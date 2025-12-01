@@ -1,0 +1,82 @@
+name: 🧪📅
+
+on:
+  schedule:
+    - cron: "0 7 * * 1"
+
+jobs:
+  run-tests-rust:
+    name: Run Rust tests
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        rust-version: ["stable", "beta", "nightly"]
+        mpi: [ 'mpich', 'openmpi']
+        f_mpi: ["", "mpi,"]
+        f_strict: ["", "strict,"]
+        f_serde: ["", "serde,"]
+    steps:
+      - name: Set up Rust
+        uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          toolchain: ${{ matrix.rust-version }}
+      - name: Set up MPI
+        uses: mpi4py/setup-mpi@v1
+        with:
+          mpi: ${{ matrix.mpi }}
+      - name: Install cargo-mpirun and cargo-templated-examples
+        run: cargo install cargo-mpirun cargo-templated-examples
+      - uses: actions/checkout@v4
+      - name: Install LAPACK, OpenBLAS
+        run:
+          sudo apt-get install -y libopenblas-dev liblapack-dev
+
+      - name: Build rust library
+        run: cargo build --features "${{matrix.f_mpi}}${{matrix.f_strict}}${{matrix.f_serde}}"
+      - name: Build rust library in release mode
+        run: cargo build --release --features "${{matrix.f_mpi}}${{matrix.f_strict}}${{matrix.f_serde}}"
+
+      - name: Run unit tests
+        run: RUST_MIN_STACK=8388608 cargo test --features "${{matrix.f_mpi}}${{matrix.f_strict}}${{matrix.f_serde}}"
+      - name: Run unit tests in release mode
+        run: RUST_MIN_STACK=8388608 cargo test --release --features "${{matrix.f_mpi}}${{matrix.f_strict}}${{matrix.f_serde}}"
+      - name: Run tests
+        run: RUST_MIN_STACK=8388608 cargo test --examples --release --features "${{matrix.f_mpi}}${{matrix.f_strict}}${{matrix.f_serde}}"
+      - name: Run examples
+        run: cargo templated-examples
+
+      - name: Build docs
+        run: cargo doc --features "${{matrix.f_mpi}}${{matrix.f_strict}}${{matrix.f_serde}}" --no-deps
+
+  run-tests-python:
+     name: Run Python tests
+     runs-on: ubuntu-latest
+     strategy:
+       matrix:
+         python-version: ["3.9", "3.10", "3.11", "3.12", "3.13", "3.14"]
+     steps:
+       - name: Install LAPACK, OpenBLAS
+         run: sudo apt-get install -y libopenblas-dev liblapack-dev
+       - name: Set up Rust
+         uses: actions-rust-lang/setup-rust-toolchain@v1
+         with:
+           toolchain: nightly
+       - name: Set up Python
+         uses: actions/setup-python@v4
+         with:
+           python-version: ${{ matrix.python-version }}
+       - uses: actions/checkout@v4
+       - name: Install uv
+         run: pip install uv "maturin>=1.7.2"
+       - name: Make virtual environment
+         run: |
+           uv venv .venv
+           uv pip install pip pytest
+       - name: Install python package
+         run: |
+           source .venv/bin/activate
+           rustup run nightly maturin develop --release
+       - name: Run Python tests
+         run: |
+           source .venv/bin/activate
+           python -m pytest python/test

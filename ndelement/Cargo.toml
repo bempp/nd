@@ -1,0 +1,66 @@
+[features]
+mpi = ["dep:mpi"]
+serde = ["dep:serde"]
+strict = []
+default = []
+
+[package]
+name = "ndelement"
+version = "0.3.0-dev"
+edition = "2024"
+authors = ["Matthew Scroggs <rust@mscroggs.co.uk>"]
+description = "n-dimensional finite element definition library."
+license = "BSD-3-Clause"
+homepage = "https://github.com/bempp/ndelement"
+repository = "https://github.com/bempp/ndelement"
+readme = "README.md"
+keywords = ["numerics"]
+categories = ["mathematics", "science"]
+
+[lib]
+name = "ndelement"
+crate-type = ["lib", "cdylib"]
+
+[dependencies]
+bempp-quadrature = { version = "0.1.0" }
+itertools = "0.14.*"
+mpi = { git = "https://github.com/rsmpi/rsmpi.git", optional = true }
+num = "0.4"
+rlst = { git = "https://github.com/linalg-rs/rlst.git" }
+serde = { version = "1", features = ["derive"], optional = true }
+strum = "0.27"
+strum_macros = "0.27"
+c-api-tools = { version = "0.1.0" }
+
+[target.'cfg(target_os = "macos")'.dependencies]
+blas-src = { version = "0.14", features = ["accelerate"]}
+lapack-src = { version = "0.13", features = ["accelerate"]}
+
+[target.'cfg(target_os = "linux")'.dependencies]
+lapack-src = { version = "0.13", features = ["netlib"]}
+blas-src = { version = "0.14", features = ["blis"]}
+
+[dev-dependencies]
+paste = "1.*"
+approx = "0.5"
+
+[build-dependencies]
+cbindgen = "0.29.*"
+
+[package.metadata.docs.rs]
+cargo-args = ["-Zunstable-options", "-Zrustdoc-scrape-examples"]
+rustdoc-args = [ "--html-in-header", "katex-header.html" ]
+
+[lints.clippy]
+wildcard_imports = "forbid"
+
+[[example]]
+name = "element_family"
+doc-scrape-examples = true
+
+[[example]]
+name = "lagrange_element"
+doc-scrape-examples = true
+
+[[example]]
+name = "test_high_degree"
