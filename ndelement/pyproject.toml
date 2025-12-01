@@ -6,9 +6,9 @@ build-backend = "maturin"
 name = "ndelement"
 version = "0.3.0-dev"
 description = "n-dimensional finite element definition library."
-readme = "README.md"
+readme = "../README.md"
 requires-python = ">=3.9"
-license = { file = "LICENSE" }
+license = { file = "../LICENSE" }
 authors = [{ name = "Matthew Scroggs", email = "rust@mscroggs.co.uk" }]
 classifiers = [
     "Programming Language :: Rust",
@@ -25,9 +25,9 @@ dependencies = [
 packages = ["ndelement"]
 
 [project.urls]
-homepage = "https://github.com/bempp/ndelement"
-repository = "https://github.com/bempp/ndelement"
-documentation = "https://bempp.github.io/ndelement/python"
+homepage = "https://github.com/bempp/nd"
+repository = "https://github.com/bempp/nd"
+documentation = "https://bempp.github.io/nd/python/ndelement"
 
 [tool.maturin]
 python-source = "python"
