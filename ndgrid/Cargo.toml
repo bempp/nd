@@ -15,7 +15,7 @@ authors = [
     "Srinath Kailasa <srinathkailasa@gmail.com>",
     "Matthew Scroggs <rust@mscroggs.co.uk>",
 ]
-description = "n-dimensional grid library."
+description = "Finite element grid library."
 license = "BSD-3-Clause"
 homepage = "https://github.com/bempp/nd"
 repository = "https://github.com/bempp/nd"
