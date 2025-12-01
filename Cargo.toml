@@ -1,0 +1,9 @@
+[workspace]
+members = [
+    "ndelement",
+    "ndgrid",
+]
+resolver = "2"
+
+[patch.crates-io]
+scotch = { git = "https://github.com/mscroggs/scotch-rs.git", branch = "mscroggs/runtime", optional = true }

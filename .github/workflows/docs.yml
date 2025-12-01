@@ -28,8 +28,6 @@ jobs:
       - uses: actions/checkout@v4
       - name: Build Rust docs
         run: RUSTDOCFLAGS="--html-in-header katex-header.html" cargo +nightly doc --no-deps -Zunstable-options -Zrustdoc-scrape-examples --all-features
-      - name: Make index page
-        run: echo "<html><head><meta http-equiv='refresh' content='0; URL=ndelement'></head></html>" > target/doc/index.html
       - name: Set file permissions
         run: |
           rm target/doc/.lock
@@ -44,17 +42,22 @@ jobs:
       - name: Build Python docs
         run: |
           source .venv/bin/activate
-          cd python/docs
+          cd ndelement/python/docs
           uv pip install -r requirements.txt
           make html
 
       - name: Move docs
         run: |
           mkdir doc
+          mkdir doc/python
           mv target/doc doc/rust
-          mv python/docs/_build/html doc/python
+          mv ndelement/python/docs/_build/html doc/python/ndelement
       - name: Make index page
-        run: echo "<html><head><title>ndelement docs</title></head><body><center><a href='rust/ndelement'>Rust docs</a><br /><a href='python'>Python docs</a></center></body></html>" > doc/index.html
+        run: |
+          echo "<html><head><title>nd docs</title></head><body>" > doc/index.html
+          echo "<h1>ndelement</h1><center><a href='rust/ndelement'>Rust docs</a><br /><a href='python/ndelement'>Python docs</a></center>" >> doc/index.html
+          echo "<h1>ndgrid</h1><center><a href='rust/ndgrid'>Rust docs</a></center>" >> doc/index.html
+          echo "</body></html>" >> doc/index.html
 
       - name: Setup Pages
         uses: actions/configure-pages@v3
