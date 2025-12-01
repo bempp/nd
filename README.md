@@ -1,4 +1,4 @@
-# nd: Numerical discretisation in Rust
+# nd: Numerical Discretisation in Rust
 
 This repo contains a number of crates that can be used for solving problems using numerical
 discretisation in Rust, for example by using the finite element method or boundary element
