@@ -11,8 +11,8 @@ jobs:
     name: Build docs
     runs-on: ubuntu-latest
     steps:
-      - name: Install LAPACK, OpenBLAS
-        run: sudo apt-get install -y libopenblas-dev liblapack-dev
+      - name: Install LAPACK, OpenBLAS, SCOTCH
+        run: sudo apt-get install -y libopenblas-dev liblapack-dev libscotch-dev
       - name: Set up Python
         uses: actions/setup-python@v4
         with:

@@ -11,10 +11,12 @@ jobs:
     strategy:
       matrix:
         rust-version: ["stable", "beta", "nightly"]
-        mpi: [ 'mpich', 'openmpi']
-        f_mpi: ["", "mpi,"]
+        mpi: ["openmpi"]
         f_strict: ["", "strict,"]
         f_serde: ["", "serde,"]
+        f_coupe: ["", "coupe,"]
+        f_scotch: ["", "scotch,"]
+        f_mpi: ["", "mpi,"]
     steps:
       - name: Set up Rust
         uses: actions-rust-lang/setup-rust-toolchain@v1
@@ -27,26 +29,26 @@ jobs:
       - name: Install cargo-mpirun and cargo-templated-examples
         run: cargo install cargo-mpirun cargo-templated-examples
       - uses: actions/checkout@v4
-      - name: Install LAPACK, OpenBLAS
+      - name: Install LAPACK, OpenBLAS, SCOTCH
         run:
-          sudo apt-get install -y libopenblas-dev liblapack-dev
+          sudo apt-get install -y libopenblas-dev liblapack-dev libscotch-dev
 
       - name: Build rust library
-        run: cargo build --features "${{matrix.f_mpi}}${{matrix.f_strict}}${{matrix.f_serde}}"
+        run: cargo build --no-default-features --features "${{matrix.f_strict}}${{matrix.f_serde}}${{matrix.f_coupe}}${{matrix.f_scotch}}${{matrix.f_mpi}}"
       - name: Build rust library in release mode
-        run: cargo build --release --features "${{matrix.f_mpi}}${{matrix.f_strict}}${{matrix.f_serde}}"
+        run: cargo build --release --no-default-features --features "${{matrix.f_strict}}${{matrix.f_serde}}${{matrix.f_coupe}}${{matrix.f_scotch}}${{matrix.f_mpi}}"
 
       - name: Run unit tests
-        run: RUST_MIN_STACK=8388608 cargo test --features "${{matrix.f_mpi}}${{matrix.f_strict}}${{matrix.f_serde}}"
+        run: cargo test --no-default-features --features "${{matrix.f_strict}}${{matrix.f_serde}}${{matrix.f_coupe}}${{matrix.f_scotch}}${{matrix.f_mpi}}"
       - name: Run unit tests in release mode
-        run: RUST_MIN_STACK=8388608 cargo test --release --features "${{matrix.f_mpi}}${{matrix.f_strict}}${{matrix.f_serde}}"
+        run: cargo test --release --no-default-features --features "${{matrix.f_strict}}${{matrix.f_serde}}${{matrix.f_coupe}}${{matrix.f_scotch}}${{matrix.f_mpi}}"
       - name: Run tests
-        run: RUST_MIN_STACK=8388608 cargo test --examples --release --features "${{matrix.f_mpi}}${{matrix.f_strict}}${{matrix.f_serde}}"
+        run: cargo test --examples --release --no-default-features --features "${{matrix.f_strict}}${{matrix.f_serde}}${{matrix.f_coupe}}${{matrix.f_scotch}}${{matrix.f_mpi}}"
       - name: Run examples
-        run: cargo templated-examples
+        run: cargo templated-examples NPROCESSES 2,4
 
       - name: Build docs
-        run: cargo doc --features "${{matrix.f_mpi}}${{matrix.f_strict}}${{matrix.f_serde}}" --no-deps
+        run: cargo doc --no-default-features --features "${{matrix.f_strict}}${{matrix.f_serde}}${{matrix.f_coupe}}${{matrix.f_scotch}}${{matrix.f_mpi}}" --no-deps
 
   run-tests-python:
      name: Run Python tests
@@ -68,15 +70,19 @@ jobs:
        - uses: actions/checkout@v4
        - name: Install uv
          run: pip install uv "maturin>=1.7.2"
-       - name: Make virtual environment
+
+       - name: Make virtual environment for ndelement
          run: |
+           cd ndelement
            uv venv .venv
            uv pip install pip pytest
-       - name: Install python package
+       - name: Install ndelement Python package
          run: |
+           cd ndelement
            source .venv/bin/activate
            rustup run nightly maturin develop --release
-       - name: Run Python tests
+       - name: Run ndelement Python tests
          run: |
+           cd ndelement
            source .venv/bin/activate
            python -m pytest python/test

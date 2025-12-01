@@ -13,7 +13,10 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        feature-flags: ['--all-features', '--features "strict"']
+        feature-flags:
+          - '--no-default-features --features "strict"'
+          - '--features "strict"'
+          - '--all-features'
     steps:
       - name: Set up Rust
         uses: actions-rust-lang/setup-rust-toolchain@v1
@@ -25,9 +28,9 @@ jobs:
         with:
           mpi: mpich
       - uses: actions/checkout@v4
-      - name: Install LAPACK, OpenBLAS
+      - name: Install LAPACK, OpenBLAS, SCOTCH
         run:
-          sudo apt-get install -y libopenblas-dev liblapack-dev
+          sudo apt-get install -y libopenblas-dev liblapack-dev libscotch-dev
 
       - name: Rust style checks
         run: |
