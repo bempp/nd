@@ -200,9 +200,10 @@ impl MixedTopology {
                 let mut dc = HashMap::new();
                 for sub_etypes in &reference_cell::entity_types(*etype) {
                     for e in sub_etypes {
-                        dc.entry(*e).or_insert(DynArray::<usize, 2>::from_shape(
-                            [sub_etypes.iter().filter(|&i| *i == *e).count(), *ecount]
-                        ));
+                        dc.entry(*e).or_insert(DynArray::<usize, 2>::from_shape([
+                            sub_etypes.iter().filter(|&i| *i == *e).count(),
+                            *ecount,
+                        ]));
                     }
                 }
                 dc

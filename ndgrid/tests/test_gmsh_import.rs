@@ -12,7 +12,9 @@ fn relative_file(filename: &str) -> String {
     // format!("{}/{filename}", dir.display())
     let mut dir = absolute(file).unwrap();
     dir = dir.parent().unwrap().to_path_buf();
-    while dir.display().to_string().ends_with("/ndgrid") || dir.display().to_string().ends_with("/tests") {
+    while dir.display().to_string().ends_with("/ndgrid")
+        || dir.display().to_string().ends_with("/tests")
+    {
         dir = dir.parent().unwrap().to_path_buf();
     }
     format!("{}/ndgrid/tests/{filename}", dir.display())
