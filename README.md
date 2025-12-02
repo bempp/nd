@@ -6,7 +6,7 @@ method.
 
 ## The crates
 
-### ndelement
+### [ndelement](ndelement/)
 [![DefElement verification](https://defelement.org/badges/ndelement.svg)](https://defelement.org/verification/ndelement.html)
 [![crates.io](https://img.shields.io/crates/v/ndelement?color=blue)](https://crates.io/crates/ndelement)
 [![docs.rs](https://img.shields.io/docsrs/ndelement?label=docs.rs)](https://docs.rs/ndelement/latest/ndelement/)
@@ -34,7 +34,7 @@ The Python functionality of the library can be tested by running:
 python -m pytest ndelement/python/test
 ```
 
-### ndgrid
+### [ndgrid](ndgrid/)
 [![crates.io](https://img.shields.io/crates/v/ndgrid?color=blue)](https://crates.io/crates/ndgrid)
 
 ndgrid is an open-source library written in Rust for handling finite element grids/meshes.

@@ -19,7 +19,7 @@ description = "Finite element grid library."
 license = "BSD-3-Clause"
 homepage = "https://github.com/bempp/nd"
 repository = "https://github.com/bempp/nd"
-readme = "../README.md"
+readme = "README.md"
 keywords = ["numerics"]
 categories = ["mathematics", "science"]
 
