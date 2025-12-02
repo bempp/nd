@@ -5,7 +5,7 @@ use crate::traits::ConvertToSerializable;
 use crate::traits::Topology;
 use itertools::izip;
 use ndelement::{orientation::compute_orientation, reference_cell, types::ReferenceCellType};
-use rlst::{DynArray, rlst_dynamic_array};
+use rlst::DynArray;
 use std::collections::HashMap;
 use std::iter::Copied;
 
@@ -200,8 +200,7 @@ impl MixedTopology {
                 let mut dc = HashMap::new();
                 for sub_etypes in &reference_cell::entity_types(*etype) {
                     for e in sub_etypes {
-                        dc.entry(*e).or_insert(rlst_dynamic_array!(
-                            usize,
+                        dc.entry(*e).or_insert(DynArray::<usize, 2>::from_shape(
                             [sub_etypes.iter().filter(|&i| *i == *e).count(), *ecount]
                         ));
                     }
