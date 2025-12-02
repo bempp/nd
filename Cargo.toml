@@ -6,4 +6,7 @@ members = [
 resolver = "2"
 
 [patch.crates-io]
-scotch = { git = "https://github.com/mscroggs/scotch-rs.git", branch = "mscroggs/runtime", optional = true }
+scotch = { git = "https://github.com/mscroggs/scotch-rs.git", branch = "mscroggs/runtime" }
+mpi = { git = "https://github.com/rsmpi/rsmpi.git" }
+rlst = { git = "https://github.com/linalg-rs/rlst.git" }
+coupe = { git = "https://github.com/LIHPC-Computational-Geometry/coupe.git"}
