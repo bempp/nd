@@ -6,7 +6,7 @@ build-backend = "maturin"
 name = "ndelement"
 version = "0.3.0-dev"
 description = "Finite element definition library."
-readme = "../README.md"
+readme = "README.md"
 requires-python = ">=3.9"
 license = { file = "../LICENSE" }
 authors = [{ name = "Matthew Scroggs", email = "rust@mscroggs.co.uk" }]
