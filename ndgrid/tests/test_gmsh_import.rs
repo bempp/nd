@@ -3,12 +3,19 @@ use ndgrid::{
     SingleElementGridBuilder,
     traits::{Builder, GmshImport},
 };
-use std::path::PathBuf;
+use std::path::{PathBuf, absolute};
 
 fn relative_file(filename: &str) -> String {
     let file = PathBuf::from(file!());
-    let dir = file.parent().unwrap();
-    format!("{}/{filename}", dir.display())
+    // TODO: Revert to using these two lines once https://github.com/rust-lang/rust/issues/149536 is fixed
+    // let dir = absolute(file.parent().unwrap()).unwrap();
+    // format!("{}/{filename}", dir.display())
+    let mut dir = absolute(file).unwrap();
+    dir = dir.parent().unwrap().to_path_buf();
+    while dir.display().to_string().ends_with("/ndgrid") || dir.display().to_string().ends_with("/tests") {
+        dir = dir.parent().unwrap().to_path_buf();
+    }
+    format!("{}/ndgrid/tests/{filename}", dir.display())
 }
 
 #[test]
