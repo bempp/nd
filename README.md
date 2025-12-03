@@ -48,7 +48,6 @@ ndgrid = "0.1.5"
 ```
 
 ### [ndfunctionspace](ndfunctionspace/)
-[![crates.io](https://img.shields.io/crates/v/ndfunctionspace?color=blue)](https://crates.io/crates/ndfunctionspace)
 
 ndfunctionspace is an open-source Rust library for creating finite element DOF maps and function spaces.
 
