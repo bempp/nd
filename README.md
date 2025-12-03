@@ -12,7 +12,8 @@ method.
 [![docs.rs](https://img.shields.io/docsrs/ndelement?label=docs.rs)](https://docs.rs/ndelement/latest/ndelement/)
 [![PyPI](https://img.shields.io/pypi/v/ndelement?color=blue&label=PyPI&logo=pypi&logoColor=white)](https://pypi.org/project/ndelement/)
 
-ndelement is an open-source library written in Rust that can be used to create finite elements on 1D, 2D, or 3D reference cells.
+ndelement is an open-source Rust library for defining and tabulating finite elements on 1D, 2D, or
+3D reference cells.
 
 #### Using ndelement
 ##### Rust
@@ -37,13 +38,25 @@ python -m pytest ndelement/python/test
 ### [ndgrid](ndgrid/)
 [![crates.io](https://img.shields.io/crates/v/ndgrid?color=blue)](https://crates.io/crates/ndgrid)
 
-ndgrid is an open-source library written in Rust for handling finite element grids/meshes.
+ndgrid is an open-source Rust library for handling finite element grids/meshes.
 
-### Using ndgrid
+#### Using ndgrid
 You can use the latest release of ndgrid by adding the following to `[dependencies]` section of your Cargo.toml file:
 
 ```toml
 ndgrid = "0.1.5"
+```
+
+### [ndfunctionspace](ndfunctionspace/)
+[![crates.io](https://img.shields.io/crates/v/ndfunctionspace?color=blue)](https://crates.io/crates/ndfunctionspace)
+
+ndfunctionspace is an open-source Rust library for creating finite element DOF maps and function spaces.
+
+#### Using ndfunctionspace
+You can use the latest version of ndfunctionspace by adding the following to `[dependencies]` section of your Cargo.toml file:
+
+```toml
+ndfunctionspace = { git = "https://github.com/bempp/nd.git" }
 ```
 
 ## Documentation

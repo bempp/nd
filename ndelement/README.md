@@ -5,7 +5,8 @@
 [![docs.rs](https://img.shields.io/docsrs/ndelement?label=docs.rs)](https://docs.rs/ndelement/latest/ndelement/)
 [![PyPI](https://img.shields.io/pypi/v/ndelement?color=blue&label=PyPI&logo=pypi&logoColor=white)](https://pypi.org/project/ndelement/)
 
-ndelement is an open-source library written in Rust that can be used to create finite elements on 1D, 2D, or 3D reference cells.
+ndelement is an open-source Rust library for defining and tabulating finite elements on 1D, 2D, or
+3D reference cells.
 
 ## Using ndelement
 ### Rust

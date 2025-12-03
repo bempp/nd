@@ -25,13 +25,13 @@ categories = ["mathematics", "science"]
 
 [lib]
 name = "ndgrid"
-crate-type = ["lib", "cdylib"]
+crate-type = ["lib"]
 
 [dependencies]
 coupe = { git = "https://github.com/LIHPC-Computational-Geometry/coupe.git", optional = true }
 itertools = "0.14.*"
 mpi = { git = "https://github.com/rsmpi/rsmpi.git", optional = true }
-ndelement = { path = "../ndelement" }
+ndelement = "0.3.0-dev"
 num = "0.4"
 rlst = { git = "https://github.com/linalg-rs/rlst.git" }
 serde = { version = "1", features = ["derive"], optional = true }
@@ -41,9 +41,6 @@ scotch = { version = "0.2.1", optional = true }
 [dev-dependencies]
 approx = "0.5"
 paste = "1.*"
-
-[build-dependencies]
-cbindgen = "0.29.2"
 
 [package.metadata.docs.rs]
 cargo-args = ["-Zunstable-options", "-Zrustdoc-scrape-examples"]

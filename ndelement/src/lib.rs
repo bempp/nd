@@ -1,4 +1,4 @@
-//! A library for the definition and tabulation of finite elements in Rust.
+//! A library for defining and tabulating finite elements on 1D, 2D, or 3D reference cells.
 //!
 //! `ndelement` provides definition of many frequently used low and high order finite elements
 //! and provides routines for the tabulation of their values.
