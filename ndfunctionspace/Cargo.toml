@@ -21,9 +21,10 @@ name = "ndfunctionspace"
 crate-type = ["lib", "cdylib"]
 
 [dependencies]
-ndelement = "0.3.0-dev"
-ndgrid = "0.1.5-dev"
-rlst = { git = "https://github.com/linalg-rs/rlst.git" }
+ndelement = { path = "../ndelement" }
+ndgrid = { path = "../ndgrid" }
+num = "0.4"
+rlst = "0.4"
 
 [dev-dependencies]
 approx = "0.5"
