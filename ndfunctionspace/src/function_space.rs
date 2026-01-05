@@ -70,7 +70,7 @@ impl<
                 {
                     for (t, i) in izip!(types, indices) {
                         let reference_entity_dofs = element.entity_dofs(d, *i).unwrap();
-                        if reference_entity_dofs.len() > 0 && !reference_entity_dofs.is_empty() {
+                        if !reference_entity_dofs.is_empty() && !reference_entity_dofs.is_empty() {
                             let ed = &mut entity_dofs.get_mut(t).unwrap()
                                 [cell.topology().sub_entity(*t, *i)];
                             while ed.len() < reference_entity_dofs.len() {

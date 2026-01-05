@@ -23,8 +23,6 @@ crate-type = ["lib", "cdylib"]
 [dependencies]
 ndelement = { path = "../ndelement" }
 ndgrid = { path = "../ndgrid" }
-num = "0.4"
-rlst = "0.4"
 itertools = "0.14.*"
 
 [dev-dependencies]
