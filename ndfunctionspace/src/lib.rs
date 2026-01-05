@@ -3,5 +3,9 @@
 #![cfg_attr(feature = "strict", deny(warnings), deny(unused_crate_dependencies))]
 #![warn(missing_docs)]
 
-use ndgrid as _;
+mod function_space;
+pub mod traits;
+pub use function_space::FunctionSpace;
+
 use ndelement as _;
+use ndgrid as _;
