@@ -25,6 +25,7 @@ ndelement = { path = "../ndelement" }
 ndgrid = { path = "../ndgrid" }
 num = "0.4"
 rlst = "0.4"
+itertools = "0.14.*"
 
 [dev-dependencies]
 approx = "0.5"

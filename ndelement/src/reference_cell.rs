@@ -375,6 +375,42 @@ pub fn entity_types(cell: ReferenceCellType) -> Vec<Vec<ReferenceCellType>> {
     }
 }
 
+/// The local indices of the subentities of the reference cell, with each entity type indexed separately
+pub fn entity_indices(cell: ReferenceCellType) -> Vec<Vec<usize>> {
+    match cell {
+        ReferenceCellType::Point => vec![vec![0], vec![], vec![], vec![]],
+        ReferenceCellType::Interval => vec![vec![0, 1], vec![0], vec![], vec![]],
+        ReferenceCellType::Triangle => vec![vec![0, 1, 2], vec![0, 1, 2], vec![0], vec![]],
+        ReferenceCellType::Quadrilateral => {
+            vec![vec![0, 1, 2, 3], vec![0, 1, 2, 3], vec![0], vec![]]
+        }
+        ReferenceCellType::Tetrahedron => vec![
+            vec![0, 1, 2, 3],
+            vec![0, 1, 2, 3, 4, 5],
+            vec![0, 1, 2, 3],
+            vec![0],
+        ],
+        ReferenceCellType::Hexahedron => vec![
+            vec![0, 1, 2, 3, 4, 5, 6, 7],
+            vec![0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11],
+            vec![0, 1, 2, 3, 4, 5],
+            vec![0],
+        ],
+        ReferenceCellType::Prism => vec![
+            vec![0, 1, 2, 3, 4, 5],
+            vec![0, 1, 2, 3, 4, 5, 6, 7, 8],
+            vec![0, 0, 1, 2, 1],
+            vec![0],
+        ],
+        ReferenceCellType::Pyramid => vec![
+            vec![0, 1, 2, 3, 4],
+            vec![0, 1, 2, 3, 4, 5, 6, 7],
+            vec![0, 0, 1, 2, 3],
+            vec![0],
+        ],
+    }
+}
+
 /// The number of subentities of each dimension
 pub fn entity_counts(cell: ReferenceCellType) -> Vec<usize> {
     match cell {
