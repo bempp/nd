@@ -1,7 +1,7 @@
 # ndgrid
 [![crates.io](https://img.shields.io/crates/v/ndgrid?color=blue)](https://crates.io/crates/ndgrid)
 
-ndgrid is an open-source library written in Rust for handling finite element grids/meshes.
+ndgrid is an open-source Rust library for handling finite element grids/meshes.
 
 ## Using ndgrid
 You can use the latest release of ndgrid by adding the following to `[dependencies]` section of your Cargo.toml file:

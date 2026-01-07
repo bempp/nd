@@ -1,4 +1,4 @@
-//! Data structures to work with n-dimensional grids.
+//! A library for handling Finite element grids/meshes.
 //!
 //! `ndgrid` builds upen [ndelement] to provide data structures for grids on either a single node or distributed via MPI.
 //!

@@ -2,8 +2,12 @@
 members = [
     "ndelement",
     "ndgrid",
+    "ndfunctionspace",
 ]
 resolver = "2"
 
 [patch.crates-io]
 scotch = { git = "https://github.com/mscroggs/scotch-rs.git", branch = "mscroggs/runtime", optional = true }
+ndelement = { path = "ndelement" }
+ndgrid = { path = "ndgrid" }
+ndfunctionspace = { path = "ndfunctionspace" }
