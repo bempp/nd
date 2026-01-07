@@ -576,7 +576,7 @@ pub fn unit_cube_boundary<T: Scalar>(
     b.create_grid()
 }
 
-/// Create a Create a grid of the boundary of a unit cube distributed in parallel
+/// Create a grid of the boundary of a unit cube distributed in parallel
 #[cfg(feature = "mpi")]
 pub fn unit_cube_boundary_distributed<T: Scalar + Equivalence, C: Communicator>(
     comm: &C,
@@ -614,7 +614,7 @@ pub fn unit_cube_edges<T: Scalar>(
     b.create_grid()
 }
 
-/// Create a Create a grid of the edges of a unit cube distributed in parallel
+/// Create a grid of the edges of a unit cube distributed in parallel
 #[cfg(feature = "mpi")]
 pub fn unit_cube_edges_distributed<T: Scalar + Equivalence, C: Communicator>(
     comm: &C,
