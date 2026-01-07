@@ -1,5 +1,6 @@
 [features]
 strict = []
+mpi = ["dep:mpi", "ndelement/mpi", "ndgrid/mpi"]
 
 [package]
 name = "ndfunctionspace"
@@ -24,6 +25,7 @@ crate-type = ["lib", "cdylib"]
 ndelement = { path = "../ndelement" }
 ndgrid = { path = "../ndgrid" }
 itertools = "0.14.*"
+mpi = { version = "0.8.0", optional = true }
 
 [package.metadata.docs.rs]
 cargo-args = ["-Zunstable-options", "-Zrustdoc-scrape-examples"]
@@ -31,3 +33,10 @@ rustdoc-args = [ "--html-in-header", "../katex-header.html" ]
 
 [lints.clippy]
 wildcard_imports = "forbid"
+
+[[example]]
+name = "test_parallel_space"
+required-features = ["mpi"]
+
+[package.metadata.example.test_parallel_space.templated-examples]
+command = "mpirun -n {{NPROCESSES}}"
