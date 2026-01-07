@@ -6,6 +6,10 @@ use crate::{
     types::Scalar,
 };
 use ndelement::{ciarlet::CiarletElement, map::IdentityMap, types::ReferenceCellType};
+#[cfg(feature = "mpi")]
+use crate::{types::GraphPartitioner, traits::ParallelBuilder, ParallelGridImpl};
+#[cfg(feature = "mpi")]
+use mpi::traits::{Communicator, Equivalence};
 
 /// Create a unit interval grid
 ///
@@ -149,28 +153,14 @@ pub fn unit_square_boundary<T: Scalar>(
     b.create_grid()
 }
 
-/// Create a unit cube grid
-///
-/// The unit cube is the cube with corners at (0,0,0), (1,0,0), (0,1,0), (1,1,0), (0,0,1),
-/// (1,0,1), (0,1,1) and (1,1,1)
-pub fn unit_cube<T: Scalar>(
+/// Add points and cells for unit cube to builder
+pub fn unit_cube_add_points_and_cells<T: Scalar>(
+    b: &mut SingleElementGridBuilder<T>,
     nx: usize,
     ny: usize,
     nz: usize,
     cell_type: ReferenceCellType,
-) -> SingleElementGrid<T, CiarletElement<T, IdentityMap, T>> {
-    let mut b = SingleElementGridBuilder::new_with_capacity(
-        3,
-        (nx + 1) * (ny + 1) * (nz + 1),
-        match cell_type {
-            ReferenceCellType::Tetrahedron => 6 * nx * ny * nz,
-            ReferenceCellType::Hexahedron => 2 * nx * ny * nz,
-            _ => {
-                panic!("Unsupported cell type: {cell_type:?}")
-            }
-        },
-        (cell_type, 1),
-    );
+) {
     for i in 0..nx + 1 {
         for j in 0..ny + 1 {
             for k in 0..nz + 1 {
@@ -249,8 +239,52 @@ pub fn unit_cube<T: Scalar>(
             panic!("Unsupported cell type: {cell_type:?}")
         }
     }
+}
+
+/// Create a unit cube grid
+///
+/// The unit cube is the cube with corners at (0,0,0), (1,0,0), (0,1,0), (1,1,0), (0,0,1),
+/// (1,0,1), (0,1,1) and (1,1,1)
+pub fn unit_cube<T: Scalar>(
+    nx: usize,
+    ny: usize,
+    nz: usize,
+    cell_type: ReferenceCellType,
+) -> SingleElementGrid<T, CiarletElement<T, IdentityMap, T>> {
+    let mut b = SingleElementGridBuilder::new_with_capacity(
+        3,
+        (nx + 1) * (ny + 1) * (nz + 1),
+        match cell_type {
+            ReferenceCellType::Tetrahedron => 6 * nx * ny * nz,
+            ReferenceCellType::Hexahedron => 2 * nx * ny * nz,
+            _ => {
+                panic!("Unsupported cell type: {cell_type:?}")
+            }
+        },
+        (cell_type, 1),
+    );
+
+    unit_cube_add_points_and_cells(&mut b, nx, ny, nz, cell_type);
 
     b.create_grid()
+}
+
+/// Create a unit cube grid distributed in parallel
+pub fn unit_cube_distributed<T: Scalar + Equivalence, C: Communicator>(
+    comm: &C,
+    partitioner: GraphPartitioner,
+    nx: usize,
+    ny: usize,
+    nz: usize,
+    cell_type: ReferenceCellType,
+) -> ParallelGridImpl<'_, C, SingleElementGrid<T, CiarletElement<T, IdentityMap, T>>> {
+    let mut b = SingleElementGridBuilder::new(3, (cell_type, 1));
+    if comm.rank() == 0 {
+        unit_cube_add_points_and_cells(&mut b, nx, ny, nz, cell_type);
+        b.create_parallel_grid_root(comm, partitioner)
+    } else {
+        b.create_parallel_grid(comm, 0)
+    }
 }
 
 /// Create a grid of the boundary of a unit cube
