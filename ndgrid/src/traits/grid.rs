@@ -119,6 +119,7 @@ pub trait ParallelGrid {
 
     /// MPI communicator
     fn comm(&self) -> &Self::C;
+
     /// Local grid on the current process
     fn local_grid(&self) -> &Self::LocalGrid;
 
