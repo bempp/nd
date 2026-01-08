@@ -1,4 +1,6 @@
 //! Function space traits
+#[cfg(feature = "mpi")]
+use mpi::traits::Communicator;
 use ndelement::traits::FiniteElement;
 use ndgrid::{traits::Grid, types::Ownership};
 use std::fmt::Debug;
@@ -47,4 +49,23 @@ pub trait FunctionSpace {
 
     /// Get ownership of a local DOF
     fn ownership(&self, local_dof_index: usize) -> Ownership;
+}
+
+/// MPI parallel function space.
+#[cfg(feature = "mpi")]
+pub trait ParallelFunctionSpace {
+    /// Local space type   
+    type LocalSpace: FunctionSpace;
+
+    /// Communicator
+    type C: Communicator;
+
+    /// MPI communicator
+    fn comm(&self) -> &Self::C;
+
+    /// Local space on the current process
+    fn local_space(&self) -> &Self::LocalSpace;
+
+    /// Get the number of DOFs on all processes
+    fn global_size(&self) -> usize;
 }

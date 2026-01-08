@@ -5,7 +5,9 @@
 
 mod function_space;
 pub mod traits;
-pub use function_space::SerialFunctionSpace;
+pub use function_space::FunctionSpaceImpl;
+#[cfg(feature = "mpi")]
+pub use function_space::ParallelFunctionSpaceImpl;
 
 use ndelement as _;
 use ndgrid as _;
