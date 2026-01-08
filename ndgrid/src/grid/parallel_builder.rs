@@ -274,7 +274,7 @@ trait ParallelBuilderFunctions: Builder + GeometryBuilder + TopologyBuilder + Gr
     //!
     //! These functions are included in a trait so that they can be implemented for an arbitrary builder B below
 
-    /// Intrernal function to create parallel grid
+    /// Internal function to create parallel grid
     #[allow(clippy::too_many_arguments)]
     fn create_parallel_grid_internal<'a, C: Communicator>(
         &self,

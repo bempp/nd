@@ -1,5 +1,5 @@
 //! Serial function space
-use crate::traits::FunctionSpace as FunctionSpaceTrait;
+use crate::traits::FunctionSpace;
 use itertools::izip;
 use ndelement::{
     reference_cell,
@@ -15,7 +15,7 @@ use std::fmt::Debug;
 use std::hash::Hash;
 
 /// Function space.
-pub struct SerialFunctionSpace<
+pub struct FunctionSpaceImpl<
     'a,
     E: Debug + PartialEq + Eq + Clone + Copy + Hash,
     G: Grid<EntityDescriptor = E>,
@@ -33,7 +33,7 @@ impl<
     'a,
     G: Grid<EntityDescriptor = ReferenceCellType>,
     F: MappedFiniteElement<CellType = ReferenceCellType>,
-> SerialFunctionSpace<'a, ReferenceCellType, G, F>
+> FunctionSpaceImpl<'a, ReferenceCellType, G, F>
 {
     /// Create a new serial function space
     pub fn new<EF: ElementFamily<FiniteElement = F, CellType = ReferenceCellType>>(
@@ -110,7 +110,7 @@ impl<
     E: Debug + PartialEq + Eq + Clone + Copy + Hash,
     G: Grid<EntityDescriptor = E>,
     F: MappedFiniteElement<CellType = E>,
-> FunctionSpaceTrait for SerialFunctionSpace<'a, E, G, F>
+> FunctionSpace for FunctionSpaceImpl<'a, E, G, F>
 {
     type EntityDescriptor = E;
     type Grid = G;
@@ -185,7 +185,7 @@ mod test {
         let grid = unit_cube_boundary::<f64>(2, 2, 2, ReferenceCellType::Triangle);
         let family = LagrangeElementFamily::<f64>::new(0, Continuity::Discontinuous);
 
-        let space = SerialFunctionSpace::new(&grid, &family);
+        let space = FunctionSpaceImpl::new(&grid, &family);
 
         assert_eq!(
             space.local_size(),
@@ -247,7 +247,7 @@ mod test {
         let grid = unit_cube_boundary::<f64>(2, 2, 2, ReferenceCellType::Triangle);
         let family = LagrangeElementFamily::<f64>::new(1, Continuity::Standard);
 
-        let space = SerialFunctionSpace::new(&grid, &family);
+        let space = FunctionSpaceImpl::new(&grid, &family);
 
         assert_eq!(
             space.local_size(),
@@ -309,7 +309,7 @@ mod test {
         let grid = unit_cube_boundary::<f64>(2, 2, 2, ReferenceCellType::Triangle);
         let family = LagrangeElementFamily::<f64>::new(1, Continuity::Discontinuous);
 
-        let space = SerialFunctionSpace::new(&grid, &family);
+        let space = FunctionSpaceImpl::new(&grid, &family);
 
         assert_eq!(
             space.local_size(),
@@ -371,7 +371,7 @@ mod test {
         let grid = unit_cube_boundary::<f64>(2, 2, 2, ReferenceCellType::Triangle);
         let family = LagrangeElementFamily::<f64>::new(2, Continuity::Standard);
 
-        let space = SerialFunctionSpace::new(&grid, &family);
+        let space = FunctionSpaceImpl::new(&grid, &family);
 
         assert_eq!(
             space.local_size(),
@@ -434,7 +434,7 @@ mod test {
         let grid = unit_cube_boundary::<f64>(2, 2, 2, ReferenceCellType::Triangle);
         let family = LagrangeElementFamily::<f64>::new(3, Continuity::Standard);
 
-        let space = SerialFunctionSpace::new(&grid, &family);
+        let space = FunctionSpaceImpl::new(&grid, &family);
 
         assert_eq!(
             space.local_size(),
@@ -498,7 +498,7 @@ mod test {
         let grid = unit_cube_boundary::<f64>(2, 2, 2, ReferenceCellType::Quadrilateral);
         let family = LagrangeElementFamily::<f64>::new(1, Continuity::Standard);
 
-        let space = SerialFunctionSpace::new(&grid, &family);
+        let space = FunctionSpaceImpl::new(&grid, &family);
 
         assert_eq!(
             space.local_size(),
@@ -560,7 +560,7 @@ mod test {
         let grid = unit_cube_boundary::<f64>(2, 2, 2, ReferenceCellType::Quadrilateral);
         let family = LagrangeElementFamily::<f64>::new(2, Continuity::Standard);
 
-        let space = SerialFunctionSpace::new(&grid, &family);
+        let space = FunctionSpaceImpl::new(&grid, &family);
 
         assert_eq!(
             space.local_size(),

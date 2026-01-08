@@ -26,6 +26,7 @@ ndelement = { path = "../ndelement" }
 ndgrid = { path = "../ndgrid" }
 itertools = "0.14.*"
 mpi = { version = "0.8.0", optional = true }
+rlst = "0.5"
 
 [package.metadata.docs.rs]
 cargo-args = ["-Zunstable-options", "-Zrustdoc-scrape-examples"]
