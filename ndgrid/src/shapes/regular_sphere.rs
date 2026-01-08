@@ -1,27 +1,22 @@
 //! Regular sphere grid
 
+#[cfg(feature = "mpi")]
+use crate::{ParallelGridImpl, traits::ParallelBuilder, types::GraphPartitioner};
 use crate::{
     grid::local_grid::{SingleElementGrid, SingleElementGridBuilder},
     traits::Builder,
     types::Scalar,
 };
+#[cfg(feature = "mpi")]
+use mpi::traits::{Communicator, Equivalence};
 use ndelement::{ciarlet::CiarletElement, map::IdentityMap, types::ReferenceCellType};
 use std::collections::{HashMap, hash_map::Entry::Vacant};
 
-/// Create a surface grid of a regular sphere
-///
-/// A regular sphere is created by starting with a regular octahedron. The shape is then refined `refinement_level` times.
-/// Each time the grid is refined, each triangle is split into four triangles (by adding lines connecting the midpoints of
-/// each edge). The new points are then scaled so that they are a distance of 1 from the origin.
-pub fn regular_sphere<T: Scalar>(
+/// Add points and cells for regular sphere to builder
+fn regular_sphere_add_points_and_cells<T: Scalar>(
+    b: &mut SingleElementGridBuilder<T>,
     refinement_level: u32,
-) -> SingleElementGrid<T, CiarletElement<T, IdentityMap, T>> {
-    let mut b = SingleElementGridBuilder::new_with_capacity(
-        3,
-        2 + usize::pow(4, refinement_level + 1),
-        8 * usize::pow(4, refinement_level),
-        (ReferenceCellType::Triangle, 1),
-    );
+) {
     let zero = T::from(0.0).unwrap();
     let one = T::from(1.0).unwrap();
     let half = T::from(0.5).unwrap();
@@ -91,8 +86,40 @@ pub fn regular_sphere<T: Scalar>(
     for (i, v) in cells.iter().enumerate() {
         b.add_cell(i, v);
     }
+}
 
+/// Create a surface grid of a regular sphere
+///
+/// A regular sphere is created by starting with a regular octahedron. The shape is then refined `refinement_level` times.
+/// Each time the grid is refined, each triangle is split into four triangles (by adding lines connecting the midpoints of
+/// each edge). The new points are then scaled so that they are a distance of 1 from the origin.
+pub fn regular_sphere<T: Scalar>(
+    refinement_level: u32,
+) -> SingleElementGrid<T, CiarletElement<T, IdentityMap, T>> {
+    let mut b = SingleElementGridBuilder::new_with_capacity(
+        3,
+        2 + usize::pow(4, refinement_level + 1),
+        8 * usize::pow(4, refinement_level),
+        (ReferenceCellType::Triangle, 1),
+    );
+    regular_sphere_add_points_and_cells(&mut b, refinement_level);
     b.create_grid()
+}
+
+/// Create a grid of a regular sphere distributed in parallel
+#[cfg(feature = "mpi")]
+pub fn regular_sphere_distributed<T: Scalar + Equivalence, C: Communicator>(
+    comm: &C,
+    partitioner: GraphPartitioner,
+    refinement_level: u32,
+) -> ParallelGridImpl<'_, C, SingleElementGrid<T, CiarletElement<T, IdentityMap, T>>> {
+    let mut b = SingleElementGridBuilder::new(3, (ReferenceCellType::Triangle, 1));
+    if comm.rank() == 0 {
+        regular_sphere_add_points_and_cells(&mut b, refinement_level);
+        b.create_parallel_grid_root(comm, partitioner)
+    } else {
+        b.create_parallel_grid(comm, 0)
+    }
 }
 
 #[cfg(test)]
