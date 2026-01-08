@@ -1,6 +1,6 @@
 [features]
 strict = []
-mpi = ["dep:mpi", "ndelement/mpi", "ndgrid/mpi"]
+mpi = ["dep:rlst", "dep:mpi", "ndelement/mpi", "ndgrid/mpi"]
 
 [package]
 name = "ndfunctionspace"
@@ -26,7 +26,7 @@ ndelement = { path = "../ndelement" }
 ndgrid = { path = "../ndgrid" }
 itertools = "0.14.*"
 mpi = { version = "0.8.0", optional = true }
-rlst = "0.5"
+rlst = { version = "0.5", optional = true }
 
 [package.metadata.docs.rs]
 cargo-args = ["-Zunstable-options", "-Zrustdoc-scrape-examples"]
