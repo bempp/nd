@@ -11,8 +11,9 @@ use crate::{
 use itertools::{Itertools, izip};
 use mpi::{
     collective::SystemOperation,
-    traits::{Buffer, Communicator, CommunicatorCollectives, Equivalence, Root},
+    traits::{Buffer, Communicator, CommunicatorCollectives, Equivalence},
 };
+use rlst::distributed_tools::{all_to_allv, scatterv, scatterv_root};
 use std::collections::{HashMap, HashSet};
 
 #[cfg(feature = "coupe")]
@@ -21,22 +22,27 @@ use coupe::{KMeans, Partition, Point3D};
 #[cfg(feature = "scotch")]
 use scotch::{Architecture, Graph, Strategy, graph};
 
-// A simple struct to hold chunked data. The data is a long
-// array and `idx_bounds` is a vector sunch that `chunks[idx_bounds[i]..idx_bounds[i+1]]`
-// is one chunk. The last element of `idx_bounds` is the length of the data array.
+/// A simple struct to hold chunked data. The data is a long
+/// array and `idx_bounds` is a vector sunch that `chunks[idx_bounds[i]..idx_bounds[i+1]]`
+/// is one chunk. The last element of `idx_bounds` is the length of the data array.
 struct ChunkedData<T: Equivalence + Copy> {
     data: Vec<T>,
     idx_bounds: Vec<usize>,
 }
 
 impl<T: Equivalence + Copy> ChunkedData<T> {
-    // Return a vector with the number of elements per chunk.
+    /// Return a vector with the number of elements per chunk.
     fn counts(&self) -> Vec<usize> {
         self.idx_bounds
             .iter()
             .tuple_windows()
             .map(|(a, b)| b - a)
             .collect()
+    }
+
+    /// Scatter data across processes
+    fn scatterv_root(&self, comm: &impl Communicator) -> Vec<T> {
+        scatterv_root(comm, &self.counts(), &self.data)
     }
 }
 
@@ -211,15 +217,15 @@ where
         // - `cell_types` contains the types of the cells that are owned by the current process.
         // - `cell_degrees` contains the degrees of the cells that are owned by the current process.
         // - `cell_owners` contains the owners of the cells that are owned by the current process.
-        let point_indices = scatterv_root(comm, &points_per_proc);
-        let coordinates = scatterv_root(comm, &coords_per_proc);
-        let vertex_indices = scatterv_root(comm, &vertices_per_proc);
-        let vertex_owners = scatterv_root(comm, &vertex_owners_per_proc);
-        let cell_indices = scatterv_root(comm, &cells_per_proc);
-        let cell_points = scatterv_root(comm, &cell_points_per_proc);
-        let cell_types = scatterv_root(comm, &cell_types_per_proc);
-        let cell_degrees = scatterv_root(comm, &cell_degrees_per_proc);
-        let cell_owners = scatterv_root(comm, &cell_owners_per_proc);
+        let point_indices = points_per_proc.scatterv_root(comm);
+        let coordinates = coords_per_proc.scatterv_root(comm);
+        let vertex_indices = vertices_per_proc.scatterv_root(comm);
+        let vertex_owners = vertex_owners_per_proc.scatterv_root(comm);
+        let cell_indices = cells_per_proc.scatterv_root(comm);
+        let cell_points = cell_points_per_proc.scatterv_root(comm);
+        let cell_types = cell_types_per_proc.scatterv_root(comm);
+        let cell_degrees = cell_degrees_per_proc.scatterv_root(comm);
+        let cell_owners = cell_owners_per_proc.scatterv_root(comm);
 
         // This is executed on all ranks and creates the local grid.
         self.create_parallel_grid_internal(
@@ -709,77 +715,13 @@ where
 {
 }
 
-fn scatterv_root<T: Equivalence + Copy>(
-    comm: &impl Communicator,
-    chunks_per_proc: &ChunkedData<T>,
-) -> Vec<T> {
-    let rank = comm.rank() as usize;
-    let size = comm.size() as usize;
-
-    let send_counts = chunks_per_proc
-        .counts()
-        .iter()
-        .map(|&x| x as i32)
-        .collect_vec();
-
-    let mut recv_count: i32 = 0;
-    let mut recvbuf: Vec<T> = Vec::<T>::with_capacity(send_counts[rank] as usize);
-    // This avoids having the pre-initialise the array. We simply transmute the spare capacity
-    // into a valid reference and later manually set the length of the array to the full capacity.
-    let recvbuf_ref: &mut [T] = unsafe { std::mem::transmute(recvbuf.spare_capacity_mut()) };
-
-    // The idx-bounds are one too long as their last element is the total number of
-    // elements. We don't want this for the displacements.
-    let displacements = chunks_per_proc.idx_bounds[0..size]
-        .iter()
-        .map(|&x| x as i32)
-        .collect_vec();
-
-    // Now scatter the counts to each process.
-    comm.this_process()
-        .scatter_into_root(&send_counts, &mut recv_count);
-
-    // We now prepare the send partition of the variable length data.
-    let send_partition =
-        mpi::datatype::Partition::new(&chunks_per_proc.data, &send_counts[..], &displacements[..]);
-
-    // And now we send the partition.
-    comm.this_process()
-        .scatter_varcount_into_root(&send_partition, recvbuf_ref);
-
-    unsafe { recvbuf.set_len(send_counts[rank] as usize) };
-
-    recvbuf
-}
-
-// Receive the scattered data from `root`.
-fn scatterv<T: Equivalence + Copy>(comm: &impl Communicator, root: usize) -> Vec<T> {
-    let mut recv_count: i32 = 0;
-
-    // First we need to receive the number of elements that we are about to get.
-    comm.process_at_rank(root as i32)
-        .scatter_into(&mut recv_count);
-
-    // We prepare an unitialized buffer to receive the data.
-    let mut recvbuf: Vec<T> = Vec::<T>::with_capacity(recv_count as usize);
-    // This avoids having the pre-initialise the array. We simply transmute the spare capacity
-    // into a valid reference and later manually set the length of the array to the full capacity.
-    let recvbuf_ref: &mut [T] = unsafe { std::mem::transmute(recvbuf.spare_capacity_mut()) };
-
-    // And finally we receive the data.
-    comm.process_at_rank(root as i32)
-        .scatter_varcount_into(recvbuf_ref);
-
-    // Don't forget to manually set the length of the vector to the correct value.
-    unsafe { recvbuf.set_len(recv_count as usize) };
-    recvbuf
-}
-
-// This routine synchronizes indices across processes.
-// - Chunk length: An entity can have more than one index. This is the number of indices per entity.
-// - indices: The set of all indices.
-// - owners: The owning rank of each index.
-// The output is a tuple consisting of the associated global indices and the ownership information.
+/// This routine synchronizes indices across processes.
+///
+/// - Chunk length: An entity can have more than one index. This is the number of indices per entity.
+/// - indices: The set of all indices.
+/// - owners: The owning rank of each index.
+///
+/// The output is a tuple consisting of the associated global indices and the ownership information.
 fn synchronize_entities(
     comm: &impl Communicator,
     chunk_length: usize,
@@ -849,7 +791,7 @@ fn synchronize_entities(
 
     // Now send the counts around via an all-to-all communication.
 
-    let (recv_counts, recv_data) = all_to_all_varcount(
+    let (recv_counts, recv_data) = all_to_allv(
         comm,
         &counts,
         &ghosts.iter().flatten().copied().collect_vec(),
@@ -883,7 +825,7 @@ fn synchronize_entities(
     let recv_counts = recv_counts.iter().map(|i| *i / chunk_length).collect_vec();
 
     let (_, remote_local_indices_of_ghosts) =
-        all_to_all_varcount(comm, &recv_counts, &send_back_local_indices);
+        all_to_allv(comm, &recv_counts, &send_back_local_indices);
 
     // We now have to do exactly the same thing with the global indices so that the original process knows the
     // global indices of its ghosts.
@@ -898,7 +840,7 @@ fn synchronize_entities(
     };
 
     let (_, remote_global_indices_of_ghosts) =
-        all_to_all_varcount(comm, &recv_counts, &send_back_global_indices);
+        all_to_allv(comm, &recv_counts, &send_back_global_indices);
 
     // We can now iterate through the ghosts and assign the correct global indices.
     for (pos, ghost_local_index) in local_indices_of_ghosts.iter().enumerate() {
@@ -915,57 +857,4 @@ fn synchronize_entities(
     }
 
     (global_indices, ownership)
-}
-
-// Performs an all-to-all communication.
-// Returns the receive counts from each processor
-// and the received data.
-fn all_to_all_varcount<T: Equivalence>(
-    comm: &impl Communicator,
-    counts: &[usize],
-    data: &[T],
-) -> (Vec<usize>, Vec<T>) {
-    // We need the counts as i32 types.
-
-    let counts = counts.iter().map(|&x| x as i32).collect_vec();
-
-    // First send around the counts via an all-to-all
-    let mut recv_counts = vec![0; comm.size() as usize];
-    comm.all_to_all_into(&counts, &mut recv_counts);
-
-    // Now we can prepare the actual data. We have to allocate the data and compute the send partition and the receive partition.
-
-    let mut receive_data = Vec::<T>::with_capacity(recv_counts.iter().sum::<i32>() as usize);
-    let receive_buf: &mut [T] = unsafe { std::mem::transmute(receive_data.spare_capacity_mut()) };
-
-    let send_displacements = counts
-        .iter()
-        .scan(0, |acc, &x| {
-            let old = *acc;
-            *acc += x;
-            Some(old)
-        })
-        .collect_vec();
-
-    let receive_displacements = recv_counts
-        .iter()
-        .scan(0, |acc, &x| {
-            let old = *acc;
-            *acc += x;
-            Some(old)
-        })
-        .collect_vec();
-
-    let send_partition = mpi::datatype::Partition::new(data, counts, send_displacements);
-    let mut receive_partition =
-        mpi::datatype::PartitionMut::new(receive_buf, &recv_counts[..], receive_displacements);
-
-    comm.all_to_all_varcount_into(&send_partition, &mut receive_partition);
-
-    unsafe { receive_data.set_len(recv_counts.iter().sum::<i32>() as usize) };
-
-    (
-        recv_counts.iter().map(|i| *i as usize).collect_vec(),
-        receive_data,
-    )
 }
