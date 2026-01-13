@@ -371,7 +371,7 @@ mod test {
     };
     use rlst::rlst_dynamic_array;
 
-    fn example_grid_triangle() -> SingleElementGrid<f64, CiarletElement<f64, IdentityMap>> {
+    fn example_grid_triangle() -> SingleElementGrid<f64, CiarletElement<f64, IdentityMap, f64>> {
         let mut points = rlst_dynamic_array!(f64, [3, 4]);
         *points.get_mut([0, 0]).unwrap() = 0.0;
         *points.get_mut([1, 0]).unwrap() = 0.0;
@@ -388,7 +388,7 @@ mod test {
         let family = LagrangeElementFamily::<f64>::new(1, Continuity::Standard);
         SingleElementGrid::new(
             SingleTypeTopology::new(&[0, 1, 2, 2, 1, 3], ReferenceCellType::Triangle, None, None),
-            SingleElementGeometry::<f64, CiarletElement<f64, IdentityMap>>::new(
+            SingleElementGeometry::<f64, CiarletElement<f64, IdentityMap, f64>>::new(
                 ReferenceCellType::Triangle,
                 points,
                 &[0, 1, 2, 2, 1, 3],

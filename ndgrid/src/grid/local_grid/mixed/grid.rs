@@ -416,7 +416,7 @@ mod test {
     };
     use rlst::rlst_dynamic_array;
 
-    fn example_grid_triangle() -> MixedGrid<f64, CiarletElement<f64, IdentityMap>> {
+    fn example_grid_triangle() -> MixedGrid<f64, CiarletElement<f64, IdentityMap, f64>> {
         let mut points = rlst_dynamic_array!(f64, [3, 4]);
         *points.get_mut([0, 0]).unwrap() = 0.0;
         *points.get_mut([1, 0]).unwrap() = 0.0;
@@ -438,7 +438,7 @@ mod test {
                 None,
                 None,
             ),
-            MixedGeometry::<f64, CiarletElement<f64, IdentityMap>>::new(
+            MixedGeometry::<f64, CiarletElement<f64, IdentityMap, f64>>::new(
                 &[ReferenceCellType::Triangle, ReferenceCellType::Triangle],
                 points,
                 &[0, 1, 2, 2, 1, 3],
@@ -448,7 +448,7 @@ mod test {
         )
     }
 
-    fn example_grid_mixed() -> MixedGrid<f64, CiarletElement<f64, IdentityMap>> {
+    fn example_grid_mixed() -> MixedGrid<f64, CiarletElement<f64, IdentityMap, f64>> {
         let mut points = rlst_dynamic_array!(f64, [2, 8]);
         *points.get_mut([0, 0]).unwrap() = 0.0;
         *points.get_mut([1, 0]).unwrap() = 0.0;
@@ -479,7 +479,7 @@ mod test {
                 None,
                 None,
             ),
-            MixedGeometry::<f64, CiarletElement<f64, IdentityMap>>::new(
+            MixedGeometry::<f64, CiarletElement<f64, IdentityMap, f64>>::new(
                 &[
                     ReferenceCellType::Triangle,
                     ReferenceCellType::Triangle,

@@ -23,7 +23,7 @@ mod test {
     };
     use rlst::rlst_dynamic_array;
 
-    fn example_geometry_triangles() -> MixedGeometry<f64, CiarletElement<f64, IdentityMap>> {
+    fn example_geometry_triangles() -> MixedGeometry<f64, CiarletElement<f64, IdentityMap, f64>> {
         let mut points = rlst_dynamic_array!(f64, [2, 7]);
         *points.get_mut([0, 0]).unwrap() = 0.0;
         *points.get_mut([1, 0]).unwrap() = 0.0;
@@ -43,7 +43,7 @@ mod test {
             LagrangeElementFamily::<f64>::new(1, Continuity::Standard),
             LagrangeElementFamily::<f64>::new(2, Continuity::Standard),
         ];
-        MixedGeometry::<f64, CiarletElement<f64, IdentityMap>>::new(
+        MixedGeometry::<f64, CiarletElement<f64, IdentityMap, f64>>::new(
             &[ReferenceCellType::Triangle, ReferenceCellType::Triangle],
             points,
             &[0, 1, 4, 1, 4, 6, 5, 3, 2],
@@ -80,7 +80,7 @@ mod test {
                         for (cell_i, vertices) in cell_vertices.iter().enumerate() {
                             for (dim, conn_dim) in conn.iter().enumerate() {
                                 for (index, entity_vertices) in conn_dim.iter().enumerate() {
-                                    let entity = MixedEntityGeometry::<f64, CiarletElement<f64, IdentityMap>>::new(
+                                    let entity = MixedEntityGeometry::<f64, CiarletElement<f64, IdentityMap, f64>>::new(
                                         &g, n, cell_i, dim, index,
                                     );
                                     for (v, pt) in izip!(&entity_vertices[0], entity.points()) {
