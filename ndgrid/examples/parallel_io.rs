@@ -37,7 +37,7 @@ fn main() {
     comm.barrier();
 
     // A grid can be re-imported from raw RON data. Note that it must be imported on the same number of processes as it was exported using
-    let g2 = ParallelGridImpl::<'_, _, SingleElementGrid::<f64, CiarletElement<f64, IdentityMap>>>::import_from_ron(&comm, "_unit_cube_boundary_parallel.ron");
+    let g2 = ParallelGridImpl::<'_, _, SingleElementGrid::<f64, CiarletElement<f64, IdentityMap, f64>>>::import_from_ron(&comm, "_unit_cube_boundary_parallel.ron");
 
     // Print the first 5 cells of each grid on process 0
     if rank == 0 {

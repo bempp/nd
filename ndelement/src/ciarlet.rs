@@ -65,7 +65,7 @@ fn compute_derivative_count(nderivs: usize, cell_type: ReferenceCellType) -> usi
 }
 
 /// A Ciarlet element
-pub struct CiarletElement<T: RlstScalar, M: Map, TGeo: RlstScalar = <T as RlstScalar>::Real> {
+pub struct CiarletElement<T: RlstScalar, M: Map, TGeo: RlstScalar> {
     family_name: String,
     cell_type: ReferenceCellType,
     degree: usize,
