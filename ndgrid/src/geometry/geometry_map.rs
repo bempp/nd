@@ -18,7 +18,7 @@ fn norm<T: RlstScalar>(vector: &[T]) -> T {
 }
 
 /// Invert a matrix
-/// Note: the shape argument assumed column-major ordering
+/// Note: the shape argument assumes column-major ordering
 fn inverse<T: RlstScalar>(mat: &[T], shape: [usize; 2], result: &mut [T]) {
     let gdim = shape[0];
     let tdim = shape[1];
@@ -28,7 +28,7 @@ fn inverse<T: RlstScalar>(mat: &[T], shape: [usize; 2], result: &mut [T]) {
     debug_assert!(tdim <= gdim);
 
     match tdim {
-        0 => {},
+        0 => {}
         1 => {
             let det = mat.iter().map(|i| i.powi(2)).sum::<T>();
             for (r, m) in izip!(result, mat) {
@@ -45,19 +45,34 @@ fn inverse<T: RlstScalar>(mat: &[T], shape: [usize; 2], result: &mut [T]) {
             let ata_det = ata[0] * ata[3] - ata[1] * ata[2];
             let ata_inv = [
                 ata[3] / ata_det,
-                -ata[1] / ata_det,
                 -ata[2] / ata_det,
-                -ata[0] / ata_det,
+                -ata[1] / ata_det,
+                ata[0] / ata_det,
             ];
 
+            dbg!(&ata);
+            dbg!(&ata_det);
+            dbg!(&ata_inv);
+
             for i in 0..gdim {
-                result[i] = ata_inv[0] * mat[i] + ata_inv[2] * mat[gdim + i];
-                result[gdim + i] = ata_inv[1] * mat[i] + ata_inv[3] * mat[gdim + i];
+                result[2 * i] = ata_inv[0] * mat[i] + ata_inv[2] * mat[gdim + i];
+                result[2 * i + 1] = ata_inv[1] * mat[i] + ata_inv[3] * mat[gdim + i];
             }
         }
         3 => match gdim {
             3 => {
-                todo!();
+                let det = mat[0] * (mat[4] * mat[8] - mat[5] * mat[7])
+                    + mat[1] * (mat[5] * mat[6] - mat[3] * mat[8])
+                    + mat[1] * (mat[3] * mat[7] - mat[4] * mat[6]);
+                result[0] = (mat[4] * mat[8] - mat[5] * mat[7]) / det;
+                result[1] = (mat[2] * mat[7] - mat[1] * mat[8]) / det;
+                result[2] = (mat[1] * mat[5] - mat[2] * mat[4]) / det;
+                result[3] = (mat[5] * mat[6] - mat[3] * mat[8]) / det;
+                result[4] = (mat[0] * mat[8] - mat[2] * mat[6]) / det;
+                result[5] = (mat[2] * mat[3] - mat[0] * mat[5]) / det;
+                result[6] = (mat[3] * mat[7] - mat[4] * mat[5]) / det;
+                result[7] = (mat[1] * mat[6] - mat[0] * mat[7]) / det;
+                result[8] = (mat[0] * mat[4] - mat[1] * mat[3]) / det;
             }
             _ => {
                 panic!("Unsupported dimension");
@@ -214,5 +229,53 @@ impl<T: Scalar, B2D: ValueArrayImpl<T, 2>, C2D: ValueArrayImpl<usize, 2>> Geomet
                 *n_i /= *jd;
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    use approx::*;
+
+    fn test_inverse(gdim: usize, tdim: usize) {
+        let mat = (0..gdim * tdim).map(|i| i as f64).collect::<Vec<_>>();
+        let mut inv = vec![0.0; tdim * gdim];
+
+        inverse(&mat, [gdim, tdim], &mut inv);
+
+        dbg!(&mat);
+        dbg!(&inv);
+
+        for i in 0..tdim {
+            for j in 0..tdim {
+                for k in 0..gdim {
+                    print!("inv[{}] * mat[{}] + ", tdim * k + i, gdim * j + k);
+                }
+                println!();
+                for k in 0..gdim {
+                    print!("{} * {} + ", inv[tdim * k + i], mat[gdim * j + k]);
+                }
+                println!();
+                let entry = (0..gdim)
+                    .map(|k| inv[tdim * k + i] * mat[gdim * j + k])
+                    .sum::<f64>();
+                assert_relative_eq!(entry, if i == j { 1.0 } else { 0.0 }, epsilon = 1e-10);
+            }
+        }
+    }
+
+    #[test]
+    fn test_inverse_2_2() {
+        test_inverse(2, 2);
+    }
+
+    #[test]
+    fn test_inverse_3_2() {
+        test_inverse(3, 2);
+    }
+
+    #[test]
+    fn test_inverse_3_3() {
+        test_inverse(3, 3);
     }
 }
