@@ -28,6 +28,7 @@ fn inverse<T: RlstScalar>(mat: &[T], shape: [usize; 2], result: &mut [T]) {
     debug_assert!(tdim <= gdim);
 
     match tdim {
+        0 => {},
         1 => {
             let det = mat.iter().map(|i| i.powi(2)).sum::<T>();
             for (r, m) in izip!(result, mat) {
