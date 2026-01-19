@@ -232,16 +232,16 @@ impl<T: Scalar, B2D: ValueArrayImpl<T, 2>, C2D: ValueArrayImpl<usize, 2>> Geomet
 mod test {
     use super::*;
     use approx::assert_relative_eq;
-    use rand::{SeedableRng, Rng};
+    use rand::{Rng, SeedableRng};
     use rand_chacha::ChaCha8Rng;
 
-    use rlst::{rlst_dynamic_array, SliceArray, Lu};
+    use rlst::{Lu, SliceArray, rlst_dynamic_array};
 
     fn is_singular(mat: &[f64], gdim: usize, tdim: usize) -> bool {
         let a = SliceArray::from_shape(mat, [gdim, tdim]);
         let mut at = rlst_dynamic_array!(f64, [tdim, gdim]);
         at.fill_from(&a.r().transpose());
-        
+
         let ata = rlst::dot!(at.r(), a.r());
         if let Ok(lu) = ata.lu() {
             lu.det().abs() < 0.1
