@@ -236,9 +236,54 @@ impl<T: Scalar, B2D: ValueArrayImpl<T, 2>, C2D: ValueArrayImpl<usize, 2>> Geomet
 mod test {
     use super::*;
     use approx::*;
+    use rand::Rng;
+    use rlst::{rlst_dynamic_array, SliceArray, DynArray, ValueArrayImpl, RandomAccessByRef, Shape, Lu};
+
+    fn det(mat: &DynArray<f64, 2>) -> f64 {
+        assert_eq!(mat.shape()[0], mat.shape()[1]);
+        if mat.shape()[0] == 1 {
+            *mat.get([0, 0]).unwrap()
+        } else {
+            let mut sub = rlst_dynamic_array!(f64, [mat.shape()[0] - 1, mat.shape()[1] - 1]);
+            let mut d = 0.0;
+            for i in 0..mat.shape()[0] {
+                for j in 0..mat.shape()[0] {
+                    if j != i {
+                        for k in 0..mat.shape()[0] {
+                            if k != i {
+                                *sub.get_mut([if k > i {k - 1} else {k}, if j > i {j - 1} else {j}]).unwrap() = *mat.get([j, k]).unwrap();
+                            }
+                        }
+                    }
+                }
+                d += *mat.get([0, i]).unwrap() * det(&sub);
+            }
+            d
+        }
+    }
+
+    fn is_singular(mat: &[f64], gdim: usize, tdim: usize) -> bool {
+        let a = SliceArray::from_shape(mat, [gdim, tdim]);
+        let mut at = rlst_dynamic_array!(f64, [tdim, gdim]);
+        at.fill_from(&a.r().transpose());
+        
+        let ata = rlst::dot!(at.r(), a.r());
+        det(&ata).abs() < 0.1
+    }
+
+    fn non_singular_matrix(gdim: usize, tdim: usize) -> Vec<f64> {
+        let mut mat = vec![0.0; gdim * tdim];
+        let mut rng = rand::rng();
+        while is_singular(&mat, gdim, tdim) {
+            for m in mat.iter_mut() {
+                *m = rng.random();
+            }
+        }
+        mat
+    }
 
     fn test_inverse(gdim: usize, tdim: usize) {
-        let mat = (0..gdim * tdim).map(|i| i as f64).collect::<Vec<_>>();
+        let mat = non_singular_matrix(gdim, tdim);
         let mut inv = vec![0.0; tdim * gdim];
 
         inverse(&mat, [gdim, tdim], &mut inv);
