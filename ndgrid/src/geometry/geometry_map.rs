@@ -50,10 +50,6 @@ fn inverse<T: RlstScalar>(mat: &[T], shape: [usize; 2], result: &mut [T]) {
                 ata[0] / ata_det,
             ];
 
-            dbg!(&ata);
-            dbg!(&ata_det);
-            dbg!(&ata_inv);
-
             for i in 0..gdim {
                 result[2 * i] = ata_inv[0] * mat[i] + ata_inv[2] * mat[gdim + i];
                 result[2 * i + 1] = ata_inv[1] * mat[i] + ata_inv[3] * mat[gdim + i];
@@ -63,14 +59,14 @@ fn inverse<T: RlstScalar>(mat: &[T], shape: [usize; 2], result: &mut [T]) {
             3 => {
                 let det = mat[0] * (mat[4] * mat[8] - mat[5] * mat[7])
                     + mat[1] * (mat[5] * mat[6] - mat[3] * mat[8])
-                    + mat[1] * (mat[3] * mat[7] - mat[4] * mat[6]);
+                    + mat[2] * (mat[3] * mat[7] - mat[4] * mat[6]);
                 result[0] = (mat[4] * mat[8] - mat[5] * mat[7]) / det;
                 result[1] = (mat[2] * mat[7] - mat[1] * mat[8]) / det;
                 result[2] = (mat[1] * mat[5] - mat[2] * mat[4]) / det;
                 result[3] = (mat[5] * mat[6] - mat[3] * mat[8]) / det;
                 result[4] = (mat[0] * mat[8] - mat[2] * mat[6]) / det;
                 result[5] = (mat[2] * mat[3] - mat[0] * mat[5]) / det;
-                result[6] = (mat[3] * mat[7] - mat[4] * mat[5]) / det;
+                result[6] = (mat[3] * mat[7] - mat[4] * mat[6]) / det;
                 result[7] = (mat[1] * mat[6] - mat[0] * mat[7]) / det;
                 result[8] = (mat[0] * mat[4] - mat[1] * mat[3]) / det;
             }
@@ -235,32 +231,11 @@ impl<T: Scalar, B2D: ValueArrayImpl<T, 2>, C2D: ValueArrayImpl<usize, 2>> Geomet
 #[cfg(test)]
 mod test {
     use super::*;
-    use approx::*;
-    use rand::Rng;
-    use rlst::{rlst_dynamic_array, SliceArray, DynArray, ValueArrayImpl, RandomAccessByRef, Shape, Lu};
+    use approx::assert_relative_eq;
+    use rand::{SeedableRng, Rng};
+    use rand_chacha::ChaCha8Rng;
 
-    fn det(mat: &DynArray<f64, 2>) -> f64 {
-        assert_eq!(mat.shape()[0], mat.shape()[1]);
-        if mat.shape()[0] == 1 {
-            *mat.get([0, 0]).unwrap()
-        } else {
-            let mut sub = rlst_dynamic_array!(f64, [mat.shape()[0] - 1, mat.shape()[1] - 1]);
-            let mut d = 0.0;
-            for i in 0..mat.shape()[0] {
-                for j in 0..mat.shape()[0] {
-                    if j != i {
-                        for k in 0..mat.shape()[0] {
-                            if k != i {
-                                *sub.get_mut([if k > i {k - 1} else {k}, if j > i {j - 1} else {j}]).unwrap() = *mat.get([j, k]).unwrap();
-                            }
-                        }
-                    }
-                }
-                d += *mat.get([0, i]).unwrap() * det(&sub);
-            }
-            d
-        }
-    }
+    use rlst::{rlst_dynamic_array, SliceArray, Lu};
 
     fn is_singular(mat: &[f64], gdim: usize, tdim: usize) -> bool {
         let a = SliceArray::from_shape(mat, [gdim, tdim]);
@@ -268,12 +243,16 @@ mod test {
         at.fill_from(&a.r().transpose());
         
         let ata = rlst::dot!(at.r(), a.r());
-        det(&ata).abs() < 0.1
+        if let Ok(lu) = ata.lu() {
+            lu.det().abs() < 0.1
+        } else {
+            true
+        }
     }
 
     fn non_singular_matrix(gdim: usize, tdim: usize) -> Vec<f64> {
         let mut mat = vec![0.0; gdim * tdim];
-        let mut rng = rand::rng();
+        let mut rng = ChaCha8Rng::seed_from_u64(2);
         while is_singular(&mat, gdim, tdim) {
             for m in mat.iter_mut() {
                 *m = rng.random();
@@ -288,19 +267,8 @@ mod test {
 
         inverse(&mat, [gdim, tdim], &mut inv);
 
-        dbg!(&mat);
-        dbg!(&inv);
-
         for i in 0..tdim {
             for j in 0..tdim {
-                for k in 0..gdim {
-                    print!("inv[{}] * mat[{}] + ", tdim * k + i, gdim * j + k);
-                }
-                println!();
-                for k in 0..gdim {
-                    print!("{} * {} + ", inv[tdim * k + i], mat[gdim * j + k]);
-                }
-                println!();
                 let entry = (0..gdim)
                     .map(|k| inv[tdim * k + i] * mat[gdim * j + k])
                     .sum::<f64>();
