@@ -45,6 +45,7 @@ pub trait GeometryMap {
         &self,
         entity_index: usize,
         jacobians: &mut [Self::T],
+        inverse_jacobians: &mut [Self::T],
         jdets: &mut [Self::T],
         normals: &mut [Self::T],
     );
