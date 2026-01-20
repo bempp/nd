@@ -19,56 +19,10 @@ fn dot<T: RlstScalar>(a: &[T], b: &[T]) -> T {
     izip!(a, b).map(|(&i, &j)| i * j).sum::<T>()
 }
 
-/// Norm of a vector
-fn norm<T: RlstScalar>(vector: &[T]) -> T {
-    dot(vector, vector).sqrt()
-}
-
-/// Determinant of a matrix, or sqrt(det(A^T*A)) if A is not square
+/// Invert a matrix and return the determinad, or compute the Moore-Penrose left pseudoinverse
+/// and return sqrt(det(A^T*A) if the matrix is not square
 /// Note: the shape argument assumes column-major ordering
-fn det<T: RlstScalar>(mat: &[T], shape: [usize; 2]) -> T {
-    let gdim = shape[0];
-    let tdim = shape[1];
-
-    debug_assert!(mat.len() == tdim * gdim);
-
-    match tdim {
-        0 => T::one(),
-        1 => dot(mat, mat),
-        2 => {
-            let col0 = &mat[0..gdim];
-            let col1 = &mat[gdim..2 * gdim];
-            dot(col0, col0) * dot(col1, col1) - dot(col0, col1).powi(2)
-        }
-        3 => {
-            let col0 = &mat[0..gdim];
-            let col1 = &mat[gdim..2 * gdim];
-            let col2 = &mat[2 * gdim..3 * gdim];
-            let ata = [
-                dot(col0, col0),
-                dot(col0, col1),
-                dot(col0, col2),
-                dot(col1, col0),
-                dot(col1, col1),
-                dot(col1, col2),
-                dot(col2, col0),
-                dot(col2, col1),
-                dot(col2, col2),
-            ];
-            ata[0] * (ata[4] * ata[8] - ata[5] * ata[7])
-                + ata[1] * (ata[5] * ata[6] - ata[3] * ata[8])
-                + ata[2] * (ata[3] * ata[7] - ata[4] * ata[6])
-        }
-        _ => {
-            panic!("Unsupported dimension");
-        }
-    }
-    .sqrt()
-}
-
-/// Invert a matrix, or get the Moore-Penrose left pseudoinverse is the matrix is not square
-/// Note: the shape argument assumes column-major ordering
-fn inverse<T: RlstScalar>(mat: &[T], shape: [usize; 2], result: &mut [T]) {
+fn inverse_and_det<T: RlstScalar>(mat: &[T], shape: [usize; 2], result: &mut [T]) -> T {
     let gdim = shape[0];
     let tdim = shape[1];
 
@@ -77,12 +31,13 @@ fn inverse<T: RlstScalar>(mat: &[T], shape: [usize; 2], result: &mut [T]) {
     debug_assert!(tdim <= gdim);
 
     match tdim {
-        0 => {}
+        0 => T::one(),
         1 => {
             let det = dot(mat, mat);
             for (r, m) in izip!(result, mat) {
                 *r = *m / det;
             }
+            det
         }
         2 => {
             let col0 = &mat[0..gdim];
@@ -105,6 +60,7 @@ fn inverse<T: RlstScalar>(mat: &[T], shape: [usize; 2], result: &mut [T]) {
                 result[2 * i] = ata_inv[0] * mat[i] + ata_inv[2] * mat[gdim + i];
                 result[2 * i + 1] = ata_inv[1] * mat[i] + ata_inv[3] * mat[gdim + i];
             }
+            ata_det
         }
         3 => {
             let col0 = &mat[0..gdim];
@@ -147,12 +103,15 @@ fn inverse<T: RlstScalar>(mat: &[T], shape: [usize; 2], result: &mut [T]) {
                     + ata_inv[5] * mat[gdim + i]
                     + ata_inv[8] * mat[2 * gdim + i];
             }
+            ata_det
         }
         _ => {
             panic!("Unsupported dimension");
         }
     }
+    .sqrt()
 }
+
 fn cross<T: RlstScalar>(mat: &[T], result: &mut [T]) {
     match mat.len() {
         0 => {}
@@ -280,14 +239,12 @@ impl<T: Scalar, B2D: ValueArrayImpl<T, 2>, C2D: ValueArrayImpl<usize, 2>> Geomet
             let j = &jacobians
                 [self.gdim * self.tdim * point_index..self.gdim * self.tdim * (point_index + 1)];
 
-            inverse(
+            *jdets.get_mut(point_index).unwrap() = inverse_and_det(
                 j,
                 [self.gdim, self.tdim],
                 &mut inverse_jacobians[self.gdim * self.tdim * point_index
                     ..self.gdim * self.tdim * (point_index + 1)],
             );
-
-            *jdets.get_mut(point_index).unwrap() = det(j, [self.gdim, self.tdim]);
         }
     }
 
@@ -313,8 +270,9 @@ impl<T: Scalar, B2D: ValueArrayImpl<T, 2>, C2D: ValueArrayImpl<usize, 2>> Geomet
         for point_index in 0..npts {
             let j = &jacobians
                 [self.gdim * self.tdim * point_index..self.gdim * self.tdim * (point_index + 1)];
+            let jd = jdets.get_mut(point_index).unwrap();
 
-            inverse(
+            *jd = inverse_and_det(
                 j,
                 [self.gdim, self.tdim],
                 &mut inverse_jacobians[self.gdim * self.tdim * point_index
@@ -322,9 +280,7 @@ impl<T: Scalar, B2D: ValueArrayImpl<T, 2>, C2D: ValueArrayImpl<usize, 2>> Geomet
             );
 
             let n = &mut normals[self.gdim * point_index..self.gdim * (point_index + 1)];
-            let jd = jdets.get_mut(point_index).unwrap();
             cross(j, n);
-            *jd = norm(n);
             for n_i in n.iter_mut() {
                 *n_i /= *jd;
             }
@@ -376,7 +332,7 @@ mod test {
                     let mat = non_singular_matrix($gdim, $tdim);
                     let mut inv = vec![0.0; $tdim * $gdim];
 
-                    inverse(&mat, [$gdim, $tdim], &mut inv);
+                    inverse_and_det(&mat, [$gdim, $tdim], &mut inv);
 
                     for i in 0..$tdim {
                         for j in 0..$tdim {
@@ -411,8 +367,11 @@ mod test {
                             0.0
                         }
                     };
+
+                    let mut inv = vec![0.0; $tdim * $gdim];
+
                     assert_relative_eq!(
-                        det(&mat, [$gdim, $tdim]),
+                        inverse_and_det(&mat, [$gdim, $tdim], &mut inv),
                         rlst_det,
                         epsilon = 1e-10
                     );
