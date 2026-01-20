@@ -35,13 +35,28 @@ pub trait GeometryMap {
     /// `jacobians` should have shape [geometry_dimension, entity_topology_dimension, npts] and use column-major ordering
     fn jacobians(&self, entity_index: usize, jacobians: &mut [Self::T]);
 
-    /// Write the jacobians, their determinants, and the normals at the physical points for the entity with
-    /// index `entity_index` into `jacobians`, `jdets` and `normals`.
+    /// Write the jacobians, their inverses and their determinants for the entity with
+    /// index `entity_index` into `jacobians`, `inverse_jacobians` and `jdets`.
     ///
     /// `jacobians` should have shape [geometry_dimension, entity_topology_dimension, npts] and use column-major ordering;
+    /// `inverse_jacobians` should have shape [entity_topology_dimension, geometry_dimension, npts] and use column-major ordering;
+    /// `jdets` should have shape \[npts\];
+    fn jacobians_inverses_dets(
+        &self,
+        entity_index: usize,
+        jacobians: &mut [Self::T],
+        inverse_jacobians: &mut [Self::T],
+        jdets: &mut [Self::T],
+    );
+
+    /// Write the jacobians, their inverses, their determinants, and the normals at the physical points for the entity with
+    /// index `entity_index` into `jacobians`, `inverse_jacobians`, `jdets` and `normals`.
+    ///
+    /// `jacobians` should have shape [geometry_dimension, entity_topology_dimension, npts] and use column-major ordering;
+    /// `inverse_jacobians` should have shape [entity_topology_dimension, geometry_dimension, npts] and use column-major ordering;
     /// `jdets` should have shape \[npts\];
     /// `normals` should have shape [geometry_dimension, npts] and use column-major ordering
-    fn jacobians_dets_normals(
+    fn jacobians_inverses_dets_normals(
         &self,
         entity_index: usize,
         jacobians: &mut [Self::T],

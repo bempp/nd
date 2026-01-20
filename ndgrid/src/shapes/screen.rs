@@ -137,7 +137,7 @@ mod test {
             let mut normal = vec![0.0; 3];
             for i in 0..g.entity_count(ReferenceCellType::Triangle) {
                 map.physical_points(i, &mut mapped_pt);
-                map.jacobians_dets_normals(i, &mut j, &mut jinv, &mut jdet, &mut normal);
+                map.jacobians_inverses_dets_normals(i, &mut j, &mut jinv, &mut jdet, &mut normal);
                 assert!(normal[2] > 0.0);
                 assert_relative_eq!(normal[2], 1.0);
             }
@@ -164,7 +164,7 @@ mod test {
             let mut normal = vec![0.0; 3];
             for i in 0..g.entity_count(ReferenceCellType::Quadrilateral) {
                 map.physical_points(i, &mut mapped_pt);
-                map.jacobians_dets_normals(i, &mut j, &mut jinv, &mut jdet, &mut normal);
+                map.jacobians_inverses_dets_normals(i, &mut j, &mut jinv, &mut jdet, &mut normal);
                 assert!(normal[2] > 0.0);
                 assert_relative_eq!(normal[2], 1.0);
             }
