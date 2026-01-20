@@ -334,7 +334,9 @@ mod test {
 
                     inverse_and_det(&mat, [$gdim, $tdim], &mut inv);
 
+                    #[allow(clippy::reversed_empty_ranges)]
                     for i in 0..$tdim {
+                        #[allow(clippy::reversed_empty_ranges)]
                         for j in 0..$tdim {
                             let entry = (0..$gdim)
                                 .map(|k| inv[$tdim * k + i] * mat[$gdim * j + k])
