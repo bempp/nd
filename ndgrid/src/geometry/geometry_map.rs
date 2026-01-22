@@ -2,7 +2,7 @@
 use crate::{traits::GeometryMap as GeometryMapTrait, types::Scalar};
 use itertools::izip;
 use ndelement::{reference_cell, traits::MappedFiniteElement, types::ReferenceCellType};
-use rlst::{Array, DynArray, RlstScalar, ValueArrayImpl};
+use rlst::{Array, DynArray, MutableArrayImpl, RlstScalar, ValueArrayImpl};
 
 /// Single element geometry
 pub struct GeometryMap<'a, T, B2D, C2D> {
@@ -14,34 +14,46 @@ pub struct GeometryMap<'a, T, B2D, C2D> {
 }
 
 /// Dot product of two vectors
-fn dot<T: RlstScalar>(a: &[T], b: &[T]) -> T {
-    debug_assert!(a.len() == b.len());
-    izip!(a, b).map(|(&i, &j)| i * j).sum::<T>()
+fn dot<T: RlstScalar, Array1Impl: ValueArrayImpl<T, 1>>(
+    a: &Array<Array1Impl, 1>,
+    b: &Array<Array1Impl, 1>,
+) -> T {
+    debug_assert!(a.shape()[0] == b.shape()[0]);
+    izip!(a.iter_value(), b.iter_value())
+        .map(|(i, j)| i * j)
+        .sum::<T>()
 }
 
 /// Invert a matrix and return the determinad, or compute the Moore-Penrose left pseudoinverse
 /// and return sqrt(det(A^T*A) if the matrix is not square
 /// Note: the shape argument assumes column-major ordering
-fn inverse_and_det<T: RlstScalar>(mat: &[T], shape: [usize; 2], result: &mut [T]) -> T {
-    let gdim = shape[0];
-    let tdim = shape[1];
+fn inverse_and_det<
+    T: RlstScalar,
+    Array2Impl: ValueArrayImpl<T, 2>,
+    Array2ImplMut: MutableArrayImpl<T, 2>,
+>(
+    mat: &Array<Array2Impl, 2>,
+    result: &mut Array<Array2ImplMut, 2>,
+) -> T {
+    let gdim = mat.shape()[0];
+    let tdim = mat.shape()[1];
 
-    debug_assert!(mat.len() == tdim * gdim);
-    debug_assert!(result.len() == tdim * gdim);
+    debug_assert!(result.shape()[0] == tdim);
+    debug_assert!(result.shape()[1] == gdim);
     debug_assert!(tdim <= gdim);
 
     match tdim {
         0 => T::one(),
         1 => {
-            let det = dot(mat, mat);
-            for (r, m) in izip!(result, mat) {
-                *r = *m / det;
+            let det = dot(&mat.r().slice(1, 0), &mat.r().slice(1, 0));
+            for (r, m) in izip!(result.iter_mut(), mat.iter_value()) {
+                *r = m / det;
             }
             det
         }
         2 => {
-            let col0 = &mat[0..gdim];
-            let col1 = &mat[gdim..2 * gdim];
+            let col0 = &mat.r().slice(1, 0);
+            let col1 = &mat.r().slice(1, 1);
             let ata = [
                 dot(col0, col0),
                 dot(col0, col1),
@@ -57,15 +69,17 @@ fn inverse_and_det<T: RlstScalar>(mat: &[T], shape: [usize; 2], result: &mut [T]
             ];
 
             for i in 0..gdim {
-                result[2 * i] = ata_inv[0] * mat[i] + ata_inv[2] * mat[gdim + i];
-                result[2 * i + 1] = ata_inv[1] * mat[i] + ata_inv[3] * mat[gdim + i];
+                *result.get_mut([0, i]).unwrap() = ata_inv[0] * mat.get_value([i, 0]).unwrap()
+                    + ata_inv[2] * mat.get_value([i, 1]).unwrap();
+                *result.get_mut([1, i]).unwrap() = ata_inv[1] * mat.get_value([i, 0]).unwrap()
+                    + ata_inv[3] * mat.get_value([i, 1]).unwrap();
             }
             ata_det
         }
         3 => {
-            let col0 = &mat[0..gdim];
-            let col1 = &mat[gdim..2 * gdim];
-            let col2 = &mat[2 * gdim..3 * gdim];
+            let col0 = &mat.r().slice(1, 0);
+            let col1 = &mat.r().slice(1, 1);
+            let col2 = &mat.r().slice(1, 2);
             let ata = [
                 dot(col0, col0),
                 dot(col0, col1),
@@ -93,15 +107,15 @@ fn inverse_and_det<T: RlstScalar>(mat: &[T], shape: [usize; 2], result: &mut [T]
             ];
 
             for i in 0..gdim {
-                result[3 * i] = ata_inv[0] * mat[i]
-                    + ata_inv[3] * mat[gdim + i]
-                    + ata_inv[6] * mat[2 * gdim + i];
-                result[3 * i + 1] = ata_inv[1] * mat[i]
-                    + ata_inv[4] * mat[gdim + i]
-                    + ata_inv[7] * mat[2 * gdim + i];
-                result[3 * i + 2] = ata_inv[2] * mat[i]
-                    + ata_inv[5] * mat[gdim + i]
-                    + ata_inv[8] * mat[2 * gdim + i];
+                *result.get_mut([0, i]).unwrap() = ata_inv[0] * mat.get_value([i, 0]).unwrap()
+                    + ata_inv[3] * mat.get_value([i, 1]).unwrap()
+                    + ata_inv[6] * mat.get_value([i, 2]).unwrap();
+                *result.get_mut([1, i]).unwrap() = ata_inv[1] * mat.get_value([i, 0]).unwrap()
+                    + ata_inv[4] * mat.get_value([i, 1]).unwrap()
+                    + ata_inv[7] * mat.get_value([i, 2]).unwrap();
+                *result.get_mut([2, i]).unwrap() = ata_inv[2] * mat.get_value([i, 0]).unwrap()
+                    + ata_inv[5] * mat.get_value([i, 1]).unwrap()
+                    + ata_inv[8] * mat.get_value([i, 2]).unwrap();
             }
             ata_det
         }
@@ -112,26 +126,29 @@ fn inverse_and_det<T: RlstScalar>(mat: &[T], shape: [usize; 2], result: &mut [T]
     .sqrt()
 }
 
-fn cross<T: RlstScalar>(mat: &[T], result: &mut [T]) {
-    match mat.len() {
+fn cross<T: RlstScalar, Array2Impl: ValueArrayImpl<T, 2>, Array1ImplMut: MutableArrayImpl<T, 1>>(
+    mat: &Array<Array2Impl, 2>,
+    result: &mut Array<Array1ImplMut, 1>,
+) {
+    debug_assert!(mat.shape()[0] == mat.shape()[1] + 1);
+    match mat.shape()[1] {
         0 => {}
-        2 => {
-            debug_assert!(result.len() == 2);
-            unsafe {
-                *result.get_unchecked_mut(0) = *mat.get_unchecked(1);
-                *result.get_unchecked_mut(1) = -*mat.get_unchecked(0);
-            }
+        1 => {
+            debug_assert!(result.shape()[0] == 2);
+            *result.get_mut([0]).unwrap() = mat.get_value([1, 0]).unwrap();
+            *result.get_mut([1]).unwrap() = -mat.get_value([0, 0]).unwrap();
         }
-        6 => {
-            debug_assert!(result.len() == 3);
-            unsafe {
-                *result.get_unchecked_mut(0) = *mat.get_unchecked(1) * *mat.get_unchecked(5)
-                    - *mat.get_unchecked(2) * *mat.get_unchecked(4);
-                *result.get_unchecked_mut(1) = *mat.get_unchecked(2) * *mat.get_unchecked(3)
-                    - *mat.get_unchecked(0) * *mat.get_unchecked(5);
-                *result.get_unchecked_mut(2) = *mat.get_unchecked(0) * *mat.get_unchecked(4)
-                    - *mat.get_unchecked(1) * *mat.get_unchecked(3);
-            }
+        2 => {
+            debug_assert!(result.shape()[0] == 3);
+            *result.get_mut([0]).unwrap() = mat.get_value([1, 0]).unwrap()
+                * mat.get_value([2, 1]).unwrap()
+                - mat.get_value([2, 0]).unwrap() * mat.get_value([1, 1]).unwrap();
+            *result.get_mut([1]).unwrap() = mat.get_value([2, 0]).unwrap()
+                * mat.get_value([0, 1]).unwrap()
+                - mat.get_value([0, 0]).unwrap() * mat.get_value([2, 1]).unwrap();
+            *result.get_mut([2]).unwrap() = mat.get_value([0, 0]).unwrap()
+                * mat.get_value([1, 1]).unwrap()
+                - mat.get_value([1, 0]).unwrap() * mat.get_value([0, 1]).unwrap();
         }
         _ => {
             unimplemented!();
@@ -181,29 +198,40 @@ impl<T: Scalar, B2D: ValueArrayImpl<T, 2>, C2D: ValueArrayImpl<usize, 2>> Geomet
     fn point_count(&self) -> usize {
         self.table.shape()[1]
     }
-    fn physical_points(&self, entity_index: usize, points: &mut [T]) {
+    fn physical_points<Array2Impl: MutableArrayImpl<T, 2>>(
+        &self,
+        entity_index: usize,
+        points: &mut Array<Array2Impl, 2>,
+    ) {
         let npts = self.table.shape()[1];
-        debug_assert!(points.len() == self.gdim * npts);
+        debug_assert!(points.shape()[0] == self.gdim);
+        debug_assert!(points.shape()[1] == npts);
 
-        points.fill(T::default());
+        points.fill_with_value(T::default());
         for i in 0..self.entities.shape()[0] {
             let v = unsafe { self.entities.get_value_unchecked([i, entity_index]) };
             for point_index in 0..npts {
                 let t = unsafe { *self.table.get_unchecked([0, point_index, i, 0]) };
                 for gd in 0..self.gdim {
                     unsafe {
-                        *points.get_unchecked_mut(gd + self.gdim * point_index) +=
+                        *points.get_unchecked_mut([gd, point_index]) +=
                             self.geometry_points.get_value_unchecked([gd, v]) * t
                     };
                 }
             }
         }
     }
-    fn jacobians(&self, entity_index: usize, jacobians: &mut [T]) {
+    fn jacobians<Array3MutImpl: MutableArrayImpl<T, 3>>(
+        &self,
+        entity_index: usize,
+        jacobians: &mut Array<Array3MutImpl, 3>,
+    ) {
         let npts = self.table.shape()[1];
-        debug_assert!(jacobians.len() == self.gdim * self.tdim * npts);
+        debug_assert!(jacobians.shape()[0] == self.gdim);
+        debug_assert!(jacobians.shape()[1] == self.tdim);
+        debug_assert!(jacobians.shape()[2] == npts);
 
-        jacobians.fill(T::zero());
+        jacobians.fill_with_value(T::zero());
         for i in 0..self.entities.shape()[0] {
             let v = unsafe { self.entities.get_value_unchecked([i, entity_index]) };
             for point_index in 0..npts {
@@ -211,9 +239,8 @@ impl<T: Scalar, B2D: ValueArrayImpl<T, 2>, C2D: ValueArrayImpl<usize, 2>> Geomet
                     let t = unsafe { self.table.get_value_unchecked([1 + td, point_index, i, 0]) };
                     for gd in 0..self.gdim {
                         unsafe {
-                            *jacobians.get_unchecked_mut(
-                                gd + self.gdim * td + self.gdim * self.tdim * point_index,
-                            ) += self.geometry_points.get_value_unchecked([gd, v]) * t
+                            *jacobians.get_unchecked_mut([gd, td, point_index]) +=
+                                self.geometry_points.get_value_unchecked([gd, v]) * t
                         };
                     }
                 }
@@ -221,65 +248,66 @@ impl<T: Scalar, B2D: ValueArrayImpl<T, 2>, C2D: ValueArrayImpl<usize, 2>> Geomet
         }
     }
 
-    fn jacobians_inverses_dets(
+    fn jacobians_inverses_dets<Array3MutImpl: MutableArrayImpl<T, 3>>(
         &self,
         entity_index: usize,
-        jacobians: &mut [Self::T],
-        inverse_jacobians: &mut [Self::T],
-        jdets: &mut [Self::T],
+        jacobians: &mut Array<Array3MutImpl, 3>,
+        inverse_jacobians: &mut Array<Array3MutImpl, 3>,
+        jdets: &mut [T],
     ) {
         let npts = self.table.shape()[1];
-        debug_assert!(jacobians.len() == self.gdim * self.tdim * npts);
-        debug_assert!(inverse_jacobians.len() == self.gdim * self.tdim * npts);
+        debug_assert!(jacobians.shape()[0] == self.gdim);
+        debug_assert!(jacobians.shape()[1] == self.tdim);
+        debug_assert!(jacobians.shape()[2] == npts);
+        debug_assert!(inverse_jacobians.shape()[0] == self.tdim);
+        debug_assert!(inverse_jacobians.shape()[1] == self.gdim);
+        debug_assert!(inverse_jacobians.shape()[2] == npts);
         debug_assert!(jdets.len() == npts);
 
         self.jacobians(entity_index, jacobians);
 
         for point_index in 0..npts {
-            let j = &jacobians
-                [self.gdim * self.tdim * point_index..self.gdim * self.tdim * (point_index + 1)];
+            let j = &jacobians.r().slice(2, point_index);
 
-            *jdets.get_mut(point_index).unwrap() = inverse_and_det(
-                j,
-                [self.gdim, self.tdim],
-                &mut inverse_jacobians[self.gdim * self.tdim * point_index
-                    ..self.gdim * self.tdim * (point_index + 1)],
-            );
+            *jdets.get_mut(point_index).unwrap() =
+                inverse_and_det(j, &mut inverse_jacobians.r_mut().slice(2, point_index));
         }
     }
 
-    fn jacobians_inverses_dets_normals(
+    fn jacobians_inverses_dets_normals<
+        Array2Impl: MutableArrayImpl<T, 2>,
+        Array3MutImpl: MutableArrayImpl<T, 3>,
+    >(
         &self,
         entity_index: usize,
-        jacobians: &mut [Self::T],
-        inverse_jacobians: &mut [Self::T],
-        jdets: &mut [Self::T],
-        normals: &mut [Self::T],
+        jacobians: &mut Array<Array3MutImpl, 3>,
+        inverse_jacobians: &mut Array<Array3MutImpl, 3>,
+        jdets: &mut [T],
+        normals: &mut Array<Array2Impl, 2>,
     ) {
         if self.tdim + 1 != self.gdim {
             panic!("Can only compute normal for entities where tdim + 1 == gdim");
         }
         let npts = self.table.shape()[1];
-        debug_assert!(jacobians.len() == self.gdim * self.tdim * npts);
-        debug_assert!(inverse_jacobians.len() == self.gdim * self.tdim * npts);
+        debug_assert!(jacobians.shape()[0] == self.gdim);
+        debug_assert!(jacobians.shape()[1] == self.tdim);
+        debug_assert!(jacobians.shape()[2] == npts);
+        debug_assert!(inverse_jacobians.shape()[0] == self.tdim);
+        debug_assert!(inverse_jacobians.shape()[1] == self.gdim);
+        debug_assert!(inverse_jacobians.shape()[2] == npts);
         debug_assert!(jdets.len() == npts);
-        debug_assert!(normals.len() == self.gdim * npts);
+        debug_assert!(normals.shape()[0] == self.gdim);
+        debug_assert!(normals.shape()[1] == npts);
 
         self.jacobians(entity_index, jacobians);
 
         for point_index in 0..npts {
-            let j = &jacobians
-                [self.gdim * self.tdim * point_index..self.gdim * self.tdim * (point_index + 1)];
+            let j = &jacobians.r().slice(2, point_index);
             let jd = jdets.get_mut(point_index).unwrap();
 
-            *jd = inverse_and_det(
-                j,
-                [self.gdim, self.tdim],
-                &mut inverse_jacobians[self.gdim * self.tdim * point_index
-                    ..self.gdim * self.tdim * (point_index + 1)],
-            );
+            *jd = inverse_and_det(j, &mut inverse_jacobians.r_mut().slice(2, point_index));
 
-            let n = &mut normals[self.gdim * point_index..self.gdim * (point_index + 1)];
+            let n = &mut normals.r_mut().slice(1, point_index);
             cross(j, n);
             for n_i in n.iter_mut() {
                 *n_i /= *jd;
@@ -295,28 +323,26 @@ mod test {
     use rand::{Rng, SeedableRng};
     use rand_chacha::ChaCha8Rng;
 
-    use rlst::{Lu, SliceArray, rlst_dynamic_array};
+    use rlst::{DynArray, Lu, rlst_dynamic_array};
 
-    fn is_singular(mat: &[f64], gdim: usize, tdim: usize) -> bool {
-        if tdim == 0 || gdim == 0 {
+    fn is_singular(mat: &DynArray<f64, 2>) -> bool {
+        if mat.shape()[0] == 0 || mat.shape()[1] == 0 {
             return false;
         }
-        let a = SliceArray::from_shape(mat, [gdim, tdim]);
-        let mut at = rlst_dynamic_array!(f64, [tdim, gdim]);
-        at.fill_from(&a.r().transpose());
+        let mut mat_t = rlst_dynamic_array!(f64, [mat.shape()[1], mat.shape()[0]]);
+        mat_t.fill_from(&mat.r().transpose());
 
-        let ata = rlst::dot!(at.r(), a.r());
-        if let Ok(lu) = ata.lu() {
+        if let Ok(lu) = rlst::dot!(mat_t.r(), mat.r()).lu() {
             lu.det().abs() < 0.1
         } else {
             true
         }
     }
 
-    fn non_singular_matrix(gdim: usize, tdim: usize) -> Vec<f64> {
-        let mut mat = vec![0.0; gdim * tdim];
+    fn non_singular_matrix(gdim: usize, tdim: usize) -> DynArray<f64, 2> {
+        let mut mat = rlst_dynamic_array!(f64, [gdim, tdim]);
         let mut rng = ChaCha8Rng::seed_from_u64(2);
-        while is_singular(&mat, gdim, tdim) {
+        while is_singular(&mat) {
             for m in mat.iter_mut() {
                 *m = rng.random();
             }
@@ -330,16 +356,16 @@ mod test {
                 #[test]
                 fn [< test_inverse_ $gdim _ $tdim >]() {
                     let mat = non_singular_matrix($gdim, $tdim);
-                    let mut inv = vec![0.0; $tdim * $gdim];
+                    let mut inv = rlst_dynamic_array!(f64, [$tdim, $gdim]);
 
-                    inverse_and_det(&mat, [$gdim, $tdim], &mut inv);
+                    inverse_and_det(&mat, &mut inv);
 
                     #[allow(clippy::reversed_empty_ranges)]
                     for i in 0..$tdim {
                         #[allow(clippy::reversed_empty_ranges)]
                         for j in 0..$tdim {
                             let entry = (0..$gdim)
-                                .map(|k| inv[$tdim * k + i] * mat[$gdim * j + k])
+                                .map(|k| inv[[i, k]] * mat[[k, j]])
                                 .sum::<f64>();
                             assert_relative_eq!(
                                 entry,
@@ -358,22 +384,20 @@ mod test {
                     let rlst_det = if $tdim == 0 || $gdim == 0 {
                         1.0
                     } else {
-                        let a = SliceArray::from_shape(&mat, [$gdim, $tdim]);
-                        let mut at = rlst_dynamic_array!(f64, [$tdim, $gdim]);
-                        at.fill_from(&a.r().transpose());
+                        let mut mat_t = rlst_dynamic_array!(f64, [$tdim, $gdim]);
+                        mat_t.fill_from(&mat.r().transpose());
 
-                        let ata = rlst::dot!(at.r(), a.r());
-                        if let Ok(lu) = ata.lu() {
+                        if let Ok(lu) = rlst::dot!(mat_t.r(), mat.r()).lu() {
                             lu.det().sqrt()
                         } else {
                             0.0
                         }
                     };
 
-                    let mut inv = vec![0.0; $tdim * $gdim];
+                    let mut inv = rlst_dynamic_array!(f64, [$tdim, $gdim]);
 
                     assert_relative_eq!(
-                        inverse_and_det(&mat, [$gdim, $tdim], &mut inv),
+                        inverse_and_det(&mat, &mut inv),
                         rlst_det,
                         epsilon = 1e-10
                     );

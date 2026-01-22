@@ -127,6 +127,7 @@ mod test {
     use super::*;
     use crate::traits::{GeometryMap, Grid};
     use approx::assert_relative_eq;
+    use rlst::rlst_dynamic_array;
 
     #[test]
     fn test_regular_sphere_0() {
@@ -144,19 +145,21 @@ mod test {
     fn test_normal_is_outward() {
         for i in 0..3 {
             let g = regular_sphere::<f64>(i);
-            let points = vec![1.0 / 3.0, 1.0 / 3.0];
+            let mut points = rlst_dynamic_array!(f64, [2, 1]);
+            points[[0, 0]] = 1.0 / 3.0;
+            points[[1, 0]] = 1.0 / 3.0;
             let map = g.geometry_map(ReferenceCellType::Triangle, 1, &points);
-            let mut mapped_pt = vec![0.0; 3];
-            let mut j = vec![0.0; 6];
-            let mut jinv = vec![0.0; 6];
+            let mut mapped_pt = rlst_dynamic_array!(f64, [3, 1]);
+            let mut j = rlst_dynamic_array!(f64, [3, 2, 1]);
+            let mut jinv = rlst_dynamic_array!(f64, [2, 3, 1]);
             let mut jdet = vec![0.0];
-            let mut normal = vec![0.0; 3];
+            let mut normal = rlst_dynamic_array!(f64, [3, 1]);
             for i in 0..g.entity_count(ReferenceCellType::Triangle) {
                 map.physical_points(i, &mut mapped_pt);
                 map.jacobians_inverses_dets_normals(i, &mut j, &mut jinv, &mut jdet, &mut normal);
                 let dot = mapped_pt
-                    .iter()
-                    .zip(&normal)
+                    .iter_value()
+                    .zip(normal.iter_value())
                     .map(|(i, j)| i * j)
                     .sum::<f64>();
                 assert!(dot > 0.0);
@@ -168,17 +171,23 @@ mod test {
     fn test_normal_is_unit() {
         for i in 0..3 {
             let g = regular_sphere::<f64>(i);
-            let points = vec![1.0 / 3.0, 1.0 / 3.0];
+            let mut points = rlst_dynamic_array!(f64, [2, 1]);
+            points[[0, 0]] = 1.0 / 3.0;
+            points[[1, 0]] = 1.0 / 3.0;
             let map = g.geometry_map(ReferenceCellType::Triangle, 1, &points);
-            let mut j = vec![0.0; 6];
-            let mut jinv = vec![0.0; 6];
+            let mut mapped_pt = rlst_dynamic_array!(f64, [3, 1]);
+            let mut j = rlst_dynamic_array!(f64, [3, 2, 1]);
+            let mut jinv = rlst_dynamic_array!(f64, [2, 3, 1]);
             let mut jdet = vec![0.0];
-            let mut mapped_pt = vec![0.0; 3];
-            let mut normal = vec![0.0; 3];
+            let mut normal = rlst_dynamic_array!(f64, [3, 1]);
             for i in 0..g.entity_count(ReferenceCellType::Triangle) {
                 map.physical_points(i, &mut mapped_pt);
                 map.jacobians_inverses_dets_normals(i, &mut j, &mut jinv, &mut jdet, &mut normal);
-                let dot = normal.iter().zip(&normal).map(|(i, j)| i * j).sum::<f64>();
+                let dot = normal
+                    .iter_value()
+                    .zip(normal.iter_value())
+                    .map(|(i, j)| i * j)
+                    .sum::<f64>();
                 assert_relative_eq!(dot, 1.0, epsilon = 1e-10);
             }
         }

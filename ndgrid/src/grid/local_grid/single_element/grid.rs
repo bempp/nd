@@ -27,8 +27,11 @@ use ndelement::{
     traits::{ElementFamily, FiniteElement, MappedFiniteElement},
     types::{Continuity, ReferenceCellType},
 };
-use rlst::dense::{base_array::BaseArray, data_container::VectorContainer};
-use rlst::{SliceArray, rlst_dynamic_array};
+use rlst::{
+    Array, ValueArrayImpl,
+    dense::{base_array::BaseArray, data_container::VectorContainer},
+    rlst_dynamic_array,
+};
 
 /// Single element grid entity
 #[derive(Debug)]
@@ -295,24 +298,19 @@ impl<T: Scalar, E: MappedFiniteElement<CellType = ReferenceCellType, T = T>> Gri
             .map(|i| self.entity(entity_type, *i))?
     }
 
-    fn geometry_map(
+    fn geometry_map<Array2Impl: ValueArrayImpl<T, 2>>(
         &self,
         entity_type: ReferenceCellType,
         geometry_degree: usize,
-        points: &[T],
+        points: &Array<Array2Impl, 2>,
     ) -> GeometryMap<'_, T, BaseArray<VectorContainer<T>, 2>, BaseArray<VectorContainer<usize>, 2>>
     {
-        assert_eq!(
-            geometry_degree,
-            self.geometry.element().lagrange_superdegree()
-        );
-        let entity_dim = reference_cell::dim(entity_type);
-        let npoints = points.len() / entity_dim;
-        let rlst_points = SliceArray::<T, 2>::from_shape(points, [entity_dim, npoints]);
+        debug_assert!(points.shape()[0] == reference_cell::dim(entity_type));
+        debug_assert!(geometry_degree == self.geometry.element().lagrange_superdegree());
         if entity_type == self.topology.entity_types()[self.topology_dim()] {
             GeometryMap::new(
                 self.geometry.element(),
-                &rlst_points,
+                points,
                 self.geometry.points(),
                 self.geometry.cells(),
             )
