@@ -12,6 +12,7 @@ use std::hash::Hash;
 use std::iter::Iterator;
 #[cfg(feature = "mpi")]
 use std::rc::Rc;
+use rlst::{Array, ValueArrayImpl};
 
 /// A grid provides access to entities, their geometrical and their topological properties.
 pub trait Grid {
@@ -96,12 +97,12 @@ pub trait Grid {
 
     /// Geometry map from reference entity to physical entities at the given points
     ///
-    /// `points` should have space [entity_topology_dim, npts] and use column-major ordering
-    fn geometry_map(
+    /// `points` should have shape [entity_topology_dim, npts] and use column-major ordering
+    fn geometry_map<Array2Impl: ValueArrayImpl<Self::T, 2>>(
         &self,
         entity_type: Self::EntityDescriptor,
         geometry_degree: usize,
-        points: &[Self::T],
+        points: &Array<Array2Impl, 2>,
     ) -> Self::GeometryMap<'_>;
 }
 
