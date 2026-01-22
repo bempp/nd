@@ -7,12 +7,12 @@ use crate::types::{Ownership, Scalar};
 use mpi::traits::Communicator;
 #[cfg(feature = "mpi")]
 use rlst::distributed_tools::IndexLayout;
+use rlst::{Array, ValueArrayImpl};
 use std::fmt::Debug;
 use std::hash::Hash;
 use std::iter::Iterator;
 #[cfg(feature = "mpi")]
 use std::rc::Rc;
-use rlst::{Array, ValueArrayImpl};
 
 /// A grid provides access to entities, their geometrical and their topological properties.
 pub trait Grid {

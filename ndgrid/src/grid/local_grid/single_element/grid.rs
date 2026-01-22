@@ -27,7 +27,11 @@ use ndelement::{
     traits::{ElementFamily, FiniteElement, MappedFiniteElement},
     types::{Continuity, ReferenceCellType},
 };
-use rlst::{dense::{base_array::BaseArray, data_container::VectorContainer}, rlst_dynamic_array, Array, ValueArrayImpl};
+use rlst::{
+    Array, ValueArrayImpl,
+    dense::{base_array::BaseArray, data_container::VectorContainer},
+    rlst_dynamic_array,
+};
 
 /// Single element grid entity
 #[derive(Debug)]

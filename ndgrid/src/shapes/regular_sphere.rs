@@ -183,7 +183,11 @@ mod test {
             for i in 0..g.entity_count(ReferenceCellType::Triangle) {
                 map.physical_points(i, &mut mapped_pt);
                 map.jacobians_inverses_dets_normals(i, &mut j, &mut jinv, &mut jdet, &mut normal);
-                let dot = normal.iter_value().zip(normal.iter_value()).map(|(i, j)| i * j).sum::<f64>();
+                let dot = normal
+                    .iter_value()
+                    .zip(normal.iter_value())
+                    .map(|(i, j)| i * j)
+                    .sum::<f64>();
                 assert_relative_eq!(dot, 1.0, epsilon = 1e-10);
             }
         }

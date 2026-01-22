@@ -2,7 +2,7 @@
 use crate::{traits::GeometryMap as GeometryMapTrait, types::Scalar};
 use itertools::izip;
 use ndelement::{reference_cell, traits::MappedFiniteElement, types::ReferenceCellType};
-use rlst::{Array, DynArray, RlstScalar, ValueArrayImpl, MutableArrayImpl};
+use rlst::{Array, DynArray, MutableArrayImpl, RlstScalar, ValueArrayImpl};
 
 /// Single element geometry
 pub struct GeometryMap<'a, T, B2D, C2D> {
@@ -14,15 +14,27 @@ pub struct GeometryMap<'a, T, B2D, C2D> {
 }
 
 /// Dot product of two vectors
-fn dot<T: RlstScalar, Array1Impl: ValueArrayImpl<T, 1>>(a: &Array<Array1Impl, 1>, b: &Array<Array1Impl, 1>) -> T {
+fn dot<T: RlstScalar, Array1Impl: ValueArrayImpl<T, 1>>(
+    a: &Array<Array1Impl, 1>,
+    b: &Array<Array1Impl, 1>,
+) -> T {
     debug_assert!(a.shape()[0] == b.shape()[0]);
-    izip!(a.iter_value(), b.iter_value()).map(|(i, j)| i * j).sum::<T>()
+    izip!(a.iter_value(), b.iter_value())
+        .map(|(i, j)| i * j)
+        .sum::<T>()
 }
 
 /// Invert a matrix and return the determinad, or compute the Moore-Penrose left pseudoinverse
 /// and return sqrt(det(A^T*A) if the matrix is not square
 /// Note: the shape argument assumes column-major ordering
-fn inverse_and_det<T: RlstScalar, Array2Impl: ValueArrayImpl<T, 2>, Array2ImplMut: MutableArrayImpl<T, 2>>(mat: &Array<Array2Impl, 2>, result: &mut Array<Array2ImplMut, 2>) -> T {
+fn inverse_and_det<
+    T: RlstScalar,
+    Array2Impl: ValueArrayImpl<T, 2>,
+    Array2ImplMut: MutableArrayImpl<T, 2>,
+>(
+    mat: &Array<Array2Impl, 2>,
+    result: &mut Array<Array2ImplMut, 2>,
+) -> T {
     let gdim = mat.shape()[0];
     let tdim = mat.shape()[1];
 
@@ -57,8 +69,10 @@ fn inverse_and_det<T: RlstScalar, Array2Impl: ValueArrayImpl<T, 2>, Array2ImplMu
             ];
 
             for i in 0..gdim {
-                *result.get_mut([0, i]).unwrap() = ata_inv[0] * mat.get_value([i, 0]).unwrap() + ata_inv[2] * mat.get_value([i, 1]).unwrap();
-                *result.get_mut([1, i]).unwrap() = ata_inv[1] * mat.get_value([i, 0]).unwrap() + ata_inv[3] * mat.get_value([i, 1]).unwrap();
+                *result.get_mut([0, i]).unwrap() = ata_inv[0] * mat.get_value([i, 0]).unwrap()
+                    + ata_inv[2] * mat.get_value([i, 1]).unwrap();
+                *result.get_mut([1, i]).unwrap() = ata_inv[1] * mat.get_value([i, 0]).unwrap()
+                    + ata_inv[3] * mat.get_value([i, 1]).unwrap();
             }
             ata_det
         }
@@ -112,7 +126,10 @@ fn inverse_and_det<T: RlstScalar, Array2Impl: ValueArrayImpl<T, 2>, Array2ImplMu
     .sqrt()
 }
 
-fn cross<T: RlstScalar, Array2Impl: ValueArrayImpl<T, 2>, Array1ImplMut: MutableArrayImpl<T, 1>>(mat: &Array<Array2Impl, 2>, result: &mut Array<Array1ImplMut, 1>) {
+fn cross<T: RlstScalar, Array2Impl: ValueArrayImpl<T, 2>, Array1ImplMut: MutableArrayImpl<T, 1>>(
+    mat: &Array<Array2Impl, 2>,
+    result: &mut Array<Array1ImplMut, 1>,
+) {
     debug_assert!(mat.shape()[0] == mat.shape()[1] + 1);
     match mat.shape()[1] {
         0 => {}
@@ -123,12 +140,15 @@ fn cross<T: RlstScalar, Array2Impl: ValueArrayImpl<T, 2>, Array1ImplMut: Mutable
         }
         2 => {
             debug_assert!(result.shape()[0] == 3);
-            *result.get_mut([0]).unwrap() = mat.get_value([1,0]).unwrap() * mat.get_value([2,1]).unwrap()
-                - mat.get_value([2,0]).unwrap() * mat.get_value([1,1]).unwrap();
-            *result.get_mut([1]).unwrap() = mat.get_value([2,0]).unwrap() * mat.get_value([0,1]).unwrap()
-                - mat.get_value([0,0]).unwrap() * mat.get_value([2,1]).unwrap();
-            *result.get_mut([2]).unwrap() = mat.get_value([0,0]).unwrap() * mat.get_value([1,1]).unwrap()
-                - mat.get_value([1,0]).unwrap() * mat.get_value([0,1]).unwrap();
+            *result.get_mut([0]).unwrap() = mat.get_value([1, 0]).unwrap()
+                * mat.get_value([2, 1]).unwrap()
+                - mat.get_value([2, 0]).unwrap() * mat.get_value([1, 1]).unwrap();
+            *result.get_mut([1]).unwrap() = mat.get_value([2, 0]).unwrap()
+                * mat.get_value([0, 1]).unwrap()
+                - mat.get_value([0, 0]).unwrap() * mat.get_value([2, 1]).unwrap();
+            *result.get_mut([2]).unwrap() = mat.get_value([0, 0]).unwrap()
+                * mat.get_value([1, 1]).unwrap()
+                - mat.get_value([1, 0]).unwrap() * mat.get_value([0, 1]).unwrap();
         }
         _ => {
             unimplemented!();
@@ -178,7 +198,11 @@ impl<T: Scalar, B2D: ValueArrayImpl<T, 2>, C2D: ValueArrayImpl<usize, 2>> Geomet
     fn point_count(&self) -> usize {
         self.table.shape()[1]
     }
-    fn physical_points<Array2Impl: MutableArrayImpl<T, 2>>(&self, entity_index: usize, points: &mut Array<Array2Impl, 2>) {
+    fn physical_points<Array2Impl: MutableArrayImpl<T, 2>>(
+        &self,
+        entity_index: usize,
+        points: &mut Array<Array2Impl, 2>,
+    ) {
         let npts = self.table.shape()[1];
         debug_assert!(points.shape()[0] == self.gdim);
         debug_assert!(points.shape()[1] == npts);
@@ -197,7 +221,11 @@ impl<T: Scalar, B2D: ValueArrayImpl<T, 2>, C2D: ValueArrayImpl<usize, 2>> Geomet
             }
         }
     }
-    fn jacobians<Array3MutImpl: MutableArrayImpl<T, 3>>(&self, entity_index: usize, jacobians: &mut Array<Array3MutImpl, 3>) {
+    fn jacobians<Array3MutImpl: MutableArrayImpl<T, 3>>(
+        &self,
+        entity_index: usize,
+        jacobians: &mut Array<Array3MutImpl, 3>,
+    ) {
         let npts = self.table.shape()[1];
         debug_assert!(jacobians.shape()[0] == self.gdim);
         debug_assert!(jacobians.shape()[1] == self.tdim);
@@ -211,7 +239,8 @@ impl<T: Scalar, B2D: ValueArrayImpl<T, 2>, C2D: ValueArrayImpl<usize, 2>> Geomet
                     let t = unsafe { self.table.get_value_unchecked([1 + td, point_index, i, 0]) };
                     for gd in 0..self.gdim {
                         unsafe {
-                            *jacobians.get_unchecked_mut([gd, td, point_index]) += self.geometry_points.get_value_unchecked([gd, v]) * t
+                            *jacobians.get_unchecked_mut([gd, td, point_index]) +=
+                                self.geometry_points.get_value_unchecked([gd, v]) * t
                         };
                     }
                 }
@@ -240,14 +269,15 @@ impl<T: Scalar, B2D: ValueArrayImpl<T, 2>, C2D: ValueArrayImpl<usize, 2>> Geomet
         for point_index in 0..npts {
             let j = &jacobians.r().slice(2, point_index);
 
-            *jdets.get_mut(point_index).unwrap() = inverse_and_det(
-                j,
-                &mut inverse_jacobians.r_mut().slice(2, point_index),
-            );
+            *jdets.get_mut(point_index).unwrap() =
+                inverse_and_det(j, &mut inverse_jacobians.r_mut().slice(2, point_index));
         }
     }
 
-    fn jacobians_inverses_dets_normals<Array2Impl: MutableArrayImpl<T, 2>, Array3MutImpl: MutableArrayImpl<T, 3>>(
+    fn jacobians_inverses_dets_normals<
+        Array2Impl: MutableArrayImpl<T, 2>,
+        Array3MutImpl: MutableArrayImpl<T, 3>,
+    >(
         &self,
         entity_index: usize,
         jacobians: &mut Array<Array3MutImpl, 3>,
@@ -275,10 +305,7 @@ impl<T: Scalar, B2D: ValueArrayImpl<T, 2>, C2D: ValueArrayImpl<usize, 2>> Geomet
             let j = &jacobians.r().slice(2, point_index);
             let jd = jdets.get_mut(point_index).unwrap();
 
-            *jd = inverse_and_det(
-                j,
-                &mut inverse_jacobians.r_mut().slice(2, point_index),
-            );
+            *jd = inverse_and_det(j, &mut inverse_jacobians.r_mut().slice(2, point_index));
 
             let n = &mut normals.r_mut().slice(1, point_index);
             cross(j, n);
@@ -296,7 +323,7 @@ mod test {
     use rand::{Rng, SeedableRng};
     use rand_chacha::ChaCha8Rng;
 
-    use rlst::{Lu, rlst_dynamic_array, DynArray};
+    use rlst::{DynArray, Lu, rlst_dynamic_array};
 
     fn is_singular(mat: &DynArray<f64, 2>) -> bool {
         if mat.shape()[0] == 0 || mat.shape()[1] == 0 {

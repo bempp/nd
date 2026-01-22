@@ -7,10 +7,10 @@ use crate::{
 };
 #[cfg(feature = "serde")]
 use itertools::izip;
+use rlst::{Array, ValueArrayImpl};
 #[cfg(feature = "serde")]
 use std::hash::Hash;
 use std::{collections::HashMap, fmt::Debug};
-use rlst::{Array, ValueArrayImpl};
 
 mod single_element;
 pub use single_element::{SingleElementGrid, SingleElementGridBuilder};

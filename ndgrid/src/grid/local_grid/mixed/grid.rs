@@ -28,7 +28,11 @@ use ndelement::{
     traits::{ElementFamily, FiniteElement, MappedFiniteElement},
     types::{Continuity, ReferenceCellType},
 };
-use rlst::{dense::{base_array::BaseArray, data_container::VectorContainer}, rlst_dynamic_array, Array, ValueArrayImpl};
+use rlst::{
+    Array, ValueArrayImpl,
+    dense::{base_array::BaseArray, data_container::VectorContainer},
+    rlst_dynamic_array,
+};
 use std::collections::HashMap;
 
 /// Mixed grid entity
@@ -345,12 +349,7 @@ impl<T: Scalar, E: MappedFiniteElement<CellType = ReferenceCellType, T = T>> Gri
         for i in 0..self.geometry.element_count() {
             let e = self.geometry.element(i);
             if e.cell_type() == entity_type && e.lagrange_superdegree() == geometry_degree {
-                return GeometryMap::new(
-                    e,
-                    points,
-                    self.geometry.points(),
-                    self.geometry.cells(i),
-                );
+                return GeometryMap::new(e, points, self.geometry.points(), self.geometry.cells(i));
             }
         }
         unimplemented!();
