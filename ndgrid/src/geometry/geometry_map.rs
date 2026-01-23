@@ -438,7 +438,8 @@ mod test {
 
         for p in 0..npts {
             *points.get_mut([0, p]).unwrap() = rng.random();
-            *points.get_mut([1, p]).unwrap() = rng.random::<f64>() * points.get_value([0, p]).unwrap();
+            *points.get_mut([1, p]).unwrap() =
+                rng.random::<f64>() * points.get_value([0, p]).unwrap();
         }
 
         *points.get_mut([0, 0]).unwrap() = 1.0;
