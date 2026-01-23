@@ -273,9 +273,7 @@ where
                 })
                 .collect::<Vec<_>>();
 
-            println!("{coords:?}");
             self.add_point(tag, &coords[..self.gdim()]);
-            println!("ADDED");
         }
 
         // Load elements

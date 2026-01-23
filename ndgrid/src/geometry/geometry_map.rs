@@ -320,9 +320,12 @@ impl<T: Scalar, B2D: ValueArrayImpl<T, 2>, C2D: ValueArrayImpl<usize, 2>> Geomet
 mod test {
     use super::*;
     use approx::assert_relative_eq;
+    use ndelement::{
+        ciarlet::lagrange,
+        types::{Continuity, ReferenceCellType},
+    };
     use rand::{Rng, SeedableRng};
     use rand_chacha::ChaCha8Rng;
-
     use rlst::{DynArray, Lu, rlst_dynamic_array};
 
     fn is_singular(mat: &DynArray<f64, 2>) -> bool {
@@ -424,4 +427,58 @@ mod test {
     tests!(5, 1);
     tests!(5, 2);
     tests!(5, 3);
+
+    #[test]
+    fn test_geometry_map_3_2() {
+        let e = lagrange::create::<f64, f64>(ReferenceCellType::Triangle, 1, Continuity::Standard);
+        let mut rng = ChaCha8Rng::seed_from_u64(13);
+
+        let npts = 4;
+        let mut points = rlst_dynamic_array!(f64, [2, npts]);
+
+        for p in 0..npts {
+            *points.get_mut([0, p]).unwrap() = rng.random();
+            *points.get_mut([1, p]).unwrap() =
+                rng.random::<f64>() * points.get_value([0, p]).unwrap();
+        }
+
+        *points.get_mut([0, 0]).unwrap() = 1.0;
+        *points.get_mut([0, 0]).unwrap() = 1.0;
+        let mut geo_points = rlst_dynamic_array!(f64, [3, 3]);
+        *geo_points.get_mut([0, 0]).unwrap() = 1.0;
+        *geo_points.get_mut([1, 0]).unwrap() = 0.0;
+        *geo_points.get_mut([2, 0]).unwrap() = 0.0;
+        *geo_points.get_mut([0, 1]).unwrap() = 2.0;
+        *geo_points.get_mut([1, 1]).unwrap() = 0.0;
+        *geo_points.get_mut([2, 1]).unwrap() = 1.0;
+        *geo_points.get_mut([0, 2]).unwrap() = 0.0;
+        *geo_points.get_mut([1, 2]).unwrap() = 1.0;
+        *geo_points.get_mut([2, 2]).unwrap() = 0.0;
+
+        let mut entities = rlst_dynamic_array!(usize, [2, 1]);
+        *entities.get_mut([0, 0]).unwrap() = 2;
+        *entities.get_mut([1, 0]).unwrap() = 0;
+
+        let gmap = GeometryMap::new(&e, &points, &geo_points, &entities);
+
+        let mut jacobians = rlst_dynamic_array!(f64, [3, 2, npts]);
+        let mut jinv = rlst_dynamic_array!(f64, [2, 3, npts]);
+        let mut jdets = vec![0.0; npts];
+
+        gmap.jacobians_inverses_dets(0, &mut jacobians, &mut jinv, &mut jdets);
+
+        for p in 0..npts {
+            for i in 0..2 {
+                for j in 0..2 {
+                    assert_relative_eq!(
+                        (0..3)
+                            .map(|k| jinv[[i, k, p]] * jacobians[[k, j, p]])
+                            .sum::<f64>(),
+                        if i == j { 1.0 } else { 0.0 },
+                        epsilon = 1e-10
+                    );
+                }
+            }
+        }
+    }
 }

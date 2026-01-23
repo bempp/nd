@@ -273,17 +273,17 @@ def test_nedelec_1_triangle(continuity):
 def test_push_forward_pull_back(ftype, reference_values, physical_values):
     family = create_family(ftype, 1, continuity=Continuity.Standard)
     element = family.element(ReferenceCellType.Triangle)
-    j = np.array([[[1.0, 2.0], [0.0, 0.0]], [[1.0, 0.0], [1.0, 3.0]]])
+    j = np.array([[[1.0, 0.0], [1.0, 1.0]], [[2.0, 0.0], [0.0, 3.0]]])
     jdet = np.array([1.0, 6.0])
     jinv = np.array(
         [
             [
-                [1.0, 0.5],
-                [0.0, 0.0],
+                [1.0, 0.0],
+                [-1.0, 1.0],
             ],
             [
-                [-1.0, 0.0],
-                [1.0, 1.0 / 3.0],
+                [0.5, 0.0],
+                [0.0, 1.0 / 3.0],
             ],
         ]
     )
