@@ -9,5 +9,8 @@ pub use function_space::FunctionSpaceImpl;
 #[cfg(feature = "mpi")]
 pub use function_space::ParallelFunctionSpaceImpl;
 
-use ndelement as _;
-use ndgrid as _;
+#[test]
+mod test {
+    use rlst as _;
+    use quadraturerules as _;
+}
