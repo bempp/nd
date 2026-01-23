@@ -28,8 +28,11 @@ use ndelement::{
     traits::{ElementFamily, FiniteElement, MappedFiniteElement},
     types::{Continuity, ReferenceCellType},
 };
-use rlst::dense::{base_array::BaseArray, data_container::VectorContainer};
-use rlst::{SliceArray, rlst_dynamic_array};
+use rlst::{
+    Array, ValueArrayImpl,
+    dense::{base_array::BaseArray, data_container::VectorContainer},
+    rlst_dynamic_array,
+};
 use std::collections::HashMap;
 
 /// Mixed grid entity
@@ -334,26 +337,19 @@ impl<T: Scalar, E: MappedFiniteElement<CellType = ReferenceCellType, T = T>> Gri
             .map(|i| self.entity(entity_type, *i))?
     }
 
-    fn geometry_map(
+    fn geometry_map<Array2Impl: ValueArrayImpl<T, 2>>(
         &self,
         entity_type: ReferenceCellType,
         geometry_degree: usize,
-        points: &[T],
+        points: &Array<Array2Impl, 2>,
     ) -> GeometryMap<'_, T, BaseArray<VectorContainer<T>, 2>, BaseArray<VectorContainer<usize>, 2>>
     {
-        let entity_dim = reference_cell::dim(entity_type);
-        let npoints = points.len() / entity_dim;
-        let rlst_points = SliceArray::<T, 2>::from_shape(points, [entity_dim, npoints]);
+        debug_assert!(points.shape()[0] == reference_cell::dim(entity_type));
 
         for i in 0..self.geometry.element_count() {
             let e = self.geometry.element(i);
             if e.cell_type() == entity_type && e.lagrange_superdegree() == geometry_degree {
-                return GeometryMap::new(
-                    e,
-                    &rlst_points,
-                    self.geometry.points(),
-                    self.geometry.cells(i),
-                );
+                return GeometryMap::new(e, points, self.geometry.points(), self.geometry.cells(i));
             }
         }
         unimplemented!();
@@ -514,36 +510,45 @@ mod test {
     #[test]
     fn test_geometry_map() {
         let grid = example_grid_mixed();
-        let mut mapped_pts = vec![0.0; 4];
+        let mut mapped_pts = rlst_dynamic_array!(f64, [2, 2]);
 
-        let pts = vec![0.0, 0.0, 0.5, 0.5];
+        let mut pts = rlst_dynamic_array!(f64, [2, 2]);
+        pts[[0, 0]] = 0.0;
+        pts[[1, 0]] = 0.0;
+        pts[[0, 1]] = 0.5;
+        pts[[1, 1]] = 0.5;
+
         let map = grid.geometry_map(ReferenceCellType::Triangle, 1, &pts);
 
         map.physical_points(0, &mut mapped_pts);
-        assert_relative_eq!(mapped_pts[0], 0.0, epsilon = 1e-10);
-        assert_relative_eq!(mapped_pts[1], 0.0, epsilon = 1e-10);
-        assert_relative_eq!(mapped_pts[2], 0.5, epsilon = 1e-10);
-        assert_relative_eq!(mapped_pts[3], 1.0, epsilon = 1e-10);
+        assert_relative_eq!(mapped_pts[[0, 0]], 0.0, epsilon = 1e-10);
+        assert_relative_eq!(mapped_pts[[1, 0]], 0.0, epsilon = 1e-10);
+        assert_relative_eq!(mapped_pts[[0, 1]], 0.5, epsilon = 1e-10);
+        assert_relative_eq!(mapped_pts[[1, 1]], 1.0, epsilon = 1e-10);
 
         map.physical_points(1, &mut mapped_pts);
-        assert_relative_eq!(mapped_pts[0], 0.0, epsilon = 1e-10);
-        assert_relative_eq!(mapped_pts[1], 0.0, epsilon = 1e-10);
-        assert_relative_eq!(mapped_pts[2], 1.0, epsilon = 1e-10);
-        assert_relative_eq!(mapped_pts[3], 0.5, epsilon = 1e-10);
+        assert_relative_eq!(mapped_pts[[0, 0]], 0.0, epsilon = 1e-10);
+        assert_relative_eq!(mapped_pts[[1, 0]], 0.0, epsilon = 1e-10);
+        assert_relative_eq!(mapped_pts[[0, 1]], 1.0, epsilon = 1e-10);
+        assert_relative_eq!(mapped_pts[[1, 1]], 0.5, epsilon = 1e-10);
 
-        let pts = vec![0.5, 0.0, 1.0, 1.0];
+        let mut pts = rlst_dynamic_array!(f64, [2, 2]);
+        pts[[0, 0]] = 0.5;
+        pts[[1, 0]] = 0.0;
+        pts[[0, 1]] = 1.0;
+        pts[[1, 1]] = 1.0;
         let map = grid.geometry_map(ReferenceCellType::Quadrilateral, 1, &pts);
 
         map.physical_points(0, &mut mapped_pts);
-        assert_relative_eq!(mapped_pts[0], 1.5, epsilon = 1e-10);
-        assert_relative_eq!(mapped_pts[1], 0.0, epsilon = 1e-10);
-        assert_relative_eq!(mapped_pts[2], 2.0, epsilon = 1e-10);
-        assert_relative_eq!(mapped_pts[3], 1.0, epsilon = 1e-10);
+        assert_relative_eq!(mapped_pts[[0, 0]], 1.5, epsilon = 1e-10);
+        assert_relative_eq!(mapped_pts[[1, 0]], 0.0, epsilon = 1e-10);
+        assert_relative_eq!(mapped_pts[[0, 1]], 2.0, epsilon = 1e-10);
+        assert_relative_eq!(mapped_pts[[1, 1]], 1.0, epsilon = 1e-10);
 
         map.physical_points(1, &mut mapped_pts);
-        assert_relative_eq!(mapped_pts[0], 3.0, epsilon = 1e-10);
-        assert_relative_eq!(mapped_pts[1], 0.0, epsilon = 1e-10);
-        assert_relative_eq!(mapped_pts[2], 4.0, epsilon = 1e-10);
-        assert_relative_eq!(mapped_pts[3], 1.0, epsilon = 1e-10);
+        assert_relative_eq!(mapped_pts[[0, 0]], 3.0, epsilon = 1e-10);
+        assert_relative_eq!(mapped_pts[[1, 0]], 0.0, epsilon = 1e-10);
+        assert_relative_eq!(mapped_pts[[0, 1]], 4.0, epsilon = 1e-10);
+        assert_relative_eq!(mapped_pts[[1, 1]], 1.0, epsilon = 1e-10);
     }
 }
