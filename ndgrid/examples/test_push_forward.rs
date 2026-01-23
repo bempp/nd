@@ -1,12 +1,16 @@
-use ndelement::{ciarlet::{raviart_thomas, lagrange}, types::{ReferenceCellType, Continuity}, traits::{FiniteElement, MappedFiniteElement}};
+use approx::assert_relative_eq;
+use itertools::izip;
+use ndelement::{
+    ciarlet::{lagrange, raviart_thomas},
+    traits::{FiniteElement, MappedFiniteElement},
+    types::{Continuity, ReferenceCellType},
+};
 use ndgrid::{
     grid::local_grid::SingleElementGridBuilder,
-    traits::{Builder, Entity, Grid, GeometryMap},
+    traits::{Builder, Entity, GeometryMap, Grid},
     types::{GraphPartitioner, Ownership},
 };
 use rlst::{DynArray, rlst_dynamic_array};
-use itertools::izip;
-use approx::assert_relative_eq;
 
 /// Test Lagrnage push forward
 fn test_lagrange_push_forward() {
@@ -46,17 +50,15 @@ fn test_lagrange_push_forward() {
     let mut jinv = rlst_dynamic_array!(f64, [grid.topology_dim(), grid.geometry_dim(), npts]);
     let mut jdets = vec![0.0; npts];
 
-    gmap.jacobians_inverses_dets(
-        1,
-        &mut jacobians,
-        &mut jinv,
-        &mut jdets,
-    );
+    gmap.jacobians_inverses_dets(1, &mut jacobians, &mut jinv, &mut jdets);
 
     let mut cell1_table = DynArray::<f64, 4>::from_shape(table.shape());
     e.push_forward(&table, 0, &jacobians, &jdets, &jinv, &mut cell1_table);
 
-    for (cell0_dof, cell1_dof) in izip!(e.entity_closure_dofs(1, 1).unwrap(), e.entity_closure_dofs(1, 0).unwrap()) {
+    for (cell0_dof, cell1_dof) in izip!(
+        e.entity_closure_dofs(1, 1).unwrap(),
+        e.entity_closure_dofs(1, 0).unwrap()
+    ) {
         for i in 0..npts {
             assert_relative_eq!(
                 cell0_table[[0, i, *cell0_dof, 0]],
@@ -78,7 +80,8 @@ fn test_rt_push_forward() {
     b.add_cell(1, &[1, 2, 3]);
     let grid = b.create_grid();
 
-    let e = raviart_thomas::create::<f64, f64>(ReferenceCellType::Triangle, 1, Continuity::Standard);
+    let e =
+        raviart_thomas::create::<f64, f64>(ReferenceCellType::Triangle, 1, Continuity::Standard);
 
     let npts = 5;
 
@@ -105,44 +108,54 @@ fn test_rt_push_forward() {
     let mut jinv = rlst_dynamic_array!(f64, [grid.topology_dim(), grid.geometry_dim(), npts]);
     let mut jdets = vec![0.0; npts];
 
-    gmap.jacobians_inverses_dets(
-        1,
-        &mut jacobians,
-        &mut jinv,
-        &mut jdets,
-    );
+    gmap.jacobians_inverses_dets(1, &mut jacobians, &mut jinv, &mut jdets);
 
-    let mut cell1_table = DynArray::<f64, 4>::from_shape([
-        table.shape()[0],
-        table.shape()[1],
-        table.shape()[2],
-        3
-    ]);
+    let mut cell1_table =
+        DynArray::<f64, 4>::from_shape([table.shape()[0], table.shape()[1], table.shape()[2], 3]);
     dbg!(jacobians.data());
     dbg!(&jdets);
     e.push_forward(&table, 0, &jacobians, &jdets, &jinv, &mut cell1_table);
 
-    for (cell0_dof, cell1_dof) in izip!(e.entity_closure_dofs(1, 0).unwrap(), e.entity_closure_dofs(1, 1).unwrap()) {
+    for (cell0_dof, cell1_dof) in izip!(
+        e.entity_closure_dofs(1, 0).unwrap(),
+        e.entity_closure_dofs(1, 1).unwrap()
+    ) {
         for i in 0..npts {
-            println!("{cell0_dof} @ ({},{}) -> {} {}", cell0_points[[0, i]], cell0_points[[1, i]], cell0_table[[0, i, *cell0_dof, 0]], cell0_table[[0, i, *cell0_dof, 1]]);
-            println!("{cell1_dof} @ ({},{},{}) ->  {} {} {}",
-                cell0_points[[0, i]], cell0_points[[1, i]], 0.0,
+            println!(
+                "{cell0_dof} @ ({},{}) -> {} {}",
+                cell0_points[[0, i]],
+                cell0_points[[1, i]],
+                cell0_table[[0, i, *cell0_dof, 0]],
+                cell0_table[[0, i, *cell0_dof, 1]]
+            );
+            println!(
+                "{cell1_dof} @ ({},{},{}) ->  {} {} {}",
+                cell0_points[[0, i]],
+                cell0_points[[1, i]],
+                0.0,
                 cell1_table[[0, i, *cell1_dof, 0]] * f64::sqrt(3.0),
                 cell1_table[[0, i, *cell1_dof, 1]] * f64::sqrt(3.0),
                 cell1_table[[0, i, *cell1_dof, 2]] * f64::sqrt(3.0)
             );
-            println!("{cell1_dof} @ ({},{},{}) ->  {} {} {}",
-                cell0_points[[0, i]], cell0_points[[1, i]], 0.0,
-                - cell0_points[[0, i]] - 2.0 * cell0_points[[1, i]],
+            println!(
+                "{cell1_dof} @ ({},{},{}) ->  {} {} {}",
+                cell0_points[[0, i]],
                 cell0_points[[1, i]],
-                - (cell0_points[[0, i]] + cell0_points[[1, i]])
+                0.0,
+                -cell0_points[[0, i]] - 2.0 * cell0_points[[1, i]],
+                cell0_points[[1, i]],
+                -(cell0_points[[0, i]] + cell0_points[[1, i]])
             );
             println!()
         }
         for i in 0..npts {
             assert_relative_eq!(
-                (cell0_table[[0, i, *cell0_dof, 0]] + cell0_table[[0, i, *cell0_dof, 1]]) / f64::sqrt(2.0),
-                (cell1_table[[0, i, *cell1_dof, 0]] + cell1_table[[0, i, *cell1_dof, 1]] + 2.0 * cell1_table[[0, i, *cell1_dof, 2]]) / f64::sqrt(6.0),
+                (cell0_table[[0, i, *cell0_dof, 0]] + cell0_table[[0, i, *cell0_dof, 1]])
+                    / f64::sqrt(2.0),
+                (cell1_table[[0, i, *cell1_dof, 0]]
+                    + cell1_table[[0, i, *cell1_dof, 1]]
+                    + 2.0 * cell1_table[[0, i, *cell1_dof, 2]])
+                    / f64::sqrt(6.0),
                 epsilon = 1e-10
             );
         }

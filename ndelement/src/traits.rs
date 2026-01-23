@@ -109,9 +109,9 @@ pub trait MappedFiniteElement: FiniteElement {
     /// - `reference_values`: The values on the reference cell. The shape of this input is the same as the `data` input to the function
     ///   [[FiniteElement::tabulate]].
     /// - `nderivs`: The number of derivatives.
-    /// `jacobians` should have shape [geometry_dimension, entity_topology_dimension, npts] and use column-major ordering;
-    /// `jacobian_determinants` should have shape \[npts\];
-    /// `inverse_jacobians` should have shape [entity_topology_dimension, geometry_dimension, npts] and use column-major ordering;
+    /// - `jacobians` should have shape [geometry_dimension, entity_topology_dimension, npts] and use column-major ordering;
+    /// - `jacobian_determinants` should have shape \[npts\];
+    /// - `inverse_jacobians` should have shape [entity_topology_dimension, geometry_dimension, npts] and use column-major ordering;
     /// - `physical_values`: The output array of the push operation. This shape of this array is the same as the `reference_values`
     ///   but with reference value size replaced by the physical value size
     fn push_forward<

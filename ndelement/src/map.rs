@@ -196,13 +196,6 @@ impl Map for ContravariantPiolaMap {
             unimplemented!();
         }
         for p in 0..physical_values.shape()[1] {
-            for gd in 0..gdim {
-                for td in 0..tdim {
-                    print!("[{p} {gd} {td}] {} ", jacobians.get_value([gd, td, p]).unwrap());
-                }
-                println!();
-            }        
-            println!();
             for b in 0..physical_values.shape()[2] {
                 for gd in 0..gdim {
                     unsafe {

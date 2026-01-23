@@ -38,9 +38,6 @@ fn inverse_and_det<
     let gdim = mat.shape()[0];
     let tdim = mat.shape()[1];
 
-    dbg!(tdim);
-    dbg!(gdim);
-
     debug_assert!(result.shape()[0] == tdim);
     debug_assert!(result.shape()[1] == gdim);
     debug_assert!(tdim <= gdim);
@@ -110,7 +107,6 @@ fn inverse_and_det<
             ];
 
             for i in 0..gdim {
-                println!("{tdim} {gdim} {:?} {i}", result.shape());
                 *result.get_mut([0, i]).unwrap() = ata_inv[0] * mat.get_value([i, 0]).unwrap()
                     + ata_inv[3] * mat.get_value([i, 1]).unwrap()
                     + ata_inv[6] * mat.get_value([i, 2]).unwrap();
@@ -324,10 +320,13 @@ impl<T: Scalar, B2D: ValueArrayImpl<T, 2>, C2D: ValueArrayImpl<usize, 2>> Geomet
 mod test {
     use super::*;
     use approx::assert_relative_eq;
+    use ndelement::{
+        ciarlet::lagrange,
+        types::{Continuity, ReferenceCellType},
+    };
     use rand::{Rng, SeedableRng};
     use rand_chacha::ChaCha8Rng;
-    use ndelement::{ciarlet::lagrange, types::{ReferenceCellType, Continuity}};
-    use rlst::{Lu, rlst_dynamic_array, DynArray};
+    use rlst::{DynArray, Lu, rlst_dynamic_array};
 
     fn is_singular(mat: &DynArray<f64, 2>) -> bool {
         if mat.shape()[0] == 0 || mat.shape()[1] == 0 {
@@ -456,27 +455,20 @@ mod test {
         let mut jinv = rlst_dynamic_array!(f64, [2, 3, npts]);
         let mut jdets = vec![0.0; npts];
 
-        gmap.jacobians_inverses_dets(
-            0,
-            &mut jacobians,
-            &mut jinv,
-            &mut jdets,
-        );
-
-        dbg!(jacobians.data().unwrap());
-        dbg!(jinv.data().unwrap());
+        gmap.jacobians_inverses_dets(0, &mut jacobians, &mut jinv, &mut jdets);
 
         for p in 0..npts {
             for i in 0..2 {
                 for j in 0..2 {
                     assert_relative_eq!(
-                        (0..3).map(|k| jinv[[i, k, p]] * jacobians[[k, j, p]]).sum::<f64>(),
+                        (0..3)
+                            .map(|k| jinv[[i, k, p]] * jacobians[[k, j, p]])
+                            .sum::<f64>(),
                         if i == j { 1.0 } else { 0.0 },
                         epsilon = 1e-10
                     );
                 }
             }
         }
-
     }
 }

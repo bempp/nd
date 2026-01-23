@@ -123,16 +123,8 @@ fn test_rt_mass_matrix() {
         let dofs = space
             .entity_closure_dofs(ReferenceCellType::Triangle, cell.local_index())
             .unwrap();
-        gmap.jacobians_inverses_dets(
-            cell.local_index(),
-            &mut jacobians,
-            &mut jinv,
-            &mut jdets,
-        );
+        gmap.jacobians_inverses_dets(cell.local_index(), &mut jacobians, &mut jinv, &mut jdets);
         element.push_forward(&table, 0, &jacobians, &jdets, &jinv, &mut pushed_table);
-
-        dbg!(table.data().unwrap());
-        dbg!(pushed_table.data().unwrap());
 
         for (test_i, test_dof) in dofs.iter().enumerate() {
             for (trial_i, trial_dof) in dofs.iter().enumerate() {
@@ -154,22 +146,20 @@ fn test_rt_mass_matrix() {
         }
     }
 
+    // The values from Bempp-cl here are divided by 2 as the basis functions in -cl are not scaled by edge length
     for i in 0..12 {
-        for j in 0..12 {
-            println!("{}", mass_matrix[[i, j]]);
-        }
-        println!();
-    }
-
-    for i in 0..12 {
-        assert_relative_eq!(mass_matrix[[i, i]], 0.9622504486493761, epsilon = 1e-10);
+        assert_relative_eq!(
+            mass_matrix[[i, i]],
+            0.9622504486493761 / 2.0,
+            epsilon = 1e-10
+        );
     }
     for i in 0..12 {
         for j in 0..12 {
             if i != j && mass_matrix[[i, j]].abs() > 0.001 {
                 assert_relative_eq!(
                     mass_matrix[[i, j]].abs(),
-                    0.9622504486493758,
+                    0.09622504486493733 / 2.0,
                     epsilon = 1e-10
                 );
             }
