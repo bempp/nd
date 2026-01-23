@@ -1,4 +1,4 @@
-//! Test values in mass matrices against values computing using Bempp
+//! Test values in mass matrices against values computing using Bempp--cl and FEniCS
 
 use approx::assert_relative_eq;
 use ndelement::{
@@ -69,6 +69,7 @@ fn test_lagrange_mass_matrix() {
         }
     }
 
+    // Compare matrix entries to values from Bempp
     for i in 0..6 {
         assert_relative_eq!(mass_matrix[[i, i]], 0.5773502691896255, epsilon = 1e-10);
     }
@@ -146,11 +147,11 @@ fn test_rt_mass_matrix() {
         }
     }
 
-    // The values from Bempp-cl here are divided by 2 as the basis functions in -cl are not scaled by edge length
+    // Compare matrix entries to FEniCS
     for i in 0..12 {
         assert_relative_eq!(
             mass_matrix[[i, i]],
-            0.9622504486493761 / 2.0,
+            0.4811252243246884,
             epsilon = 1e-10
         );
     }
@@ -159,7 +160,7 @@ fn test_rt_mass_matrix() {
             if i != j && mass_matrix[[i, j]].abs() > 0.001 {
                 assert_relative_eq!(
                     mass_matrix[[i, j]].abs(),
-                    0.09622504486493733 / 2.0,
+                    0.0481125224324689,
                     epsilon = 1e-10
                 );
             }
