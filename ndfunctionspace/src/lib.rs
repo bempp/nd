@@ -11,6 +11,6 @@ pub use function_space::ParallelFunctionSpaceImpl;
 
 #[test]
 mod test {
-    use rlst as _;
     use quadraturerules as _;
+    use rlst as _;
 }
