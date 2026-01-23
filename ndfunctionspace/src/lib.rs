@@ -11,6 +11,7 @@ pub use function_space::ParallelFunctionSpaceImpl;
 
 #[cfg(test)]
 mod test {
+    use approx as _;
     use quadraturerules as _;
     use rlst as _;
 }
