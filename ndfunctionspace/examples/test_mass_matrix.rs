@@ -149,11 +149,7 @@ fn test_rt_mass_matrix() {
 
     // Compare matrix entries to FEniCS
     for i in 0..12 {
-        assert_relative_eq!(
-            mass_matrix[[i, i]],
-            0.4811252243246884,
-            epsilon = 1e-10
-        );
+        assert_relative_eq!(mass_matrix[[i, i]], 0.4811252243246884, epsilon = 1e-10);
     }
     for i in 0..12 {
         for j in 0..12 {
