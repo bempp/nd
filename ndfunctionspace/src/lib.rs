@@ -9,7 +9,7 @@ pub use function_space::FunctionSpaceImpl;
 #[cfg(feature = "mpi")]
 pub use function_space::ParallelFunctionSpaceImpl;
 
-#[test]
+#[cfg(test)]
 mod test {
     use quadraturerules as _;
     use rlst as _;
