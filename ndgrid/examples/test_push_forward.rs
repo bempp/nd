@@ -7,8 +7,7 @@ use ndelement::{
 };
 use ndgrid::{
     grid::local_grid::SingleElementGridBuilder,
-    traits::{Builder, Entity, GeometryMap, Grid},
-    types::{GraphPartitioner, Ownership},
+    traits::{Builder, GeometryMap, Grid},
 };
 use rlst::{DynArray, rlst_dynamic_array};
 

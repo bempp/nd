@@ -431,9 +431,18 @@ mod test {
     #[test]
     fn test_geometry_map_3_2() {
         let e = lagrange::create::<f64, f64>(ReferenceCellType::Triangle, 1, Continuity::Standard);
+        let mut rng = ChaCha8Rng::seed_from_u64(13);
 
         let npts = 4;
         let mut points = rlst_dynamic_array!(f64, [2, npts]);
+
+        for p in 0..npts {
+            *points.get_mut([0, p]).unwrap() = rng.random();
+            *points.get_mut([1, p]).unwrap() = rng.random::<f64>() * points.get_value([0, p]).unwrap();
+        }
+
+        *points.get_mut([0, 0]).unwrap() = 1.0;
+        *points.get_mut([0, 0]).unwrap() = 1.0;
         let mut geo_points = rlst_dynamic_array!(f64, [3, 3]);
         *geo_points.get_mut([0, 0]).unwrap() = 1.0;
         *geo_points.get_mut([1, 0]).unwrap() = 0.0;
