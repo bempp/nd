@@ -40,7 +40,7 @@ fn test_lagrange_push_forward() {
     let mut table = DynArray::<f64, 4>::from_shape(e.tabulate_array_shape(0, npts));
     e.tabulate(&points, 0, &mut table);
 
-    let gmap = grid.geometry_map(ReferenceCellType::Triangle, 1, points.data().unwrap());
+    let gmap = grid.geometry_map(ReferenceCellType::Triangle, 1, &points);
 
     let mut jacobians = rlst_dynamic_array!(f64, [npts, grid.geometry_dim(), grid.topology_dim()]);
     let mut jinv = rlst_dynamic_array!(f64, [npts, grid.topology_dim(), grid.geometry_dim()]);
@@ -48,8 +48,8 @@ fn test_lagrange_push_forward() {
 
     gmap.jacobians_inverses_dets(
         1,
-        jacobians.data_mut().unwrap(),
-        jinv.data_mut().unwrap(),
+        &mut jacobians,
+        &mut jinv,
         &mut jdets,
     );
 
@@ -99,7 +99,7 @@ fn test_rt_push_forward() {
     let mut table = DynArray::<f64, 4>::from_shape(e.tabulate_array_shape(0, npts));
     e.tabulate(&points, 0, &mut table);
 
-    let gmap = grid.geometry_map(ReferenceCellType::Triangle, 1, points.data().unwrap());
+    let gmap = grid.geometry_map(ReferenceCellType::Triangle, 1, &points);
 
     let mut jacobians = rlst_dynamic_array!(f64, [grid.topology_dim(), grid.geometry_dim(), npts]);
     let mut jinv = rlst_dynamic_array!(f64, [grid.geometry_dim(), grid.topology_dim(), npts]);
@@ -107,8 +107,8 @@ fn test_rt_push_forward() {
 
     gmap.jacobians_inverses_dets(
         1,
-        jacobians.data_mut().unwrap(),
-        jinv.data_mut().unwrap(),
+        &mut jacobians,
+        &mut jinv,
         &mut jdets,
     );
 

@@ -41,9 +41,9 @@ fn test_lagrange_mass_matrix() {
     let mut table = DynArray::<f64, 4>::from_shape(element.tabulate_array_shape(0, npts));
     element.tabulate(&pts, 0, &mut table);
 
-    let gmap = grid.geometry_map(ReferenceCellType::Triangle, 1, pts.data().unwrap());
-    let mut jacobians = vec![0.0; grid.geometry_dim() * grid.topology_dim() * npts];
-    let mut jinv = vec![0.0; grid.geometry_dim() * grid.topology_dim() * npts];
+    let gmap = grid.geometry_map(ReferenceCellType::Triangle, 1, &pts);
+    let mut jacobians = rlst_dynamic_array!(f64, [npts, grid.geometry_dim(), grid.topology_dim()]);
+    let mut jinv = rlst_dynamic_array!(f64, [npts, grid.topology_dim(), grid.geometry_dim()]);
     let mut jdets = vec![0.0; npts];
 
     for cell in grid.entity_iter(ReferenceCellType::Triangle) {
@@ -112,7 +112,7 @@ fn test_rt_mass_matrix() {
         [table.shape()[0], table.shape()[1], table.shape()[2], 3]
     );
 
-    let gmap = grid.geometry_map(ReferenceCellType::Triangle, 1, pts.data().unwrap());
+    let gmap = grid.geometry_map(ReferenceCellType::Triangle, 1, &pts);
     let mut jacobians = rlst_dynamic_array!(f64, [npts, grid.geometry_dim(), grid.topology_dim()]);
     let mut jinv = rlst_dynamic_array!(f64, [npts, grid.topology_dim(), grid.geometry_dim()]);
     let mut jdets = vec![0.0; npts];
@@ -123,8 +123,8 @@ fn test_rt_mass_matrix() {
             .unwrap();
         gmap.jacobians_inverses_dets(
             cell.local_index(),
-            jacobians.data_mut().unwrap(),
-            jinv.data_mut().unwrap(),
+            &mut jacobians,
+            &mut jinv,
             &mut jdets,
         );
         element.push_forward(&table, 0, &jacobians, &jdets, &jinv, &mut pushed_table);

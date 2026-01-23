@@ -323,7 +323,7 @@ mod test {
     use rand::{Rng, SeedableRng};
     use rand_chacha::ChaCha8Rng;
     use ndelement::{ciarlet::lagrange, types::{ReferenceCellType, Continuity}};
-    use rlst::{Lu, SliceArray, rlst_dynamic_array, DynArray};
+    use rlst::{Lu, rlst_dynamic_array, DynArray};
 
     fn is_singular(mat: &DynArray<f64, 2>) -> bool {
         if mat.shape()[0] == 0 || mat.shape()[1] == 0 {
@@ -454,8 +454,8 @@ mod test {
 
         gmap.jacobians_inverses_dets(
             0,
-            jacobians.data_mut().unwrap(),
-            jinv.data_mut().unwrap(),
+            &mut jacobians,
+            &mut jinv,
             &mut jdets,
         );
 
