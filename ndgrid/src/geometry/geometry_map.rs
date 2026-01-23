@@ -294,7 +294,7 @@ mod test {
     use approx::assert_relative_eq;
     use rand::{Rng, SeedableRng};
     use rand_chacha::ChaCha8Rng;
-
+    use ndelement::{ciarlet::lagrange, types::{ReferenceCellType, Continuity}};
     use rlst::{Lu, SliceArray, rlst_dynamic_array};
 
     fn is_singular(mat: &[f64], gdim: usize, tdim: usize) -> bool {
@@ -400,4 +400,46 @@ mod test {
     tests!(5, 1);
     tests!(5, 2);
     tests!(5, 3);
+
+    #[test]
+    fn test_geometry_map_3_2() {
+        let e = lagrange::create::<f64, f64>(ReferenceCellType::Triangle, 1, Continuity::Standard);
+
+        let npts = 4;
+        let mut points = rlst_dynamic_array!(f64, [2, npts]);
+        let mut geo_points = rlst_dynamic_array!(f64, [3, 3]);
+        *geo_points.get_mut([0, 0]).unwrap() = 1.0;
+        *geo_points.get_mut([1, 0]).unwrap() = 0.0;
+        *geo_points.get_mut([2, 0]).unwrap() = 0.0;
+        *geo_points.get_mut([0, 1]).unwrap() = 2.0;
+        *geo_points.get_mut([1, 1]).unwrap() = 0.0;
+        *geo_points.get_mut([2, 1]).unwrap() = 1.0;
+        *geo_points.get_mut([0, 2]).unwrap() = 0.0;
+        *geo_points.get_mut([1, 2]).unwrap() = 1.0;
+        *geo_points.get_mut([2, 2]).unwrap() = 0.0;
+
+        let mut entities = rlst_dynamic_array!(usize, [2, 1]);
+        *entities.get_mut([0, 0]).unwrap() = 2;
+        *entities.get_mut([1, 0]).unwrap() = 0;
+
+        let gmap = GeometryMap::new(&e, &points, &geo_points, &entities);
+
+        let mut jacobians = rlst_dynamic_array!(f64, [npts, 3, 2]);
+        let mut jinv = rlst_dynamic_array!(f64, [npts, 2, 3]);
+        let mut jdets = vec![0.0; npts];
+
+        gmap.jacobians_inverses_dets(
+            0,
+            jacobians.data_mut().unwrap(),
+            jinv.data_mut().unwrap(),
+            &mut jdets,
+        );
+
+        dbg!(jacobians.data().unwrap());
+        dbg!(jinv.data().unwrap());
+
+        assert_eq!(1, 0);
+
+
+    }
 }
