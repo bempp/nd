@@ -42,8 +42,8 @@ fn test_lagrange_push_forward() {
 
     let gmap = grid.geometry_map(ReferenceCellType::Triangle, 1, &points);
 
-    let mut jacobians = rlst_dynamic_array!(f64, [npts, grid.geometry_dim(), grid.topology_dim()]);
-    let mut jinv = rlst_dynamic_array!(f64, [npts, grid.topology_dim(), grid.geometry_dim()]);
+    let mut jacobians = rlst_dynamic_array!(f64, [grid.geometry_dim(), grid.topology_dim(), npts]);
+    let mut jinv = rlst_dynamic_array!(f64, [grid.topology_dim(), grid.geometry_dim(), npts]);
     let mut jdets = vec![0.0; npts];
 
     gmap.jacobians_inverses_dets(
@@ -101,8 +101,8 @@ fn test_rt_push_forward() {
 
     let gmap = grid.geometry_map(ReferenceCellType::Triangle, 1, &points);
 
-    let mut jacobians = rlst_dynamic_array!(f64, [grid.topology_dim(), grid.geometry_dim(), npts]);
-    let mut jinv = rlst_dynamic_array!(f64, [grid.geometry_dim(), grid.topology_dim(), npts]);
+    let mut jacobians = rlst_dynamic_array!(f64, [grid.geometry_dim(), grid.topology_dim(), npts]);
+    let mut jinv = rlst_dynamic_array!(f64, [grid.topology_dim(), grid.geometry_dim(), npts]);
     let mut jdets = vec![0.0; npts];
 
     gmap.jacobians_inverses_dets(
@@ -119,6 +119,7 @@ fn test_rt_push_forward() {
         3
     ]);
     dbg!(jacobians.data());
+    dbg!(&jdets);
     e.push_forward(&table, 0, &jacobians, &jdets, &jinv, &mut cell1_table);
 
     for (cell0_dof, cell1_dof) in izip!(e.entity_closure_dofs(1, 0).unwrap(), e.entity_closure_dofs(1, 1).unwrap()) {

@@ -1,3 +1,5 @@
+//! Test values in mass matrices against values computing using Bempp
+
 use approx::assert_relative_eq;
 use ndelement::{
     ciarlet::{LagrangeElementFamily, RaviartThomasElementFamily},
@@ -42,8 +44,8 @@ fn test_lagrange_mass_matrix() {
     element.tabulate(&pts, 0, &mut table);
 
     let gmap = grid.geometry_map(ReferenceCellType::Triangle, 1, &pts);
-    let mut jacobians = rlst_dynamic_array!(f64, [npts, grid.geometry_dim(), grid.topology_dim()]);
-    let mut jinv = rlst_dynamic_array!(f64, [npts, grid.topology_dim(), grid.geometry_dim()]);
+    let mut jacobians = rlst_dynamic_array!(f64, [grid.geometry_dim(), grid.topology_dim(), npts]);
+    let mut jinv = rlst_dynamic_array!(f64, [grid.topology_dim(), grid.geometry_dim(), npts]);
     let mut jdets = vec![0.0; npts];
 
     for cell in grid.entity_iter(ReferenceCellType::Triangle) {
@@ -113,8 +115,8 @@ fn test_rt_mass_matrix() {
     );
 
     let gmap = grid.geometry_map(ReferenceCellType::Triangle, 1, &pts);
-    let mut jacobians = rlst_dynamic_array!(f64, [npts, grid.geometry_dim(), grid.topology_dim()]);
-    let mut jinv = rlst_dynamic_array!(f64, [npts, grid.topology_dim(), grid.geometry_dim()]);
+    let mut jacobians = rlst_dynamic_array!(f64, [grid.geometry_dim(), grid.topology_dim(), npts]);
+    let mut jinv = rlst_dynamic_array!(f64, [grid.topology_dim(), grid.geometry_dim(), npts]);
     let mut jdets = vec![0.0; npts];
 
     for cell in grid.entity_iter(ReferenceCellType::Triangle) {

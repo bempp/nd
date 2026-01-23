@@ -38,6 +38,9 @@ fn inverse_and_det<
     let gdim = mat.shape()[0];
     let tdim = mat.shape()[1];
 
+    dbg!(tdim);
+    dbg!(gdim);
+
     debug_assert!(result.shape()[0] == tdim);
     debug_assert!(result.shape()[1] == gdim);
     debug_assert!(tdim <= gdim);
@@ -107,6 +110,7 @@ fn inverse_and_det<
             ];
 
             for i in 0..gdim {
+                println!("{tdim} {gdim} {:?} {i}", result.shape());
                 *result.get_mut([0, i]).unwrap() = ata_inv[0] * mat.get_value([i, 0]).unwrap()
                     + ata_inv[3] * mat.get_value([i, 1]).unwrap()
                     + ata_inv[6] * mat.get_value([i, 2]).unwrap();
@@ -448,8 +452,8 @@ mod test {
 
         let gmap = GeometryMap::new(&e, &points, &geo_points, &entities);
 
-        let mut jacobians = rlst_dynamic_array!(f64, [npts, 3, 2]);
-        let mut jinv = rlst_dynamic_array!(f64, [npts, 2, 3]);
+        let mut jacobians = rlst_dynamic_array!(f64, [3, 2, npts]);
+        let mut jinv = rlst_dynamic_array!(f64, [2, 3, npts]);
         let mut jdets = vec![0.0; npts];
 
         gmap.jacobians_inverses_dets(
@@ -462,8 +466,17 @@ mod test {
         dbg!(jacobians.data().unwrap());
         dbg!(jinv.data().unwrap());
 
-        assert_eq!(1, 0);
-
+        for p in 0..npts {
+            for i in 0..2 {
+                for j in 0..2 {
+                    assert_relative_eq!(
+                        (0..3).map(|k| jinv[[i, k, p]] * jacobians[[k, j, p]]).sum::<f64>(),
+                        if i == j { 1.0 } else { 0.0 },
+                        epsilon = 1e-10
+                    );
+                }
+            }
+        }
 
     }
 }

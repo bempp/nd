@@ -466,7 +466,7 @@ where
                 .enumerate()
                 {
                     for p in 0..npts {
-                        *j.get_mut([t_in, t_out, p]).unwrap() = b - a;
+                        *j.get_mut([t_out, t_in, p]).unwrap() = b - a;
                     }
                 }
             }
@@ -494,7 +494,7 @@ where
                 .enumerate()
                 {
                     for p in 0..npts {
-                        *jinv.get_mut([t_in, t_out, p]).unwrap() = TGeo::from(b - a).unwrap();
+                        *jinv.get_mut([t_out, t_in, p]).unwrap() = TGeo::from(b - a).unwrap();
                     }
                 }
             }

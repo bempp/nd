@@ -85,8 +85,8 @@ impl Map for CovariantPiolaMap {
         inverse_jacobians: &Array<Array3GeoImpl, 3>,
         physical_values: &mut Array<Array4MutImpl, 4>,
     ) {
-        let tdim = inverse_jacobians.shape()[1];
-        let gdim = inverse_jacobians.shape()[2];
+        let tdim = inverse_jacobians.shape()[0];
+        let gdim = inverse_jacobians.shape()[1];
         assert_eq!(reference_values.shape()[0], physical_values.shape()[0]);
         assert_eq!(reference_values.shape()[1], physical_values.shape()[1]);
         assert_eq!(reference_values.shape()[2], physical_values.shape()[2]);
@@ -101,7 +101,7 @@ impl Map for CovariantPiolaMap {
                     unsafe {
                         *physical_values.get_unchecked_mut([0, p, b, gd]) = (0..tdim)
                             .map(|td| {
-                                T::from(inverse_jacobians.get_value_unchecked([gd, td, p])).unwrap()
+                                T::from(inverse_jacobians.get_value_unchecked([td, gd, p])).unwrap()
                                     * reference_values.get_value_unchecked([0, p, b, td])
                             })
                             .sum::<T>();
@@ -125,8 +125,8 @@ impl Map for CovariantPiolaMap {
         _inverse_jacobians: &Array<Array3GeoImpl, 3>,
         reference_values: &mut Array<Array4MutImpl, 4>,
     ) {
-        let gdim = jacobians.shape()[1];
-        let tdim = jacobians.shape()[0];
+        let gdim = jacobians.shape()[0];
+        let tdim = jacobians.shape()[1];
         assert_eq!(reference_values.shape()[0], physical_values.shape()[0]);
         assert_eq!(reference_values.shape()[1], physical_values.shape()[1]);
         assert_eq!(reference_values.shape()[2], physical_values.shape()[2]);
@@ -141,7 +141,7 @@ impl Map for CovariantPiolaMap {
                     unsafe {
                         *reference_values.get_unchecked_mut([0, p, b, td]) = (0..gdim)
                             .map(|gd| {
-                                T::from(jacobians.get_value_unchecked([td, gd, p])).unwrap()
+                                T::from(jacobians.get_value_unchecked([gd, td, p])).unwrap()
                                     * physical_values.get_value_unchecked([0, p, b, gd])
                             })
                             .sum::<T>();
@@ -184,8 +184,8 @@ impl Map for ContravariantPiolaMap {
         _inverse_jacobians: &Array<Array3GeoImpl, 3>,
         physical_values: &mut Array<Array4MutImpl, 4>,
     ) {
-        let gdim = jacobians.shape()[1];
-        let tdim = jacobians.shape()[0];
+        let gdim = jacobians.shape()[0];
+        let tdim = jacobians.shape()[1];
 
         assert_eq!(reference_values.shape()[0], physical_values.shape()[0]);
         assert_eq!(reference_values.shape()[1], physical_values.shape()[1]);
@@ -198,7 +198,7 @@ impl Map for ContravariantPiolaMap {
         for p in 0..physical_values.shape()[1] {
             for gd in 0..gdim {
                 for td in 0..tdim {
-                    print!("[{p} {gd} {td}] {} ", jacobians.get_value([td, gd, p]).unwrap());
+                    print!("[{p} {gd} {td}] {} ", jacobians.get_value([gd, td, p]).unwrap());
                 }
                 println!();
             }        
@@ -208,7 +208,7 @@ impl Map for ContravariantPiolaMap {
                     unsafe {
                         *physical_values.get_unchecked_mut([0, p, b, gd]) = (0..tdim)
                             .map(|td| {
-                                T::from(jacobians.get_value_unchecked([td, gd, p])).unwrap()
+                                T::from(jacobians.get_value_unchecked([gd, td, p])).unwrap()
                                     * reference_values.get_value_unchecked([0, p, b, td])
                             })
                             .sum::<T>()
@@ -233,8 +233,8 @@ impl Map for ContravariantPiolaMap {
         inverse_jacobians: &Array<Array3GeoImpl, 3>,
         reference_values: &mut Array<Array4MutImpl, 4>,
     ) {
-        let tdim = inverse_jacobians.shape()[1];
-        let gdim = inverse_jacobians.shape()[2];
+        let tdim = inverse_jacobians.shape()[0];
+        let gdim = inverse_jacobians.shape()[1];
         assert_eq!(reference_values.shape()[0], physical_values.shape()[0]);
         assert_eq!(reference_values.shape()[1], physical_values.shape()[1]);
         assert_eq!(reference_values.shape()[2], physical_values.shape()[2]);
@@ -249,7 +249,7 @@ impl Map for ContravariantPiolaMap {
                     unsafe {
                         *reference_values.get_unchecked_mut([0, p, b, td]) = (0..gdim)
                             .map(|gd| {
-                                T::from(inverse_jacobians.get_value_unchecked([gd, td, p])).unwrap()
+                                T::from(inverse_jacobians.get_value_unchecked([td, gd, p])).unwrap()
                                     * physical_values.get_value_unchecked([0, p, b, gd])
                             })
                             .sum::<T>()
@@ -276,22 +276,22 @@ mod test {
         jinv: &mut Array<Array3MutImpl, 3>,
     ) {
         *j.get_mut([0, 0, 0]).unwrap() = T::from(1.0).unwrap();
-        *j.get_mut([1, 0, 0]).unwrap() = T::from(1.0).unwrap();
-        *j.get_mut([0, 1, 0]).unwrap() = T::from(0.0).unwrap();
+        *j.get_mut([0, 1, 0]).unwrap() = T::from(1.0).unwrap();
+        *j.get_mut([1, 0, 0]).unwrap() = T::from(0.0).unwrap();
         *j.get_mut([1, 1, 0]).unwrap() = T::from(1.0).unwrap();
         *j.get_mut([0, 0, 1]).unwrap() = T::from(2.0).unwrap();
-        *j.get_mut([1, 0, 1]).unwrap() = T::from(0.0).unwrap();
         *j.get_mut([0, 1, 1]).unwrap() = T::from(0.0).unwrap();
+        *j.get_mut([1, 0, 1]).unwrap() = T::from(0.0).unwrap();
         *j.get_mut([1, 1, 1]).unwrap() = T::from(3.0).unwrap();
         jdet[0] = T::from(1.0).unwrap();
         jdet[1] = T::from(6.0).unwrap();
         *jinv.get_mut([0, 0, 0]).unwrap() = T::from(1.0).unwrap();
-        *jinv.get_mut([1, 0, 0]).unwrap() = T::from(-1.0).unwrap();
-        *jinv.get_mut([0, 1, 0]).unwrap() = T::from(0.0).unwrap();
+        *jinv.get_mut([0, 1, 0]).unwrap() = T::from(-1.0).unwrap();
+        *jinv.get_mut([1, 0, 0]).unwrap() = T::from(0.0).unwrap();
         *jinv.get_mut([1, 1, 0]).unwrap() = T::from(1.0).unwrap();
         *jinv.get_mut([0, 0, 1]).unwrap() = T::from(0.5).unwrap();
-        *jinv.get_mut([1, 0, 1]).unwrap() = T::from(0.0).unwrap();
         *jinv.get_mut([0, 1, 1]).unwrap() = T::from(0.0).unwrap();
+        *jinv.get_mut([1, 0, 1]).unwrap() = T::from(0.0).unwrap();
         *jinv.get_mut([1, 1, 1]).unwrap() = T::from(1.0 / 3.0).unwrap();
     }
 
