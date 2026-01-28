@@ -25,6 +25,9 @@ pub trait Builder {
     /// Add a point to the grid
     fn add_point(&mut self, id: usize, data: &[Self::T]);
 
+    /// Add parametric coordinates for a point (optional)
+    fn add_point_parametric_coords(&mut self, _id: usize, _entity_dim: usize, _coords: &[Self::T]); 
+
     /// Add a cell to the grid
     fn add_cell(&mut self, id: usize, cell_data: Self::CellData<'_>);
 
@@ -63,6 +66,9 @@ pub trait Builder {
 
     /// Get all points
     fn points(&self) -> &[Self::T];
+
+    /// Get parametric coordinates for a point, if available
+    fn point_parametric_coords(&self, _index: usize) -> Option<(usize, &[Self::T])>;
 
     /// Get the type of a cell
     fn cell_type(&self, index: usize) -> Self::EntityDescriptor;

@@ -533,7 +533,7 @@ where
 
         let mut line_n = 1;
         for _ in 0..num_entity_blocks {
-            let [_entity_dim, _entity_tag, parametric, num_nodes_in_block] = nodes[line_n]
+            let [entity_dim, _entity_tag, parametric, num_nodes_in_block] = nodes[line_n]
                 .trim()
                 .split(" ")
                 .map(|i| i.parse::<usize>().unwrap())
@@ -541,9 +541,6 @@ where
             else {
                 panic!("Unrecognised gmsh format for nodes");
             };
-            if parametric == 1 {
-                unimplemented!("Parametric nodes currently not supported")
-            }
             line_n += 1;
             let tags = &nodes[line_n..line_n + num_nodes_in_block];
             let coords = &nodes[line_n + num_nodes_in_block..line_n + 2 * num_nodes_in_block];
@@ -559,7 +556,15 @@ where
                         }
                     })
                     .collect::<Vec<_>>();
-                self.add_point(t.parse::<usize>().unwrap(), &pt[..self.gdim()]);
+                let tag = t.parse::<usize>().unwrap();
+                self.add_point(tag, &pt[..self.gdim()]);
+
+                if parametric == 1 && entity_dim >= 1 {
+                    let param_count = entity_dim.min(3);
+                    if pt.len() >= 3 + param_count {
+                        self.add_point_parametric_coords(tag, entity_dim, &pt[3..3 + param_count]);
+                    }
+                }
             }
             line_n += num_nodes_in_block * 2;
         }
@@ -660,17 +665,13 @@ where
 
                     for _ in 0..num_entity_blocks {
                         read_exact!(3 * GMSH_INT_SIZE, "Unable to read node entity block info");
-                        let [_entity_dim, _entity_tag, parametric] = buf
+                        let [entity_dim, _entity_tag, parametric] = buf
                             .chunks(GMSH_INT_SIZE)
                             .map(|i| parse::<usize>(i, GMSH_INT_SIZE, is_le))
                             .collect::<Vec<_>>()[..]
                         else {
                             panic!("Could not parse node entity block info")
                         };
-
-                        if parametric == 1 {
-                            unimplemented!("Parametric nodes currently not supported")
-                        }
 
                         read_exact!(data_size, "Unable to read num nodes in block");
                         let num_nodes_in_block = parse::<usize>(&buf, data_size, is_le);
@@ -681,12 +682,19 @@ where
                             .map(|i| parse::<usize>(i, data_size, is_le))
                             .collect::<Vec<_>>();
 
+                        let param_count = if parametric == 1 && entity_dim >= 1 {
+                            entity_dim.min(3)
+                        } else {
+                            0
+                        };
+                        let total_coords_per_node = 3 + param_count;
+
                         read_exact!(
-                            3 * num_nodes_in_block * data_size,
+                            total_coords_per_node * num_nodes_in_block * data_size,
                             "Unable to read node coords"
                         );
-                        let coords = buf
-                            .chunks(3 * data_size)
+                        let all_coords = buf
+                            .chunks(total_coords_per_node * data_size)
                             .map(|i| {
                                 i.chunks(data_size)
                                     .map(|j| parse::<T>(j, data_size, is_le))
@@ -694,8 +702,12 @@ where
                             })
                             .collect::<Vec<_>>();
 
-                        for (t, c) in izip!(tags, coords) {
+                        for (t, c) in izip!(tags, all_coords) {
                             self.add_point(t, &c[..self.gdim()]);
+
+                            if parametric == 1 && entity_dim >= 1 && c.len() > 3 {
+                                self.add_point_parametric_coords(t, entity_dim, &c[3..3 + param_count]);
+                            }
                         }
                     }
 
