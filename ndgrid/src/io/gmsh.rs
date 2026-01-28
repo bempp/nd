@@ -103,6 +103,36 @@ fn interpret_gmsh_cell(gmsh_cell: usize) -> (ReferenceCellType, usize) {
     }
 }
 
+/// Convert gmsh element node ordering to ndgrid ordering
+fn permute_gmsh_to_ndgrid(
+    gmsh_cell_type: usize,
+    node_tags: &[usize],
+) -> (Vec<usize>, ReferenceCellType, usize) {
+    let (cell_type, degree) = interpret_gmsh_cell(gmsh_cell_type);
+    let gmsh_perm = get_permutation_to_gmsh(cell_type, degree);
+    let mut cell = vec![0; node_tags.len()];
+    for (i, j) in gmsh_perm.iter().enumerate() {
+        cell[*j] = node_tags[i];
+    }
+    (cell, cell_type, degree)
+}
+
+/// Get the expected number of nodes for a gmsh cell type
+fn gmsh_node_count(gmsh_cell_type: usize) -> usize {
+    let (cell_type, degree) = interpret_gmsh_cell(gmsh_cell_type);
+    get_permutation_to_gmsh(cell_type, degree).len()
+}
+
+/// Parse coordinate strings into typed values
+fn parse_coordinates<T: FromStr>(values: &[&str]) -> Vec<T> {
+    values
+        .iter()
+        .map(|c| {
+            T::from_str(c).unwrap_or_else(|_| panic!("Could not parse coordinate: {c}"))
+        })
+        .collect()
+}
+
 /// Parse gmsh binary data
 fn parse<T: FromBytes>(data: &[u8], gmsh_data_size: usize, is_le: bool) -> T
 where
@@ -236,6 +266,36 @@ fn gmsh_section(s: &str, section: &str) -> String {
     String::from(a[1].split(&format!("\n$End{section}")).collect::<Vec<_>>()[0])
 }
 
+/// Import nodes from Gmsh v1/v2 ASCII format (shared between v1 and v2)
+fn import_nodes_v1_v2<T, B>(builder: &mut B, s: &str)
+where
+    T: FromStr,
+    B: Builder<T = T>,
+{
+    let nodes = gmsh_section(s, "Nodes");
+    let mut nodes = nodes.lines();
+
+    let Some(num_nodes) = nodes.next() else {
+        panic!("Could not read num nodes");
+    };
+    let num_nodes = num_nodes
+        .parse::<usize>()
+        .expect("Could not parse num nodes");
+
+    for _ in 0..num_nodes {
+        let Some(line) = nodes.next() else {
+            panic!("Unable to read node line");
+        };
+        let line = line.split(" ").collect::<Vec<&str>>();
+
+        let (tag, coord_strs) = line.split_at(1);
+        let tag = tag[0].parse::<usize>().expect("Could not parse node tag");
+        let coords: Vec<T> = parse_coordinates(coord_strs);
+
+        builder.add_point(tag, &coords[..builder.gdim()]);
+    }
+}
+
 impl<T, B> GmshImport for B
 where
     T: FromStr + FromBytes + std::fmt::Debug,
@@ -243,38 +303,7 @@ where
     B: Builder<T = T, EntityDescriptor = ReferenceCellType>,
 {
     fn import_from_gmsh_v1(&mut self, s: String) {
-        // Load nodes
-        let nodes = gmsh_section(&s, "Nodes");
-        let mut nodes = nodes.lines();
-
-        let Some(num_nodes) = nodes.next() else {
-            panic!("Could not read num nodes");
-        };
-        let num_nodes = num_nodes
-            .parse::<usize>()
-            .expect("Could not parse num nodes");
-
-        for _ in 0..num_nodes {
-            let Some(line) = nodes.next() else {
-                panic!("Unable to read node line");
-            };
-            let line = line.split(" ").collect::<Vec<&str>>();
-
-            let (tag, coords) = line.split_at(1);
-            let tag = tag[0].parse::<usize>().expect("Could not parse node tag");
-            let coords = coords
-                .iter()
-                .map(|c| {
-                    if let Ok(d) = T::from_str(c) {
-                        d
-                    } else {
-                        panic!("Could not parse coords")
-                    }
-                })
-                .collect::<Vec<_>>();
-
-            self.add_point(tag, &coords[..self.gdim()]);
-        }
+        import_nodes_v1_v2(self, &s);
 
         // Load elements
         let elements = gmsh_section(&s, "Elements");
@@ -312,51 +341,13 @@ where
                         .expect("Could not parse nodes for element")
                 })
                 .collect::<Vec<_>>();
-            let (cell_type, degree) = interpret_gmsh_cell(element_type);
-            let gmsh_perm = get_permutation_to_gmsh(cell_type, degree);
-
-            let mut cell = vec![0; node_tags.len()];
-            for (i, j) in gmsh_perm.iter().enumerate() {
-                cell[*j] = node_tags[i];
-            }
-
+            let (cell, cell_type, degree) = permute_gmsh_to_ndgrid(element_type, &node_tags);
             self.add_cell_from_nodes_and_type(tag, &cell, cell_type, degree);
         }
     }
 
     fn import_from_gmsh_string_v2(&mut self, s: String) {
-        // Load nodes
-        let nodes = gmsh_section(&s, "Nodes");
-        let mut nodes = nodes.lines();
-
-        let Some(num_nodes) = nodes.next() else {
-            panic!("Could not read num nodes");
-        };
-        let num_nodes = num_nodes
-            .parse::<usize>()
-            .expect("Could not parse num nodes");
-
-        for _ in 0..num_nodes {
-            let Some(line) = nodes.next() else {
-                panic!("Unable to read node line");
-            };
-            let line = line.split(" ").collect::<Vec<&str>>();
-
-            let (tag, coords) = line.split_at(1);
-            let tag = tag[0].parse::<usize>().expect("Could not parse node tag");
-            let coords = coords
-                .iter()
-                .map(|c| {
-                    if let Ok(d) = T::from_str(c) {
-                        d
-                    } else {
-                        panic!("Could not parse coords")
-                    }
-                })
-                .collect::<Vec<_>>();
-
-            self.add_point(tag, &coords[..self.gdim()]);
-        }
+        import_nodes_v1_v2(self, &s);
 
         // Load elements
         let elements = gmsh_section(&s, "Elements");
@@ -395,14 +386,7 @@ where
                         .expect("Could not parse nodes for element")
                 })
                 .collect::<Vec<_>>();
-            let (cell_type, degree) = interpret_gmsh_cell(element_type);
-            let gmsh_perm = get_permutation_to_gmsh(cell_type, degree);
-
-            let mut cell = vec![0; node_tags.len()];
-            for (i, j) in gmsh_perm.iter().enumerate() {
-                cell[*j] = node_tags[i];
-            }
-
+            let (cell, cell_type, degree) = permute_gmsh_to_ndgrid(element_type, &node_tags);
             self.add_cell_from_nodes_and_type(tag, &cell, cell_type, degree);
         }
     }
@@ -501,11 +485,7 @@ where
                             .map(|i| parse::<usize>(i, GMSH_INT_SIZE, is_le))
                             .collect::<Vec<_>>();
 
-                        let mut cell = vec![0; node_tags.len()];
-                        for (i, j) in gmsh_perm.iter().enumerate() {
-                            cell[*j] = node_tags[i];
-                        }
-
+                        let (cell, cell_type, degree) = permute_gmsh_to_ndgrid(elm_type, &node_tags);
                         self.add_cell_from_nodes_and_type(tag, &cell, cell_type, degree);
                     }
                     line.clear();
@@ -545,17 +525,8 @@ where
             let tags = &nodes[line_n..line_n + num_nodes_in_block];
             let coords = &nodes[line_n + num_nodes_in_block..line_n + 2 * num_nodes_in_block];
             for (t, c) in izip!(tags, coords) {
-                let pt = c
-                    .trim()
-                    .split(" ")
-                    .map(|i| {
-                        if let Ok(j) = T::from_str(i) {
-                            j
-                        } else {
-                            panic!("Could not parse coordinate");
-                        }
-                    })
-                    .collect::<Vec<_>>();
+                let coord_strs: Vec<&str> = c.trim().split(" ").collect();
+                let pt: Vec<T> = parse_coordinates(&coord_strs);
                 let tag = t.parse::<usize>().unwrap();
                 self.add_point(tag, &pt[..self.gdim()]);
 
@@ -602,8 +573,6 @@ where
             else {
                 panic!("Unrecognised gmsh format");
             };
-            let (cell_type, degree) = interpret_gmsh_cell(element_type);
-            let gmsh_perm = get_permutation_to_gmsh(cell_type, degree);
 
             line_n += 1;
             for line in &elements[line_n..line_n + num_elements_in_block] {
@@ -612,10 +581,8 @@ where
                     .split(" ")
                     .map(|i| i.parse::<usize>().unwrap())
                     .collect::<Vec<_>>();
-                let mut cell = vec![0; line.len() - 1];
-                for (i, j) in gmsh_perm.iter().enumerate() {
-                    cell[*j] = line[i + 1];
-                }
+                let node_tags = &line[1..];
+                let (cell, cell_type, degree) = permute_gmsh_to_ndgrid(element_type, node_tags);
                 self.add_cell_from_nodes_and_type(line[0], &cell, cell_type, degree);
             }
 
@@ -745,24 +712,19 @@ where
                         read_exact!(data_size, "Unable to read num elements in block");
                         let num_elements_in_block = parse::<usize>(&buf, data_size, is_le);
 
-                        let (cell_type, degree) = interpret_gmsh_cell(element_type);
-                        let gmsh_perm = get_permutation_to_gmsh(cell_type, degree);
+                        let node_count = gmsh_node_count(element_type);
 
                         for _ in 0..num_elements_in_block {
                             read_exact!(data_size, "Unable to read element tag");
                             let tag = parse::<usize>(&buf, data_size, is_le);
 
-                            read_exact!(data_size * gmsh_perm.len(), "Unable to read node tags");
+                            read_exact!(data_size * node_count, "Unable to read node tags");
                             let node_tags = buf
                                 .chunks(data_size)
                                 .map(|i| parse::<usize>(i, data_size, is_le))
                                 .collect::<Vec<_>>();
 
-                            let mut cell = vec![0; node_tags.len()];
-                            for (i, j) in gmsh_perm.iter().enumerate() {
-                                cell[*j] = node_tags[i];
-                            }
-
+                            let (cell, cell_type, degree) = permute_gmsh_to_ndgrid(element_type, &node_tags);
                             self.add_cell_from_nodes_and_type(tag, &cell, cell_type, degree);
                         }
                     }
