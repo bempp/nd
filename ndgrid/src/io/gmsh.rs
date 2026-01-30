@@ -776,7 +776,7 @@ mod test {
 
     #[test]
     fn test_regular_sphere_gmsh_io() {
-        let g = regular_sphere::<f64>(2);
+        let g = regular_sphere::<f64>(2, ReferenceCellType::Triangle);
         g.export_as_gmsh("_test_io_sphere.msh");
     }
 

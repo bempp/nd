@@ -13,7 +13,7 @@ use ndelement::{ciarlet::CiarletElement, map::IdentityMap, types::ReferenceCellT
 use std::collections::{HashMap, hash_map::Entry::Vacant};
 
 /// Add points and cells for regular sphere to builder
-fn regular_sphere_add_points_and_cells<T: Scalar>(
+fn regular_sphere_triangle_add_points_and_cells<T: Scalar>(
     b: &mut SingleElementGridBuilder<T>,
     refinement_level: u32,
 ) {
@@ -95,14 +95,30 @@ fn regular_sphere_add_points_and_cells<T: Scalar>(
 /// each edge). The new points are then scaled so that they are a distance of 1 from the origin.
 pub fn regular_sphere<T: Scalar>(
     refinement_level: u32,
+    cell_type: ReferenceCellType,
 ) -> SingleElementGrid<T, CiarletElement<T, IdentityMap, T>> {
     let mut b = SingleElementGridBuilder::new_with_capacity(
         3,
-        2 + usize::pow(4, refinement_level + 1),
-        8 * usize::pow(4, refinement_level),
-        (ReferenceCellType::Triangle, 1),
+        match cell_type {
+            ReferenceCellType::Triangle => 2 + usize::pow(4, refinement_level + 1),
+            _ => {
+                panic!("Unsupported cell type: {cell_type:?}");
+            }
+        },
+        match cell_type {
+            ReferenceCellType::Triangle => 8 * usize::pow(4, refinement_level),
+            _ => {
+                panic!("Unsupported cell type: {cell_type:?}");
+            }
+        },
+        (cell_type, 1),
     );
-    regular_sphere_add_points_and_cells(&mut b, refinement_level);
+    match cell_type {
+        ReferenceCellType::Triangle => regular_sphere_triangle_add_points_and_cells(&mut b, refinement_level),
+        _ => {
+            panic!("Unsupported cell type: {cell_type:?}");
+        }
+    }
     b.create_grid()
 }
 
@@ -112,10 +128,16 @@ pub fn regular_sphere_distributed<T: Scalar + Equivalence, C: Communicator>(
     comm: &C,
     partitioner: GraphPartitioner,
     refinement_level: u32,
+    cell_type: ReferenceCellType,
 ) -> ParallelGridImpl<'_, C, SingleElementGrid<T, CiarletElement<T, IdentityMap, T>>> {
-    let mut b = SingleElementGridBuilder::new(3, (ReferenceCellType::Triangle, 1));
+    let mut b = SingleElementGridBuilder::new(3, (cell_type, 1));
     if comm.rank() == 0 {
-        regular_sphere_add_points_and_cells(&mut b, refinement_level);
+        match cell_type {
+            ReferenceCellType::Triangle => regular_sphere_triangle_add_points_and_cells(&mut b, refinement_level),
+            _ => {
+                panic!("Unsupported cell type: {cell_type:?}");
+            }
+        }
         b.create_parallel_grid_root(comm, partitioner)
     } else {
         b.create_parallel_grid(comm, 0)
@@ -128,68 +150,86 @@ mod test {
     use crate::traits::{GeometryMap, Grid};
     use approx::assert_relative_eq;
     use rlst::rlst_dynamic_array;
+    use paste::paste;
 
-    #[test]
-    fn test_regular_sphere_0() {
-        let _g = regular_sphere::<f64>(0);
-    }
-
-    #[test]
-    fn test_regular_spheres() {
-        let _g1 = regular_sphere::<f64>(1);
-        let _g2 = regular_sphere::<f64>(2);
-        let _g3 = regular_sphere::<f64>(3);
-    }
-
-    #[test]
-    fn test_normal_is_outward() {
-        for i in 0..3 {
-            let g = regular_sphere::<f64>(i);
-            let mut points = rlst_dynamic_array!(f64, [2, 1]);
-            points[[0, 0]] = 1.0 / 3.0;
-            points[[1, 0]] = 1.0 / 3.0;
-            let map = g.geometry_map(ReferenceCellType::Triangle, 1, &points);
-            let mut mapped_pt = rlst_dynamic_array!(f64, [3, 1]);
-            let mut j = rlst_dynamic_array!(f64, [3, 2, 1]);
-            let mut jinv = rlst_dynamic_array!(f64, [2, 3, 1]);
-            let mut jdet = vec![0.0];
-            let mut normal = rlst_dynamic_array!(f64, [3, 1]);
-            for i in 0..g.entity_count(ReferenceCellType::Triangle) {
-                map.physical_points(i, &mut mapped_pt);
-                map.jacobians_inverses_dets_normals(i, &mut j, &mut jinv, &mut jdet, &mut normal);
-                let dot = mapped_pt
-                    .iter_value()
-                    .zip(normal.iter_value())
-                    .map(|(i, j)| i * j)
-                    .sum::<f64>();
-                assert!(dot > 0.0);
+    macro_rules! test_regular_sphere {
+        ($cell:ident, $order:expr) => {
+            paste! {
+                #[test]
+                fn [<test_regular_sphere_ $cell:lower _ $order>]() {
+                    let _g = regular_sphere::<f64>([<$order>], ReferenceCellType::[<$cell>]);
+                }
             }
-        }
+        };
     }
 
-    #[test]
-    fn test_normal_is_unit() {
-        for i in 0..3 {
-            let g = regular_sphere::<f64>(i);
-            let mut points = rlst_dynamic_array!(f64, [2, 1]);
-            points[[0, 0]] = 1.0 / 3.0;
-            points[[1, 0]] = 1.0 / 3.0;
-            let map = g.geometry_map(ReferenceCellType::Triangle, 1, &points);
-            let mut mapped_pt = rlst_dynamic_array!(f64, [3, 1]);
-            let mut j = rlst_dynamic_array!(f64, [3, 2, 1]);
-            let mut jinv = rlst_dynamic_array!(f64, [2, 3, 1]);
-            let mut jdet = vec![0.0];
-            let mut normal = rlst_dynamic_array!(f64, [3, 1]);
-            for i in 0..g.entity_count(ReferenceCellType::Triangle) {
-                map.physical_points(i, &mut mapped_pt);
-                map.jacobians_inverses_dets_normals(i, &mut j, &mut jinv, &mut jdet, &mut normal);
-                let dot = normal
-                    .iter_value()
-                    .zip(normal.iter_value())
-                    .map(|(i, j)| i * j)
-                    .sum::<f64>();
-                assert_relative_eq!(dot, 1.0, epsilon = 1e-10);
+    test_regular_sphere!(Triangle, 0);
+    test_regular_sphere!(Triangle, 1);
+    test_regular_sphere!(Triangle, 2);
+    test_regular_sphere!(Triangle, 3);
+    test_regular_sphere!(Quadrilateral, 0);
+    test_regular_sphere!(Quadrilateral, 1);
+    test_regular_sphere!(Quadrilateral, 2);
+    test_regular_sphere!(Quadrilateral, 3);
+
+    macro_rules! test_normals {
+        ($cell:ident, $order:expr) => {
+            paste! {
+                #[test]
+                fn [<test_normal_is_outward_ $cell:lower _ $order>]() {
+                    let g = regular_sphere::<f64>([<$order>], ReferenceCellType::[<$cell>]);
+                    let mut points = rlst_dynamic_array!(f64, [2, 1]);
+                    points[[0, 0]] = 1.0 / 3.0;
+                    points[[1, 0]] = 1.0 / 3.0;
+                    let map = g.geometry_map(ReferenceCellType::[<$cell>], 1, &points);
+                    let mut mapped_pt = rlst_dynamic_array!(f64, [3, 1]);
+                    let mut j = rlst_dynamic_array!(f64, [3, 2, 1]);
+                    let mut jinv = rlst_dynamic_array!(f64, [2, 3, 1]);
+                    let mut jdet = vec![0.0];
+                    let mut normal = rlst_dynamic_array!(f64, [3, 1]);
+                    for i in 0..g.entity_count(ReferenceCellType::[<$cell>]) {
+                        map.physical_points(i, &mut mapped_pt);
+                        map.jacobians_inverses_dets_normals(i, &mut j, &mut jinv, &mut jdet, &mut normal);
+                        let dot = mapped_pt
+                            .iter_value()
+                            .zip(normal.iter_value())
+                            .map(|(i, j)| i * j)
+                            .sum::<f64>();
+                        assert!(dot > 0.0);
+                    }
+                }
+
+                #[test]
+                fn [<test_normal_is_unit_ $cell:lower _ $order>]() {
+                    let g = regular_sphere::<f64>([<$order>], ReferenceCellType::[<$cell>]);
+                    let mut points = rlst_dynamic_array!(f64, [2, 1]);
+                    points[[0, 0]] = 1.0 / 3.0;
+                    points[[1, 0]] = 1.0 / 3.0;
+                    let map = g.geometry_map(ReferenceCellType::[<$cell>], 1, &points);
+                    let mut mapped_pt = rlst_dynamic_array!(f64, [3, 1]);
+                    let mut j = rlst_dynamic_array!(f64, [3, 2, 1]);
+                    let mut jinv = rlst_dynamic_array!(f64, [2, 3, 1]);
+                    let mut jdet = vec![0.0];
+                    let mut normal = rlst_dynamic_array!(f64, [3, 1]);
+                    for i in 0..g.entity_count(ReferenceCellType::[<$cell>]) {
+                        map.physical_points(i, &mut mapped_pt);
+                        map.jacobians_inverses_dets_normals(i, &mut j, &mut jinv, &mut jdet, &mut normal);
+                        let dot = normal
+                            .iter_value()
+                            .zip(normal.iter_value())
+                            .map(|(i, j)| i * j)
+                            .sum::<f64>();
+                        assert_relative_eq!(dot, 1.0, epsilon = 1e-10);
+                    }
+                }
             }
-        }
+        };
     }
+
+    test_normals!(Triangle, 0);
+    test_normals!(Triangle, 1);
+    test_normals!(Triangle, 2);
+    test_normals!(Quadrilateral, 0);
+    test_normals!(Quadrilateral, 1);
+    test_normals!(Quadrilateral, 2);
 }
