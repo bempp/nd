@@ -17,15 +17,12 @@ fn regular_sphere_triangle_add_points_and_cells<T: Scalar>(
     b: &mut SingleElementGridBuilder<T>,
     refinement_level: u32,
 ) {
-    let zero = T::from(0.0).unwrap();
-    let one = T::from(1.0).unwrap();
-    let half = T::from(0.5).unwrap();
-    b.add_point(0, &[zero, zero, one]);
-    b.add_point(1, &[one, zero, zero]);
-    b.add_point(2, &[zero, one, zero]);
-    b.add_point(3, &[-one, zero, zero]);
-    b.add_point(4, &[zero, -one, zero]);
-    b.add_point(5, &[zero, zero, -one]);
+    b.add_point(0, &[T::zero(), T::zero(), T::one()]);
+    b.add_point(1, &[T::one(), T::zero(), T::zero()]);
+    b.add_point(2, &[T::zero(), T::one(), T::zero()]);
+    b.add_point(3, &[-T::one(), T::zero(), T::zero()]);
+    b.add_point(4, &[T::zero(), -T::one(), T::zero()]);
+    b.add_point(5, &[T::zero(), T::zero(), -T::one()]);
     let mut point_n = 6;
 
     let mut cells = vec![
@@ -38,11 +35,15 @@ fn regular_sphere_triangle_add_points_and_cells<T: Scalar>(
         [5, 4, 3],
         [5, 1, 4],
     ];
-    let mut v = [[zero, zero, zero], [zero, zero, zero], [zero, zero, zero]];
+    let mut v = [
+        [T::zero(), T::zero(), T::zero()],
+        [T::zero(), T::zero(), T::zero()],
+        [T::zero(), T::zero(), T::zero()],
+    ];
 
-    for level in 0..refinement_level {
+    for _level in 0..refinement_level {
         let mut edge_points = HashMap::new();
-        let mut new_cells = Vec::with_capacity(8 * usize::pow(6, level));
+        let mut new_cells = Vec::with_capacity(4 * cells.len());
         for c in &cells {
             for (i, v_i) in v.iter_mut().enumerate() {
                 for (j, v_ij) in v_i.iter_mut().enumerate() {
@@ -61,9 +62,9 @@ fn regular_sphere_triangle_add_points_and_cells<T: Scalar>(
                         let v_i = v[*i];
                         let v_j = v[*j];
                         let mut new_pt = [
-                            half * (v_i[0] + v_j[0]),
-                            half * (v_i[1] + v_j[1]),
-                            half * (v_i[2] + v_j[2]),
+                            T::from(0.5).unwrap() * (v_i[0] + v_j[0]),
+                            T::from(0.5).unwrap() * (v_i[1] + v_j[1]),
+                            T::from(0.5).unwrap() * (v_i[2] + v_j[2]),
                         ];
                         let size = (new_pt.iter().map(|x| x.powi(2)).sum::<T>()).sqrt();
                         for i in new_pt.iter_mut() {
@@ -88,6 +89,97 @@ fn regular_sphere_triangle_add_points_and_cells<T: Scalar>(
     }
 }
 
+/// Add points and cells for regular sphere to builder
+fn regular_sphere_quadrilateral_add_points_and_cells<T: Scalar>(
+    b: &mut SingleElementGridBuilder<T>,
+    refinement_level: u32,
+) {
+    let k = T::from(1.0 / 3.0).unwrap().sqrt();
+    b.add_point(0, &[-k, -k, -k]);
+    b.add_point(1, &[-k, -k, k]);
+    b.add_point(2, &[-k, k, -k]);
+    b.add_point(3, &[-k, k, k]);
+    b.add_point(4, &[k, -k, -k]);
+    b.add_point(5, &[k, -k, k]);
+    b.add_point(6, &[k, k, -k]);
+    b.add_point(7, &[k, k, k]);
+
+    let mut point_n = 8;
+
+    let mut cells = vec![
+        [0, 1, 2, 3],
+        [4, 6, 5, 7],
+        [0, 4, 1, 5],
+        [2, 3, 6, 7],
+        [0, 2, 4, 6],
+        [1, 5, 2, 7],
+    ];
+    let mut v = [
+        [T::zero(), T::zero(), T::zero()],
+        [T::zero(), T::zero(), T::zero()],
+        [T::zero(), T::zero(), T::zero()],
+        [T::zero(), T::zero(), T::zero()],
+    ];
+
+    for _level in 0..refinement_level {
+        let mut edge_points = HashMap::new();
+        let mut new_cells = Vec::with_capacity(4 * cells.len());
+        for c in &cells {
+            for (i, v_i) in v.iter_mut().enumerate() {
+                for (j, v_ij) in v_i.iter_mut().enumerate() {
+                    *v_ij = b.points[3 * c[i] + j];
+                }
+            }
+            let edges = [[0, 1], [0, 2], [1, 3], [2, 3]]
+                .iter()
+                .map(|[i, j]| {
+                    let mut pt_i = c[*i];
+                    let mut pt_j = c[*j];
+                    if pt_i > pt_j {
+                        std::mem::swap(&mut pt_i, &mut pt_j);
+                    }
+                    if let Vacant(e) = edge_points.entry((pt_i, pt_j)) {
+                        let v_i = v[*i];
+                        let v_j = v[*j];
+                        let mut new_pt = [
+                            T::from(0.5).unwrap() * (v_i[0] + v_j[0]),
+                            T::from(0.5).unwrap() * (v_i[1] + v_j[1]),
+                            T::from(0.5).unwrap() * (v_i[2] + v_j[2]),
+                        ];
+                        let size = (new_pt.iter().map(|x| x.powi(2)).sum::<T>()).sqrt();
+                        for i in new_pt.iter_mut() {
+                            *i /= size;
+                        }
+                        b.add_point(point_n, &new_pt);
+                        e.insert(point_n);
+                        point_n += 1;
+                    }
+                    edge_points[&(pt_i, pt_j)]
+                })
+                .collect::<Vec<_>>();
+
+            new_cells.push([c[0], edges[0], edges[1], point_n]);
+            new_cells.push([edges[0], c[1], point_n, edges[2]]);
+            new_cells.push([edges[1], point_n, c[2], edges[3]]);
+            new_cells.push([point_n, edges[2], edges[3], c[3]]);
+            let mut new_pt = [
+                T::from(0.25).unwrap() * v.iter().map(|i| i[0]).sum(),
+                T::from(0.25).unwrap() * v.iter().map(|i| i[1]).sum(),
+                T::from(0.25).unwrap() * v.iter().map(|i| i[2]).sum(),
+            ];
+            let size = (new_pt.iter().map(|x| x.powi(2)).sum::<T>()).sqrt();
+            for i in new_pt.iter_mut() {
+                *i /= size;
+            }
+            b.add_point(point_n, &new_pt);
+            point_n += 1;
+        }
+        cells = new_cells;
+    }
+    for (i, v) in cells.iter().enumerate() {
+        b.add_cell(i, v);
+    }
+}
 /// Create a surface grid of a regular sphere
 ///
 /// A regular sphere is created by starting with a regular octahedron. The shape is then refined `refinement_level` times.
@@ -101,12 +193,14 @@ pub fn regular_sphere<T: Scalar>(
         3,
         match cell_type {
             ReferenceCellType::Triangle => 2 + usize::pow(4, refinement_level + 1),
+            ReferenceCellType::Quadrilateral => 2 + 6 * usize::pow(4, refinement_level),
             _ => {
                 panic!("Unsupported cell type: {cell_type:?}");
             }
         },
         match cell_type {
-            ReferenceCellType::Triangle => 8 * usize::pow(4, refinement_level),
+            ReferenceCellType::Triangle => 2 * usize::pow(4, refinement_level + 1),
+            ReferenceCellType::Quadrilateral => 6 * usize::pow(4, refinement_level),
             _ => {
                 panic!("Unsupported cell type: {cell_type:?}");
             }
@@ -114,7 +208,12 @@ pub fn regular_sphere<T: Scalar>(
         (cell_type, 1),
     );
     match cell_type {
-        ReferenceCellType::Triangle => regular_sphere_triangle_add_points_and_cells(&mut b, refinement_level),
+        ReferenceCellType::Triangle => {
+            regular_sphere_triangle_add_points_and_cells(&mut b, refinement_level)
+        }
+        ReferenceCellType::Quadrilateral => {
+            regular_sphere_quadrilateral_add_points_and_cells(&mut b, refinement_level)
+        }
         _ => {
             panic!("Unsupported cell type: {cell_type:?}");
         }
@@ -133,7 +232,12 @@ pub fn regular_sphere_distributed<T: Scalar + Equivalence, C: Communicator>(
     let mut b = SingleElementGridBuilder::new(3, (cell_type, 1));
     if comm.rank() == 0 {
         match cell_type {
-            ReferenceCellType::Triangle => regular_sphere_triangle_add_points_and_cells(&mut b, refinement_level),
+            ReferenceCellType::Triangle => {
+                regular_sphere_triangle_add_points_and_cells(&mut b, refinement_level)
+            }
+            ReferenceCellType::Quadrilateral => {
+                regular_sphere_quadrilateral_add_points_and_cells(&mut b, refinement_level)
+            }
             _ => {
                 panic!("Unsupported cell type: {cell_type:?}");
             }
@@ -149,8 +253,8 @@ mod test {
     use super::*;
     use crate::traits::{GeometryMap, Grid};
     use approx::assert_relative_eq;
-    use rlst::rlst_dynamic_array;
     use paste::paste;
+    use rlst::rlst_dynamic_array;
 
     macro_rules! test_regular_sphere {
         ($cell:ident, $order:expr) => {
@@ -195,6 +299,7 @@ mod test {
                             .zip(normal.iter_value())
                             .map(|(i, j)| i * j)
                             .sum::<f64>();
+                        println!("{i}");
                         assert!(dot > 0.0);
                     }
                 }
