@@ -127,9 +127,7 @@ fn gmsh_node_count(gmsh_cell_type: usize) -> usize {
 fn parse_coordinates<T: FromStr>(values: &[&str]) -> Vec<T> {
     values
         .iter()
-        .map(|c| {
-            T::from_str(c).unwrap_or_else(|_| panic!("Could not parse coordinate: {c}"))
-        })
+        .map(|c| T::from_str(c).unwrap_or_else(|_| panic!("Could not parse coordinate: {c}")))
         .collect()
 }
 
@@ -485,7 +483,8 @@ where
                             .map(|i| parse::<usize>(i, GMSH_INT_SIZE, is_le))
                             .collect::<Vec<_>>();
 
-                        let (cell, cell_type, degree) = permute_gmsh_to_ndgrid(elm_type, &node_tags);
+                        let (cell, cell_type, degree) =
+                            permute_gmsh_to_ndgrid(elm_type, &node_tags);
                         self.add_cell_from_nodes_and_type(tag, &cell, cell_type, degree);
                     }
                     line.clear();
@@ -673,7 +672,11 @@ where
                             self.add_point(t, &c[..self.gdim()]);
 
                             if parametric == 1 && entity_dim >= 1 && c.len() > 3 {
-                                self.add_point_parametric_coords(t, entity_dim, &c[3..3 + param_count]);
+                                self.add_point_parametric_coords(
+                                    t,
+                                    entity_dim,
+                                    &c[3..3 + param_count],
+                                );
                             }
                         }
                     }
@@ -724,7 +727,8 @@ where
                                 .map(|i| parse::<usize>(i, data_size, is_le))
                                 .collect::<Vec<_>>();
 
-                            let (cell, cell_type, degree) = permute_gmsh_to_ndgrid(element_type, &node_tags);
+                            let (cell, cell_type, degree) =
+                                permute_gmsh_to_ndgrid(element_type, &node_tags);
                             self.add_cell_from_nodes_and_type(tag, &cell, cell_type, degree);
                         }
                     }

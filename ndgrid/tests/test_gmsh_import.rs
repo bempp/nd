@@ -103,4 +103,3 @@ fn test_gmsh_import_binary_v4_parametric() {
 
     let _g = b.create_grid();
 }
-
