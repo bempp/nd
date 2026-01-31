@@ -299,7 +299,6 @@ mod test {
                             .zip(normal.iter_value())
                             .map(|(i, j)| i * j)
                             .sum::<f64>();
-                        println!("{i}");
                         assert!(dot > 0.0);
                     }
                 }
