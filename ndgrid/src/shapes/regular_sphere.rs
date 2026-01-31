@@ -112,7 +112,7 @@ fn regular_sphere_quadrilateral_add_points_and_cells<T: Scalar>(
         [0, 4, 1, 5],
         [2, 3, 6, 7],
         [0, 2, 4, 6],
-        [1, 5, 2, 7],
+        [1, 5, 3, 7],
     ];
     let mut v = [
         [T::zero(), T::zero(), T::zero()],

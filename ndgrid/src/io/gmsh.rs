@@ -778,6 +778,9 @@ mod test {
     fn test_regular_sphere_gmsh_io() {
         let g = regular_sphere::<f64>(2, ReferenceCellType::Triangle);
         g.export_as_gmsh("_test_io_sphere.msh");
+
+        let g = regular_sphere::<f64>(2, ReferenceCellType::Quadrilateral);
+        g.export_as_gmsh("_test_io_sphere_quads.msh");
     }
 
     #[test]
