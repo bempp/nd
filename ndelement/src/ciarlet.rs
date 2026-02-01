@@ -65,7 +65,7 @@ fn compute_derivative_count(nderivs: usize, cell_type: ReferenceCellType) -> usi
 }
 
 /// A Ciarlet element
-pub struct CiarletElement<T: RlstScalar, M: Map, TGeo: RlstScalar = <T as RlstScalar>::Real> {
+pub struct CiarletElement<T: RlstScalar, M: Map, TGeo: RlstScalar> {
     family_name: String,
     cell_type: ReferenceCellType,
     degree: usize,
@@ -453,7 +453,7 @@ where
             let wts = &new_wts[edim][entity_id];
             let edofs = &entity_dofs[edim][entity_id];
             let endofs = edofs.len();
-            let mut j = rlst_dynamic_array![TGeo, [npts, tdim, tdim]];
+            let mut j = rlst_dynamic_array![TGeo, [tdim, tdim, npts]];
             for t_in in 0..tdim {
                 for (t_out, (a, b)) in izip!(
                     f(&vec![TGeo::zero(); tdim]),
@@ -466,7 +466,7 @@ where
                 .enumerate()
                 {
                     for p in 0..npts {
-                        *j.get_mut([p, t_out, t_in]).unwrap() = b - a;
+                        *j.get_mut([t_out, t_in, p]).unwrap() = b - a;
                     }
                 }
             }
@@ -478,7 +478,7 @@ where
                 };
                 npts
             ];
-            let mut jinv = rlst_dynamic_array![TGeo, [npts, tdim, tdim]];
+            let mut jinv = rlst_dynamic_array![TGeo, [tdim, tdim, npts]];
             for t_in in 0..tdim {
                 for (t_out, (a, b)) in izip!(
                     finv(&vec![TGeo::zero(); tdim], f),
@@ -494,7 +494,7 @@ where
                 .enumerate()
                 {
                     for p in 0..npts {
-                        *jinv.get_mut([p, t_out, t_in]).unwrap() = TGeo::from(b - a).unwrap();
+                        *jinv.get_mut([t_out, t_in, p]).unwrap() = TGeo::from(b - a).unwrap();
                     }
                 }
             }
