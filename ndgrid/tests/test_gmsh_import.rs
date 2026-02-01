@@ -60,7 +60,7 @@ fn test_gmsh_import_ascii_v4_parametric() {
     for i in 0..b.point_count() {
         if let Some((entity_dim, coords)) = b.point_parametric_coords(i) {
             assert!(
-                entity_dim >= 1 && entity_dim <= 3,
+                (1..=3).contains(&entity_dim),
                 "entity_dim should be 1, 2, or 3"
             );
             assert_eq!(
@@ -90,7 +90,7 @@ fn test_gmsh_import_binary_v4_parametric() {
     for i in 0..b.point_count() {
         if let Some((entity_dim, coords)) = b.point_parametric_coords(i) {
             assert!(
-                entity_dim >= 1 && entity_dim <= 3,
+                (1..=3).contains(&entity_dim),
                 "entity_dim should be 1, 2, or 3"
             );
             assert_eq!(
