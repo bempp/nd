@@ -37,6 +37,7 @@ pub struct MixedGridBuilder<T: Scalar> {
     cell_ids_to_indices: HashMap<usize, usize>,
     point_indices: HashSet<usize>,
     cell_indices: HashSet<usize>,
+    parametric_coords: HashMap<usize, (usize, Vec<T>)>,
 }
 
 impl<T: Scalar> MixedGridBuilder<T> {
@@ -59,6 +60,7 @@ impl<T: Scalar> MixedGridBuilder<T> {
             cell_ids_to_indices: HashMap::new(),
             point_indices: HashSet::new(),
             cell_indices: HashSet::new(),
+            parametric_coords: HashMap::new(),
         }
     }
 }
@@ -206,6 +208,19 @@ impl<T: Scalar> Builder for MixedGridBuilder<T> {
     }
     fn npts(&self, cell_type: Self::EntityDescriptor, degree: usize) -> usize {
         self.points_per_cell[self.element_indices[&(cell_type, degree)]]
+    }
+
+    fn add_point_parametric_coords(&mut self, id: usize, entity_dim: usize, coords: &[T]) {
+        if let Some(&index) = self.point_ids_to_indices.get(&id) {
+            self.parametric_coords
+                .insert(index, (entity_dim, coords.to_vec()));
+        }
+    }
+
+    fn point_parametric_coords(&self, index: usize) -> Option<(usize, &[T])> {
+        self.parametric_coords
+            .get(&index)
+            .map(|(dim, coords)| (*dim, coords.as_slice()))
     }
 }
 
