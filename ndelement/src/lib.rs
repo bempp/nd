@@ -51,3 +51,5 @@ pub mod traits;
 pub mod types;
 
 use openblas_src as _;
+use blis_src as _;
+use netlib_src as _;
