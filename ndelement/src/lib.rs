@@ -50,6 +50,6 @@ pub mod reference_cell;
 pub mod traits;
 pub mod types;
 
-use openblas_src as _;
 use blis_src as _;
 use netlib_src as _;
+use openblas_src as _;
