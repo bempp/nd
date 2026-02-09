@@ -49,3 +49,5 @@ pub mod quadrature;
 pub mod reference_cell;
 pub mod traits;
 pub mod types;
+
+use openblas_src as _;
