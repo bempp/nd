@@ -30,7 +30,7 @@ fn create_single_element_grid_data(b: &mut SingleElementGridBuilder<f64>, n: usi
 fn example_single_element_grid<C: Communicator>(
     comm: &C,
     n: usize,
-) -> ParallelGridImpl<'_, C, SingleElementGrid<f64, CiarletElement<f64, IdentityMap>>> {
+) -> ParallelGridImpl<'_, C, SingleElementGrid<f64, CiarletElement<f64, IdentityMap, f64>>> {
     let rank = comm.rank();
 
     let mut b = SingleElementGridBuilder::<f64>::new(3, (ReferenceCellType::Quadrilateral, 1));
@@ -60,10 +60,11 @@ fn test_parallel_import<C: Communicator>(comm: &C) {
     let size = comm.size();
 
     let filename = format!("_examples_parallel_io_{size}ranks.ron");
-    let grid =
-        ParallelGridImpl::<'_, C, SingleElementGrid<f64, CiarletElement<f64, IdentityMap>>>::import_from_ron(
-            comm, &filename,
-        );
+    let grid = ParallelGridImpl::<
+        '_,
+        C,
+        SingleElementGrid<f64, CiarletElement<f64, IdentityMap, f64>>,
+    >::import_from_ron(comm, &filename);
 
     let n = 10;
     let grid2 = example_single_element_grid(comm, n);

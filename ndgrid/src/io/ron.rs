@@ -40,11 +40,11 @@ mod test {
 
     #[test]
     fn test_ron_export_and_import() {
-        let g = regular_sphere::<f64>(1);
+        let g = regular_sphere::<f64>(1, ReferenceCellType::Triangle);
         let n = g.entity_count(ReferenceCellType::Interval);
         g.export_as_ron("_test_export.ron");
 
-        let g2 = SingleElementGrid::<f64, CiarletElement<f64, IdentityMap>>::import_from_ron(
+        let g2 = SingleElementGrid::<f64, CiarletElement<f64, IdentityMap, f64>>::import_from_ron(
             "_test_export.ron",
         );
 
@@ -70,7 +70,7 @@ mod test {
         let n = g.entity_count(ReferenceCellType::Interval);
         g.export_as_ron("_test_export_mixed.ron");
 
-        let g2 = MixedGrid::<f64, CiarletElement<f64, IdentityMap>>::import_from_ron(
+        let g2 = MixedGrid::<f64, CiarletElement<f64, IdentityMap, f64>>::import_from_ron(
             "_test_export_mixed.ron",
         );
 

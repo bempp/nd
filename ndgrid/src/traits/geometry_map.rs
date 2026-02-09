@@ -1,6 +1,7 @@
 //! Map from reference to physical space.
 
 use crate::types::Scalar;
+use rlst::{Array, MutableArrayImpl};
 
 /// A geometry map allows the computation of maps from reference to physical space and their derivatives.
 ///
@@ -28,24 +29,51 @@ pub trait GeometryMap {
     /// Write the physical points for the entity with index `entity_index` into `points`
     ///
     /// `points` should have shape [geometry_dimension, npts] and use column-major ordering.
-    fn physical_points(&self, entity_index: usize, points: &mut [Self::T]);
+    fn physical_points<Array2Impl: MutableArrayImpl<Self::T, 2>>(
+        &self,
+        entity_index: usize,
+        points: &mut Array<Array2Impl, 2>,
+    );
 
     /// Write the jacobians at the physical points for the entity with index `entity_index` into `jacobians`
     ///
     /// `jacobians` should have shape [geometry_dimension, entity_topology_dimension, npts] and use column-major ordering
-    fn jacobians(&self, entity_index: usize, jacobians: &mut [Self::T]);
-
-    /// Write the jacobians, their determinants, and the normals at the physical points for the entity with
-    /// index `entity_index` into `jacobians`, `jdets` and `normals`.
-    ///
-    /// `jacobians` should have shape [geometry_dimension, entity_topology_dimension, npts] and use column-major ordering;
-    /// `jdets` should have shape \[npts\];
-    /// `normals` should have shape [geometry_dimension, npts] and use column-major ordering
-    fn jacobians_dets_normals(
+    fn jacobians<Array3MutImpl: MutableArrayImpl<Self::T, 3>>(
         &self,
         entity_index: usize,
-        jacobians: &mut [Self::T],
+        jacobians: &mut Array<Array3MutImpl, 3>,
+    );
+
+    /// Write the jacobians, their inverses and their determinants for the entity with
+    /// index `entity_index` into `jacobians`, `inverse_jacobians` and `jdets`.
+    ///
+    /// `jacobians` should have shape [geometry_dimension, entity_topology_dimension, npts] and use column-major ordering;
+    /// `inverse_jacobians` should have shape [entity_topology_dimension, geometry_dimension, npts] and use column-major ordering;
+    /// `jdets` should have shape \[npts\];
+    fn jacobians_inverses_dets<Array3MutImpl: MutableArrayImpl<Self::T, 3>>(
+        &self,
+        entity_index: usize,
+        jacobians: &mut Array<Array3MutImpl, 3>,
+        inverse_jacobians: &mut Array<Array3MutImpl, 3>,
         jdets: &mut [Self::T],
-        normals: &mut [Self::T],
+    );
+
+    /// Write the jacobians, their inverses, their determinants, and the normals at the physical points for the entity with
+    /// index `entity_index` into `jacobians`, `inverse_jacobians`, `jdets` and `normals`.
+    ///
+    /// `jacobians` should have shape [geometry_dimension, entity_topology_dimension, npts] and use column-major ordering;
+    /// `inverse_jacobians` should have shape [entity_topology_dimension, geometry_dimension, npts] and use column-major ordering;
+    /// `jdets` should have shape \[npts\];
+    /// `normals` should have shape [geometry_dimension, npts] and use column-major ordering
+    fn jacobians_inverses_dets_normals<
+        Array2Impl: MutableArrayImpl<Self::T, 2>,
+        Array3MutImpl: MutableArrayImpl<Self::T, 3>,
+    >(
+        &self,
+        entity_index: usize,
+        jacobians: &mut Array<Array3MutImpl, 3>,
+        inverse_jacobians: &mut Array<Array3MutImpl, 3>,
+        jdets: &mut [Self::T],
+        normals: &mut Array<Array2Impl, 2>,
     );
 }

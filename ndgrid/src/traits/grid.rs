@@ -7,6 +7,7 @@ use crate::types::{Ownership, Scalar};
 use mpi::traits::Communicator;
 #[cfg(feature = "mpi")]
 use rlst::distributed_tools::IndexLayout;
+use rlst::{Array, ValueArrayImpl};
 use std::fmt::Debug;
 use std::hash::Hash;
 use std::iter::Iterator;
@@ -96,12 +97,12 @@ pub trait Grid {
 
     /// Geometry map from reference entity to physical entities at the given points
     ///
-    /// `points` should have space [entity_topology_dim, npts] and use column-major ordering
-    fn geometry_map(
+    /// `points` should have shape [entity_topology_dim, npts] and use column-major ordering
+    fn geometry_map<Array2Impl: ValueArrayImpl<Self::T, 2>>(
         &self,
         entity_type: Self::EntityDescriptor,
         geometry_degree: usize,
-        points: &[Self::T],
+        points: &Array<Array2Impl, 2>,
     ) -> Self::GeometryMap<'_>;
 }
 

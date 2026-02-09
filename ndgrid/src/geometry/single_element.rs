@@ -24,13 +24,13 @@ mod test {
     use rlst::rlst_dynamic_array;
 
     fn example_geometry_linear_interval1d()
-    -> SingleElementGeometry<f64, CiarletElement<f64, IdentityMap>> {
+    -> SingleElementGeometry<f64, CiarletElement<f64, IdentityMap, f64>> {
         let mut points = rlst_dynamic_array!(f64, [1, 3]);
         *points.get_mut([0, 0]).unwrap() = 0.0;
         *points.get_mut([0, 1]).unwrap() = 1.0;
         *points.get_mut([0, 2]).unwrap() = 2.0;
         let family = LagrangeElementFamily::<f64>::new(1, Continuity::Standard);
-        SingleElementGeometry::<f64, CiarletElement<f64, IdentityMap>>::new(
+        SingleElementGeometry::<f64, CiarletElement<f64, IdentityMap, f64>>::new(
             ReferenceCellType::Interval,
             points,
             &[0, 1, 1, 2],
@@ -39,7 +39,7 @@ mod test {
     }
 
     fn example_geometry_linear_interval2d()
-    -> SingleElementGeometry<f64, CiarletElement<f64, IdentityMap>> {
+    -> SingleElementGeometry<f64, CiarletElement<f64, IdentityMap, f64>> {
         let mut points = rlst_dynamic_array!(f64, [2, 3]);
         *points.get_mut([0, 0]).unwrap() = 0.0;
         *points.get_mut([1, 0]).unwrap() = 0.0;
@@ -48,7 +48,7 @@ mod test {
         *points.get_mut([0, 2]).unwrap() = 2.0;
         *points.get_mut([1, 2]).unwrap() = 0.0;
         let family = LagrangeElementFamily::<f64>::new(1, Continuity::Standard);
-        SingleElementGeometry::<f64, CiarletElement<f64, IdentityMap>>::new(
+        SingleElementGeometry::<f64, CiarletElement<f64, IdentityMap, f64>>::new(
             ReferenceCellType::Interval,
             points,
             &[0, 1, 1, 2],
@@ -57,7 +57,7 @@ mod test {
     }
 
     fn example_geometry_linear_interval3d()
-    -> SingleElementGeometry<f64, CiarletElement<f64, IdentityMap>> {
+    -> SingleElementGeometry<f64, CiarletElement<f64, IdentityMap, f64>> {
         let mut points = rlst_dynamic_array!(f64, [3, 3]);
         *points.get_mut([0, 0]).unwrap() = 0.0;
         *points.get_mut([1, 0]).unwrap() = 0.0;
@@ -69,7 +69,7 @@ mod test {
         *points.get_mut([1, 2]).unwrap() = 0.0;
         *points.get_mut([2, 2]).unwrap() = 0.0;
         let family = LagrangeElementFamily::<f64>::new(1, Continuity::Standard);
-        SingleElementGeometry::<f64, CiarletElement<f64, IdentityMap>>::new(
+        SingleElementGeometry::<f64, CiarletElement<f64, IdentityMap, f64>>::new(
             ReferenceCellType::Interval,
             points,
             &[0, 1, 1, 2],
@@ -78,7 +78,7 @@ mod test {
     }
 
     fn example_geometry_quadratic_interval2d()
-    -> SingleElementGeometry<f64, CiarletElement<f64, IdentityMap>> {
+    -> SingleElementGeometry<f64, CiarletElement<f64, IdentityMap, f64>> {
         let mut points = rlst_dynamic_array!(f64, [2, 5]);
         *points.get_mut([0, 0]).unwrap() = 0.0;
         *points.get_mut([1, 0]).unwrap() = 0.0;
@@ -91,7 +91,7 @@ mod test {
         *points.get_mut([0, 4]).unwrap() = 1.5;
         *points.get_mut([1, 4]).unwrap() = 0.5;
         let family = LagrangeElementFamily::<f64>::new(2, Continuity::Standard);
-        SingleElementGeometry::<f64, CiarletElement<f64, IdentityMap>>::new(
+        SingleElementGeometry::<f64, CiarletElement<f64, IdentityMap, f64>>::new(
             ReferenceCellType::Interval,
             points,
             &[0, 1, 2, 1, 3, 4],
@@ -100,7 +100,7 @@ mod test {
     }
 
     fn example_geometry_flat_triangle2d()
-    -> SingleElementGeometry<f64, CiarletElement<f64, IdentityMap>> {
+    -> SingleElementGeometry<f64, CiarletElement<f64, IdentityMap, f64>> {
         let mut points = rlst_dynamic_array!(f64, [2, 4]);
         *points.get_mut([0, 0]).unwrap() = 0.0;
         *points.get_mut([1, 0]).unwrap() = 0.0;
@@ -111,7 +111,7 @@ mod test {
         *points.get_mut([0, 3]).unwrap() = 2.0;
         *points.get_mut([1, 3]).unwrap() = 1.0;
         let family = LagrangeElementFamily::<f64>::new(1, Continuity::Standard);
-        SingleElementGeometry::<f64, CiarletElement<f64, IdentityMap>>::new(
+        SingleElementGeometry::<f64, CiarletElement<f64, IdentityMap, f64>>::new(
             ReferenceCellType::Triangle,
             points,
             &[0, 1, 2, 2, 1, 3],
@@ -120,7 +120,7 @@ mod test {
     }
 
     fn example_geometry_flat_triangle3d()
-    -> SingleElementGeometry<f64, CiarletElement<f64, IdentityMap>> {
+    -> SingleElementGeometry<f64, CiarletElement<f64, IdentityMap, f64>> {
         let mut points = rlst_dynamic_array!(f64, [3, 4]);
         *points.get_mut([0, 0]).unwrap() = 0.0;
         *points.get_mut([1, 0]).unwrap() = 0.0;
@@ -135,7 +135,7 @@ mod test {
         *points.get_mut([1, 3]).unwrap() = 1.0;
         *points.get_mut([2, 3]).unwrap() = 0.0;
         let family = LagrangeElementFamily::<f64>::new(1, Continuity::Standard);
-        SingleElementGeometry::<f64, CiarletElement<f64, IdentityMap>>::new(
+        SingleElementGeometry::<f64, CiarletElement<f64, IdentityMap, f64>>::new(
             ReferenceCellType::Triangle,
             points,
             &[0, 1, 2, 2, 1, 3],
@@ -144,7 +144,7 @@ mod test {
     }
 
     fn example_geometry_quadratic_triangle2d()
-    -> SingleElementGeometry<f64, CiarletElement<f64, IdentityMap>> {
+    -> SingleElementGeometry<f64, CiarletElement<f64, IdentityMap, f64>> {
         let mut points = rlst_dynamic_array!(f64, [2, 9]);
         *points.get_mut([0, 0]).unwrap() = 0.0;
         *points.get_mut([1, 0]).unwrap() = 0.0;
@@ -165,7 +165,7 @@ mod test {
         *points.get_mut([0, 8]).unwrap() = 0.5;
         *points.get_mut([1, 8]).unwrap() = 1.2;
         let family = LagrangeElementFamily::<f64>::new(2, Continuity::Standard);
-        SingleElementGeometry::<f64, CiarletElement<f64, IdentityMap>>::new(
+        SingleElementGeometry::<f64, CiarletElement<f64, IdentityMap, f64>>::new(
             ReferenceCellType::Triangle,
             points,
             &[0, 1, 2, 3, 4, 5, 2, 0, 6, 7, 8, 3],
@@ -174,7 +174,7 @@ mod test {
     }
 
     fn example_geometry_quadrilateral2d()
-    -> SingleElementGeometry<f64, CiarletElement<f64, IdentityMap>> {
+    -> SingleElementGeometry<f64, CiarletElement<f64, IdentityMap, f64>> {
         let mut points = rlst_dynamic_array!(f64, [2, 6]);
         *points.get_mut([0, 0]).unwrap() = 0.0;
         *points.get_mut([1, 0]).unwrap() = 0.0;
@@ -189,7 +189,7 @@ mod test {
         *points.get_mut([0, 5]).unwrap() = 3.0;
         *points.get_mut([1, 5]).unwrap() = 2.0;
         let family = LagrangeElementFamily::<f64>::new(1, Continuity::Standard);
-        SingleElementGeometry::<f64, CiarletElement<f64, IdentityMap>>::new(
+        SingleElementGeometry::<f64, CiarletElement<f64, IdentityMap, f64>>::new(
             ReferenceCellType::Quadrilateral,
             points,
             &[0, 1, 2, 3, 1, 4, 3, 5],
@@ -225,7 +225,7 @@ mod test {
 
                         for (dim, conn_dim) in conn.iter().enumerate() {
                             for (index, entity_vertices) in conn_dim.iter().enumerate() {
-                                let entity = SingleElementEntityGeometry::<f64, CiarletElement<f64, IdentityMap>>::new(
+                                let entity = SingleElementEntityGeometry::<f64, CiarletElement<f64, IdentityMap, f64>>::new(
                                     &g, cell_i, dim, index,
                                 );
                                 for (v, pt) in izip!(&entity_vertices[0], entity.points()) {

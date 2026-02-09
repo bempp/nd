@@ -7,6 +7,7 @@ use crate::{
 };
 #[cfg(feature = "serde")]
 use itertools::izip;
+use rlst::{Array, ValueArrayImpl};
 #[cfg(feature = "serde")]
 use std::hash::Hash;
 use std::{collections::HashMap, fmt::Debug};
@@ -255,11 +256,11 @@ impl<G: Grid + Sync> Grid for LocalGrid<G> {
         })
     }
 
-    fn geometry_map(
+    fn geometry_map<Array2Impl: ValueArrayImpl<Self::T, 2>>(
         &self,
         entity_type: Self::EntityDescriptor,
         geometry_degree: usize,
-        points: &[Self::T],
+        points: &Array<Array2Impl, 2>,
     ) -> Self::GeometryMap<'_> {
         self.serial_grid
             .geometry_map(entity_type, geometry_degree, points)

@@ -22,7 +22,7 @@ fn main() {
     element.tabulate(&points, 0, &mut basis_values);
     println!(
         "The values of the basis functions at the point (1/3, 1/3) are: {:?}",
-        basis_values.data()
+        basis_values.data().unwrap()
     );
 
     // Set point to [1, 0]
@@ -32,6 +32,6 @@ fn main() {
     element.tabulate(&points, 0, &mut basis_values);
     println!(
         "The values of the basis functions at the point (1, 0) are: {:?}",
-        basis_values.data()
+        basis_values.data().unwrap()
     );
 }

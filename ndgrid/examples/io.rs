@@ -18,7 +18,7 @@ fn main() {
     g.export_as_ron("_unit_cube_boundary.ron");
 
     // A grid can be re-imported from raw RON data
-    let g2 = SingleElementGrid::<f64, CiarletElement<f64, IdentityMap>>::import_from_ron(
+    let g2 = SingleElementGrid::<f64, CiarletElement<f64, IdentityMap, f64>>::import_from_ron(
         "_unit_cube_boundary.ron",
     );
 

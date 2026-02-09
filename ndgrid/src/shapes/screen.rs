@@ -117,6 +117,7 @@ mod test {
     use super::*;
     use crate::traits::{GeometryMap, Grid};
     use approx::assert_relative_eq;
+    use rlst::rlst_dynamic_array;
 
     #[test]
     fn test_screen_triangles() {
@@ -128,17 +129,20 @@ mod test {
     fn test_screen_triangles_normals() {
         for i in 1..5 {
             let g = screen::<f64>(i, ReferenceCellType::Triangle);
-            let points = vec![1.0 / 3.0, 1.0 / 3.0];
+            let mut points = rlst_dynamic_array!(f64, [2, 1]);
+            points[[0, 0]] = 1.0 / 3.0;
+            points[[1, 0]] = 1.0 / 3.0;
             let map = g.geometry_map(ReferenceCellType::Triangle, 1, &points);
-            let mut mapped_pt = vec![0.0; 3];
-            let mut j = vec![0.0; 6];
+            let mut mapped_pt = rlst_dynamic_array!(f64, [3, 1]);
+            let mut j = rlst_dynamic_array!(f64, [3, 2, 1]);
+            let mut jinv = rlst_dynamic_array!(f64, [2, 3, 1]);
             let mut jdet = vec![0.0];
-            let mut normal = vec![0.0; 3];
+            let mut normal = rlst_dynamic_array!(f64, [3, 1]);
             for i in 0..g.entity_count(ReferenceCellType::Triangle) {
                 map.physical_points(i, &mut mapped_pt);
-                map.jacobians_dets_normals(i, &mut j, &mut jdet, &mut normal);
-                assert!(normal[2] > 0.0);
-                assert_relative_eq!(normal[2], 1.0);
+                map.jacobians_inverses_dets_normals(i, &mut j, &mut jinv, &mut jdet, &mut normal);
+                assert!(normal[[2, 0]] > 0.0);
+                assert_relative_eq!(normal[[2, 0]], 1.0);
             }
         }
     }
@@ -154,17 +158,20 @@ mod test {
     fn test_screen_quadrilaterals_normals() {
         for i in 1..5 {
             let g = screen::<f64>(i, ReferenceCellType::Quadrilateral);
-            let points = vec![1.0 / 3.0, 1.0 / 3.0];
+            let mut points = rlst_dynamic_array!(f64, [2, 1]);
+            points[[0, 0]] = 1.0 / 3.0;
+            points[[1, 0]] = 1.0 / 3.0;
             let map = g.geometry_map(ReferenceCellType::Quadrilateral, 1, &points);
-            let mut mapped_pt = vec![0.0; 3];
-            let mut j = vec![0.0; 6];
+            let mut mapped_pt = rlst_dynamic_array!(f64, [3, 1]);
+            let mut j = rlst_dynamic_array!(f64, [3, 2, 1]);
+            let mut jinv = rlst_dynamic_array!(f64, [2, 3, 1]);
             let mut jdet = vec![0.0];
-            let mut normal = vec![0.0; 3];
+            let mut normal = rlst_dynamic_array!(f64, [3, 1]);
             for i in 0..g.entity_count(ReferenceCellType::Quadrilateral) {
                 map.physical_points(i, &mut mapped_pt);
-                map.jacobians_dets_normals(i, &mut j, &mut jdet, &mut normal);
-                assert!(normal[2] > 0.0);
-                assert_relative_eq!(normal[2], 1.0);
+                map.jacobians_inverses_dets_normals(i, &mut j, &mut jinv, &mut jdet, &mut normal);
+                assert!(normal[[2, 0]] > 0.0);
+                assert_relative_eq!(normal[[2, 0]], 1.0);
             }
         }
     }

@@ -107,21 +107,13 @@ pub trait MappedFiniteElement: FiniteElement {
     /// Piola transform. This method implements the appropriate transformation for the element.
     ///
     /// - `reference_values`: The values on the reference cell. The shape of this input is the same as the `data` input to the function
-    ///   [[FiniteElement::tabulate].
+    ///   [[FiniteElement::tabulate]].
     /// - `nderivs`: The number of derivatives.
-    /// - `jacobians:` A three-dimensional array of jacobians of the map from reference to physical cell.
-    ///   The first dimension is the reference point, the second dimension is the geometric dimension of the physical space, and
-    ///   the third dimension is the topological dimension of the reference element. For example,
-    ///   for the map of 5 points from the reference triangle to a physical surface triangle embedded in 3d space the dimension
-    ///   of `jacobians` is `[5, 3, 2]`.
-    /// - `jacobian_determinants`: The determinant of the jacobian at each point. If the jacobian $J$ is not square, then the
-    ///   determinant is computed using $d=\sqrt{\det(J^TJ)}$.
-    /// - `inverse_jacobians`: A three dimensional array that stores the inverse jacobian for the point with index j at position
-    ///   `inverse_jacobians[j, :, :]`. The first dimension of `inverse_jacobians` is the point index, the second dimension
-    ///   is the topological dimension, and the third dimension is the geometric dimension. If the Jacobian is rectangular then the
-    ///   inverse Jacobian is the pseudo-inverse of the Jacobian, ie the matrix $J^\dagger$ such that $J^\dagger J = I$.
+    /// - `jacobians` should have shape [geometry_dimension, entity_topology_dimension, npts] and use column-major ordering;
+    /// - `jacobian_determinants` should have shape \[npts\];
+    /// - `inverse_jacobians` should have shape [entity_topology_dimension, geometry_dimension, npts] and use column-major ordering;
     /// - `physical_values`: The output array of the push operation. This shape of this array is the same as the `reference_values`
-    ///   input, with the [MappedFiniteElement::physical_value_size] used instead of the reference value size.
+    ///   but with reference value size replaced by the physical value size
     fn push_forward<
         TGeo: RlstScalar,
         Array3GeoImpl: ValueArrayImpl<TGeo, 3>,
