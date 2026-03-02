@@ -8,8 +8,7 @@ jobs:
     runs-on: codeberg-medium
     strategy:
       matrix:
-        python-version: ["3.14"]
-         python-version: ["3.9", "3.10", "3.11", "3.12", "3.13", "3.14"]
+        python-version: ["3.9", "3.10", "3.11", "3.12", "3.13", "3.14"]
     steps:
       - name: Set up Rust
         uses: dtolnay/rust-toolchain@v1
