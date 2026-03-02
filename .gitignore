@@ -23,6 +23,6 @@ _*.msh
 
 .vscode/
 
-python/ndelement/_ndelementrs
+ndelement/python/ndelement/_ndelementrs
 *.pyc
 python/docs/_build

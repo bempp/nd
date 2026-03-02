@@ -5,6 +5,7 @@ default = ["serde"]
 coupe = ["dep:coupe"]
 scotch = ["dep:scotch"]
 mpi = ["dep:mpi", "rlst/mpi", "ndelement/mpi"]
+openblas-system = ["ndelement/openblas-system"]
 
 [package]
 name = "ndgrid"
@@ -17,8 +18,8 @@ authors = [
 ]
 description = "Finite element grid library."
 license = "BSD-3-Clause"
-homepage = "https://github.com/bempp/nd"
-repository = "https://github.com/bempp/nd"
+homepage = "https://codeberg.org/nd-project/nd"
+repository = "https://codeberg.org/nd-project/nd"
 readme = "README.md"
 keywords = ["numerics"]
 categories = ["mathematics", "science"]
@@ -60,6 +61,13 @@ required-features = ["serde", "scotch", "mpi"]
 command = "mpirun -n {{NPROCESSES}}"
 
 [[example]]
+name = "parallel_io"
+required-features = ["serde", "mpi"]
+
+[package.metadata.example.parallel_io.templated-examples]
+command = "mpirun -n 4"
+
+[[example]]
 name = "single_element_grid"
 doc-scrape-examples = true
 
@@ -70,28 +78,8 @@ required-features = ["serde"]
 
 [[example]]
 name = "test_parallel_grid"
-required-features = ["mpi"]
+required-features = ["serde", "coupe", "scotch", "mpi"]
 
 [package.metadata.example.test_parallel_grid.templated-examples]
 command = "mpirun -n {{NPROCESSES}}"
 
-[[example]]
-name = "parallel_io"
-required-features = ["serde", "mpi"]
-
-[package.metadata.example.parallel_io.templated-examples]
-command = "mpirun -n 4"
-
-[[example]]
-name = "test_parallel_io"
-required-features = ["serde", "mpi"]
-
-[package.metadata.example.test_parallel_io.templated-examples]
-command = "mpirun -n {{NPROCESSES}}"
-
-[[example]]
-name = "test_partitioners"
-required-features = ["coupe", "scotch", "mpi"]
-
-[package.metadata.example.test_partitioners.templated-examples]
-command = "mpirun -n {{NPROCESSES}}"

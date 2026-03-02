@@ -1,6 +1,7 @@
 [features]
 strict = []
 mpi = ["dep:rlst", "dep:mpi", "ndelement/mpi", "ndgrid/mpi"]
+openblas-system = ["ndelement/openblas-system", "ndgrid/openblas-system"]
 
 [package]
 name = "ndfunctionspace"
@@ -11,8 +12,8 @@ authors = [
 ]
 description = "Finite element function spaces."
 license = "BSD-3-Clause"
-homepage = "https://github.com/bempp/nd"
-repository = "https://github.com/bempp/nd"
+homepage = "https://codeberg.org/nd-project/nd"
+repository = "https://codeberg.org/nd-project/nd"
 readme = "README.md"
 keywords = ["numerics"]
 categories = ["mathematics", "science"]

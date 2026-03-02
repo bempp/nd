@@ -55,7 +55,7 @@ ndfunctionspace is an open-source Rust library for creating finite element DOF m
 You can use the latest version of ndfunctionspace by adding the following to `[dependencies]` section of your Cargo.toml file:
 
 ```toml
-ndfunctionspace = { git = "https://github.com/bempp/nd.git" }
+ndfunctionspace = { git = "https://codeberg.org/nd-project/nd" }
 ```
 
 ## Documentation
@@ -74,7 +74,7 @@ Examples of use can be found in the examples folder of each crate, for example
 [the ndgrid examples are in the folder ndgrid/examples](ndgrid/examples/).
 
 ## Getting help
-Errors in the library should be added to the [GitHub issue tracker](https://github.com/bempp/nd/issues).
+Errors in the library should be added to the [Codeberg issue tracker](https://codeberg.org/nd-project/nd/issues).
 
 Questions about the crates and their use can be asked on the [Bempp Discourse](https://bempp.discourse.group).
 

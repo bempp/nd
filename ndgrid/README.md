@@ -23,7 +23,7 @@ cargo test
 Examples of use can be found in the [examples](examples/) folder.
 
 ## Getting help
-Errors in should be added to the [nd GitHub issue tracker](https://github.com/bempp/nd/issues).
+Errors in should be added to the [nd Codeberg issue tracker](https://codeberg.org/nd-project/nd/issues).
 
 Questions about use can be asked on the [Bempp Discourse](https://bempp.discourse.group).
 

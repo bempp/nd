@@ -1,0 +1,98 @@
+name: 🧪
+
+on: [pull_request]
+
+jobs:
+  run-unit-tests-rust:
+    name: 🦀 unit tests (${{ matrix.feature-flags }})
+    runs-on: codeberg-medium
+    strategy:
+      matrix:
+        rust-version: ["stable"]
+        mpi: ["openmpi"]
+        feature-flags:
+          - '--no-default-features --features "strict,openblas-system"'
+          - '--features "strict,openblas-system"'
+          - '--all-features'
+    steps:
+      - name: Set up Rust
+        uses: https://github.com/dtolnay/rust-toolchain@v1
+        with:
+          toolchain: ${{ matrix.rust-version }}
+      - name: Set up MPI
+        uses: https://github.com/mpi4py/setup-mpi@v1
+        with:
+          mpi: ${{ matrix.mpi }}
+      - uses: actions/checkout@v6
+      - name: apt-get update
+        run: sudo apt-get update
+      - name: Install clang cmake
+        run: sudo apt-get install -y libclang-dev cmake
+      - name: Install LAPACK, OpenBLAS, SCOTCH
+        run: sudo apt-get install -y libopenblas-dev liblapack-dev libscotch-dev
+
+      - name: Run unit tests
+        run: RUST_MIN_STACK=8388608 cargo test ${{ matrix.feature-flags }}
+
+  run-tests-rust:
+    name: 🦀 tests
+    runs-on: codeberg-medium
+    strategy:
+      matrix:
+        rust-version: ["stable"]
+        mpi: ["openmpi"]
+    steps:
+      - name: Set up Rust
+        uses: https://github.com/dtolnay/rust-toolchain@v1
+        with:
+          toolchain: ${{ matrix.rust-version }}
+      - name: Set up MPI
+        uses: https://github.com/mpi4py/setup-mpi@v1
+        with:
+          mpi: ${{ matrix.mpi }}
+      - name: Install cargo-mpirun and cargo-templated-examples
+        run: cargo install cargo-mpirun cargo-templated-examples
+      - uses: actions/checkout@v6
+      - name: apt-get update
+        run: sudo apt-get update
+      - name: Install clang cmake
+        run: sudo apt-get install -y libclang-dev cmake
+      - name: Install LAPACK, OpenBLAS, SCOTCH
+        run: sudo apt-get install -y libopenblas-dev liblapack-dev libscotch-dev
+
+      - name: Run tests
+        run: RUST_MIN_STACK=8388608 cargo test --examples --release --features "strict,openblas-system"
+
+  run-examples-rust:
+    name: 🦀 examples (${{ matrix.crate }})
+    runs-on: codeberg-medium
+    strategy:
+      matrix:
+        rust-version: ["stable"]
+        mpi: ["openmpi"]
+        crate: ["ndelement", "ndgrid", "ndfunctionspace"]
+    steps:
+      - name: Set up Rust
+        uses: https://github.com/dtolnay/rust-toolchain@v1
+        with:
+          toolchain: ${{ matrix.rust-version }}
+      - name: Set up MPI
+        uses: https://github.com/mpi4py/setup-mpi@v1
+        with:
+          mpi: ${{ matrix.mpi }}
+      - name: Install cargo-mpirun and cargo-templated-examples
+        run: cargo install cargo-mpirun cargo-templated-examples
+      - uses: actions/checkout@v6
+      - name: apt-get update
+        run: sudo apt-get update
+      - name: Install clang cmake
+        run: sudo apt-get install -y libclang-dev cmake
+      - name: Install LAPACK, OpenBLAS, SCOTCH
+        run: sudo apt-get install -y libopenblas-dev liblapack-dev libscotch-dev
+
+      - name: Run examples
+        run: |
+          export OMPI_ALLOW_RUN_AS_ROOT=1
+          export OMPI_ALLOW_RUN_AS_ROOT_CONFIRM=1
+          cd ${{ matrix.crate }}
+          cargo templated-examples NPROCESSES 4 --features "openblas-system,mpi,serde,coupe,scotch"

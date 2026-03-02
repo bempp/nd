@@ -49,3 +49,6 @@ pub mod quadrature;
 pub mod reference_cell;
 pub mod traits;
 pub mod types;
+
+#[cfg(feature = "openblas-system")]
+use openblas_src as _;

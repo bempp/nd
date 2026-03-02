@@ -25,14 +25,14 @@ dependencies = [
 packages = ["ndelement"]
 
 [project.urls]
-homepage = "https://github.com/bempp/nd"
-repository = "https://github.com/bempp/nd"
+homepage = "https://codeberg.org/nd-project/nd"
+repository = "https://codeberg.org/nd-project/nd"
 documentation = "https://bempp.github.io/nd/python/ndelement"
 
 [tool.maturin]
 python-source = "python"
 module-name = "ndelement._ndelementrs"
-cargo-extra-args = '--features "serde"'
+cargo-extra-args = '--features "serde,ci"'
 no-default-features = true
 
 [tool.ruff]

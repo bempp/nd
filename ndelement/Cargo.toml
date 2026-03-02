@@ -3,6 +3,7 @@ mpi = ["dep:mpi"]
 serde = ["dep:serde"]
 strict = []
 default = []
+openblas-system = ["dep:openblas-src"]
 
 [package]
 name = "ndelement"
@@ -11,8 +12,8 @@ edition = "2024"
 authors = ["Matthew Scroggs <rust@mscroggs.co.uk>"]
 description = "Finite element definition library."
 license = "BSD-3-Clause"
-homepage = "https://github.com/bempp/nd"
-repository = "https://github.com/bempp/nd"
+homepage = "https://codeberg.org/nd-project/nd"
+repository = "https://codeberg.org/nd-project/nd"
 readme = "README.md"
 keywords = ["numerics"]
 categories = ["mathematics", "science"]
@@ -32,13 +33,15 @@ strum = "0.27"
 strum_macros = "0.27"
 c-api-tools = { version = "0.1.0" }
 
+
 [target.'cfg(target_os = "macos")'.dependencies]
 blas-src = { version = "0.14", features = ["accelerate"]}
 lapack-src = { version = "0.13", features = ["accelerate"]}
 
 [target.'cfg(target_os = "linux")'.dependencies]
-lapack-src = { version = "0.13", features = ["netlib"]}
-blas-src = { version = "0.14", features = ["blis"]}
+lapack-src = { version = "0.13", features = ["openblas"]}
+blas-src = { version = "0.14", features = ["openblas"]}
+openblas-src = { version = "0.10", features = ["system"], optional = true }
 
 [dev-dependencies]
 paste = "1.*"
