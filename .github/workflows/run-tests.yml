@@ -36,7 +36,7 @@ jobs:
         run: |
           cd ndelement
           source .venv/bin/activate
-          maturin develop --features "ci"
+          maturin develop --features "openblas-system"
       - name: Run ndelement Python tests
         run: |
           cd ndelement
