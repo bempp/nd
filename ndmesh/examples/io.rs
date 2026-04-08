@@ -1,0 +1,76 @@
+use itertools::izip;
+use ndelement::{ciarlet::CiarletElement, map::IdentityMap, types::ReferenceCellType};
+use ndmesh::traits::{
+    Builder, Entity, GmshExport, GmshImport, Mesh, RONExport, RONImport, Topology,
+};
+use ndmesh::{SingleElementMesh, SingleElementMeshBuilder, shapes};
+
+/// Mesh I/O
+///
+/// Demonstration of importing and exporting a mesh in serial
+///
+/// Parallel I/O is demonstrated in the example `parallel_io.rs`
+fn main() {
+    // Create a mesh using the shapes module: unit_cube_boundary will mesh the surface of a cube
+    let g = shapes::unit_cube_boundary::<f64>(4, 5, 4, ReferenceCellType::Triangle);
+
+    // If the serde option is used, the raw mesh data can be exported in RON format
+    g.export_as_ron("_unit_cube_boundary.ron");
+
+    // A mesh can be re-imported from raw RON data
+    let g2 = SingleElementMesh::<f64, CiarletElement<f64, IdentityMap, f64>>::import_from_ron(
+        "_unit_cube_boundary.ron",
+    );
+
+    // Print the first 5 cells of each mesh
+    println!("The first 5 cells of the meshes");
+    for (cell, cell2) in izip!(
+        g.entity_iter(ReferenceCellType::Triangle),
+        g2.entity_iter(ReferenceCellType::Triangle)
+    )
+    .take(5)
+    {
+        println!(
+            "{:?} {:?}",
+            cell.topology()
+                .sub_entity_iter(ReferenceCellType::Point)
+                .collect::<Vec<_>>(),
+            cell2
+                .topology()
+                .sub_entity_iter(ReferenceCellType::Point)
+                .collect::<Vec<_>>(),
+        );
+    }
+
+    println!();
+
+    // Alternatively, meshes can be exported and imported to/from Gmsh files
+
+    // Export the mesh as a Gmsh .msh file
+    g.export_as_gmsh("_unit_cube_boundary.msh");
+
+    // To import from a Gmsh .msh file, a builder is used
+    let mut b = SingleElementMeshBuilder::<f64>::new(3, (ReferenceCellType::Triangle, 1));
+    b.import_from_gmsh("_unit_cube_boundary.msh");
+    let g3 = b.create_mesh();
+
+    // Print the first 5 cells of each mesh
+    println!("The first 5 cells of the meshes");
+    for (cell, cell3) in izip!(
+        g.entity_iter(ReferenceCellType::Triangle),
+        g3.entity_iter(ReferenceCellType::Triangle)
+    )
+    .take(5)
+    {
+        println!(
+            "{:?} {:?}",
+            cell.topology()
+                .sub_entity_iter(ReferenceCellType::Point)
+                .collect::<Vec<_>>(),
+            cell3
+                .topology()
+                .sub_entity_iter(ReferenceCellType::Point)
+                .collect::<Vec<_>>(),
+        );
+    }
+}

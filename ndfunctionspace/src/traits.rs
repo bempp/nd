@@ -2,7 +2,7 @@
 #[cfg(feature = "mpi")]
 use mpi::traits::Communicator;
 use ndelement::traits::FiniteElement;
-use ndgrid::{traits::Grid, types::Ownership};
+use ndmesh::{traits::Mesh, types::Ownership};
 use std::fmt::Debug;
 use std::hash::Hash;
 
@@ -10,13 +10,13 @@ use std::hash::Hash;
 pub trait FunctionSpace {
     /// Type used as identifier of different entity types
     type EntityDescriptor: Debug + PartialEq + Eq + Clone + Copy + Hash;
-    /// The type for the grid this function space is defined on
-    type Grid: Grid<EntityDescriptor = Self::EntityDescriptor>;
-    /// The type for the finite element this grid is defined by
+    /// The type for the mesh this function space is defined on
+    type Mesh: Mesh<EntityDescriptor = Self::EntityDescriptor>;
+    /// The type for the finite element this mesh is defined by
     type FiniteElement: FiniteElement<CellType = Self::EntityDescriptor>;
 
-    /// The grid that this function space is defined on
-    fn grid(&self) -> &Self::Grid;
+    /// The mesh that this function space is defined on
+    fn mesh(&self) -> &Self::Mesh;
 
     /// The finite elements used in this function space
     fn elements(&self) -> &[Self::FiniteElement];

@@ -6,8 +6,8 @@ use ndelement::{
     traits::{ElementFamily, MappedFiniteElement},
     types::ReferenceCellType,
 };
-use ndgrid::{
-    traits::{Entity, Grid, Topology},
+use ndmesh::{
+    traits::{Entity, Mesh, Topology},
     types::Ownership,
 };
 use std::collections::HashMap;
@@ -18,10 +18,10 @@ use std::hash::Hash;
 pub struct FunctionSpaceImpl<
     'a,
     E: Debug + PartialEq + Eq + Clone + Copy + Hash,
-    G: Grid<EntityDescriptor = E>,
+    G: Mesh<EntityDescriptor = E>,
     F: MappedFiniteElement<CellType = E>,
 > {
-    grid: &'a G,
+    mesh: &'a G,
     elements: Vec<F>,
     entity_dofs: HashMap<E, Vec<Vec<usize>>>,
     entity_closure_dofs: HashMap<E, Vec<Vec<usize>>>,
@@ -31,17 +31,17 @@ pub struct FunctionSpaceImpl<
 
 impl<
     'a,
-    G: Grid<EntityDescriptor = ReferenceCellType>,
+    G: Mesh<EntityDescriptor = ReferenceCellType>,
     F: MappedFiniteElement<CellType = ReferenceCellType>,
 > FunctionSpaceImpl<'a, ReferenceCellType, G, F>
 {
     /// Create a new serial function space
     pub fn new<EF: ElementFamily<FiniteElement = F, CellType = ReferenceCellType>>(
-        grid: &'a G,
+        mesh: &'a G,
         family: &EF,
     ) -> Self {
-        let elements = grid
-            .entity_types(grid.topology_dim())
+        let elements = mesh
+            .entity_types(mesh.topology_dim())
             .iter()
             .map(|e| family.element(*e))
             .collect::<Vec<_>>();
@@ -49,20 +49,20 @@ impl<
         let mut entity_closure_dofs = HashMap::new();
         let mut entities_by_element = HashMap::new();
 
-        for d in 0..=grid.topology_dim() {
-            for e in grid.entity_types(d) {
-                entity_dofs.insert(*e, vec![vec![]; grid.entity_count(*e)]);
-                entity_closure_dofs.insert(*e, vec![vec![]; grid.entity_count(*e)]);
+        for d in 0..=mesh.topology_dim() {
+            for e in mesh.entity_types(d) {
+                entity_dofs.insert(*e, vec![vec![]; mesh.entity_count(*e)]);
+                entity_closure_dofs.insert(*e, vec![vec![]; mesh.entity_count(*e)]);
             }
         }
 
         let mut ndofs = 0;
 
-        for (cell_type, element) in izip!(grid.entity_types(grid.topology_dim()), &elements) {
+        for (cell_type, element) in izip!(mesh.entity_types(mesh.topology_dim()), &elements) {
             let sub_entity_types = reference_cell::entity_types(*cell_type);
             let sub_entity_indices = reference_cell::entity_indices(*cell_type);
             let mut cell_indices = vec![];
-            for cell in grid.entity_iter(*cell_type) {
+            for cell in mesh.entity_iter(*cell_type) {
                 cell_indices.push(cell.local_index());
                 let mut cell_dofs = vec![]; // &mut entity_closure_dofs.get_mut(cell_type).unwrap()[cell.local_index()];
                 for (d, (types, indices)) in
@@ -95,7 +95,7 @@ impl<
         }
 
         Self {
-            grid,
+            mesh,
             elements,
             entity_dofs,
             entity_closure_dofs,
@@ -108,16 +108,16 @@ impl<
 impl<
     'a,
     E: Debug + PartialEq + Eq + Clone + Copy + Hash,
-    G: Grid<EntityDescriptor = E>,
+    G: Mesh<EntityDescriptor = E>,
     F: MappedFiniteElement<CellType = E>,
 > FunctionSpace for FunctionSpaceImpl<'a, E, G, F>
 {
     type EntityDescriptor = E;
-    type Grid = G;
+    type Mesh = G;
     type FiniteElement = F;
 
-    fn grid(&self) -> &G {
-        self.grid
+    fn mesh(&self) -> &G {
+        self.mesh
     }
 
     fn elements(&self) -> &[F] {
@@ -178,21 +178,21 @@ mod test {
         ciarlet::LagrangeElementFamily,
         types::{Continuity, ReferenceCellType},
     };
-    use ndgrid::shapes::unit_cube_boundary;
+    use ndmesh::shapes::unit_cube_boundary;
 
     #[test]
     fn test_dp0() {
-        let grid = unit_cube_boundary::<f64>(2, 2, 2, ReferenceCellType::Triangle);
+        let mesh = unit_cube_boundary::<f64>(2, 2, 2, ReferenceCellType::Triangle);
         let family = LagrangeElementFamily::<f64>::new(0, Continuity::Discontinuous);
 
-        let space = FunctionSpaceImpl::new(&grid, &family);
+        let space = FunctionSpaceImpl::new(&mesh, &family);
 
         assert_eq!(
             space.local_size(),
-            grid.entity_count(ReferenceCellType::Triangle)
+            mesh.entity_count(ReferenceCellType::Triangle)
         );
 
-        for cell in grid.entity_iter(ReferenceCellType::Point) {
+        for cell in mesh.entity_iter(ReferenceCellType::Point) {
             assert_eq!(
                 space
                     .entity_dofs(ReferenceCellType::Point, cell.local_index())
@@ -208,7 +208,7 @@ mod test {
                 0
             );
         }
-        for cell in grid.entity_iter(ReferenceCellType::Interval) {
+        for cell in mesh.entity_iter(ReferenceCellType::Interval) {
             assert_eq!(
                 space
                     .entity_dofs(ReferenceCellType::Interval, cell.local_index())
@@ -224,7 +224,7 @@ mod test {
                 0
             );
         }
-        for cell in grid.entity_iter(ReferenceCellType::Triangle) {
+        for cell in mesh.entity_iter(ReferenceCellType::Triangle) {
             assert_eq!(
                 space
                     .entity_dofs(ReferenceCellType::Triangle, cell.local_index())
@@ -244,17 +244,17 @@ mod test {
 
     #[test]
     fn test_p1() {
-        let grid = unit_cube_boundary::<f64>(2, 2, 2, ReferenceCellType::Triangle);
+        let mesh = unit_cube_boundary::<f64>(2, 2, 2, ReferenceCellType::Triangle);
         let family = LagrangeElementFamily::<f64>::new(1, Continuity::Standard);
 
-        let space = FunctionSpaceImpl::new(&grid, &family);
+        let space = FunctionSpaceImpl::new(&mesh, &family);
 
         assert_eq!(
             space.local_size(),
-            grid.entity_count(ReferenceCellType::Point)
+            mesh.entity_count(ReferenceCellType::Point)
         );
 
-        for cell in grid.entity_iter(ReferenceCellType::Point) {
+        for cell in mesh.entity_iter(ReferenceCellType::Point) {
             assert_eq!(
                 space
                     .entity_dofs(ReferenceCellType::Point, cell.local_index())
@@ -270,7 +270,7 @@ mod test {
                 1
             );
         }
-        for cell in grid.entity_iter(ReferenceCellType::Interval) {
+        for cell in mesh.entity_iter(ReferenceCellType::Interval) {
             assert_eq!(
                 space
                     .entity_dofs(ReferenceCellType::Interval, cell.local_index())
@@ -286,7 +286,7 @@ mod test {
                 2
             );
         }
-        for cell in grid.entity_iter(ReferenceCellType::Triangle) {
+        for cell in mesh.entity_iter(ReferenceCellType::Triangle) {
             assert_eq!(
                 space
                     .entity_dofs(ReferenceCellType::Triangle, cell.local_index())
@@ -306,17 +306,17 @@ mod test {
 
     #[test]
     fn test_dp1() {
-        let grid = unit_cube_boundary::<f64>(2, 2, 2, ReferenceCellType::Triangle);
+        let mesh = unit_cube_boundary::<f64>(2, 2, 2, ReferenceCellType::Triangle);
         let family = LagrangeElementFamily::<f64>::new(1, Continuity::Discontinuous);
 
-        let space = FunctionSpaceImpl::new(&grid, &family);
+        let space = FunctionSpaceImpl::new(&mesh, &family);
 
         assert_eq!(
             space.local_size(),
-            3 * grid.entity_count(ReferenceCellType::Triangle)
+            3 * mesh.entity_count(ReferenceCellType::Triangle)
         );
 
-        for cell in grid.entity_iter(ReferenceCellType::Point) {
+        for cell in mesh.entity_iter(ReferenceCellType::Point) {
             assert_eq!(
                 space
                     .entity_dofs(ReferenceCellType::Point, cell.local_index())
@@ -332,7 +332,7 @@ mod test {
                 0
             );
         }
-        for cell in grid.entity_iter(ReferenceCellType::Interval) {
+        for cell in mesh.entity_iter(ReferenceCellType::Interval) {
             assert_eq!(
                 space
                     .entity_dofs(ReferenceCellType::Interval, cell.local_index())
@@ -348,7 +348,7 @@ mod test {
                 0
             );
         }
-        for cell in grid.entity_iter(ReferenceCellType::Triangle) {
+        for cell in mesh.entity_iter(ReferenceCellType::Triangle) {
             assert_eq!(
                 space
                     .entity_dofs(ReferenceCellType::Triangle, cell.local_index())
@@ -368,18 +368,18 @@ mod test {
 
     #[test]
     fn test_p2() {
-        let grid = unit_cube_boundary::<f64>(2, 2, 2, ReferenceCellType::Triangle);
+        let mesh = unit_cube_boundary::<f64>(2, 2, 2, ReferenceCellType::Triangle);
         let family = LagrangeElementFamily::<f64>::new(2, Continuity::Standard);
 
-        let space = FunctionSpaceImpl::new(&grid, &family);
+        let space = FunctionSpaceImpl::new(&mesh, &family);
 
         assert_eq!(
             space.local_size(),
-            grid.entity_count(ReferenceCellType::Point)
-                + grid.entity_count(ReferenceCellType::Interval)
+            mesh.entity_count(ReferenceCellType::Point)
+                + mesh.entity_count(ReferenceCellType::Interval)
         );
 
-        for cell in grid.entity_iter(ReferenceCellType::Point) {
+        for cell in mesh.entity_iter(ReferenceCellType::Point) {
             assert_eq!(
                 space
                     .entity_dofs(ReferenceCellType::Point, cell.local_index())
@@ -395,7 +395,7 @@ mod test {
                 1
             );
         }
-        for cell in grid.entity_iter(ReferenceCellType::Interval) {
+        for cell in mesh.entity_iter(ReferenceCellType::Interval) {
             assert_eq!(
                 space
                     .entity_dofs(ReferenceCellType::Interval, cell.local_index())
@@ -411,7 +411,7 @@ mod test {
                 3
             );
         }
-        for cell in grid.entity_iter(ReferenceCellType::Triangle) {
+        for cell in mesh.entity_iter(ReferenceCellType::Triangle) {
             assert_eq!(
                 space
                     .entity_dofs(ReferenceCellType::Triangle, cell.local_index())
@@ -431,19 +431,19 @@ mod test {
 
     #[test]
     fn test_p3() {
-        let grid = unit_cube_boundary::<f64>(2, 2, 2, ReferenceCellType::Triangle);
+        let mesh = unit_cube_boundary::<f64>(2, 2, 2, ReferenceCellType::Triangle);
         let family = LagrangeElementFamily::<f64>::new(3, Continuity::Standard);
 
-        let space = FunctionSpaceImpl::new(&grid, &family);
+        let space = FunctionSpaceImpl::new(&mesh, &family);
 
         assert_eq!(
             space.local_size(),
-            grid.entity_count(ReferenceCellType::Point)
-                + 2 * grid.entity_count(ReferenceCellType::Interval)
-                + grid.entity_count(ReferenceCellType::Triangle)
+            mesh.entity_count(ReferenceCellType::Point)
+                + 2 * mesh.entity_count(ReferenceCellType::Interval)
+                + mesh.entity_count(ReferenceCellType::Triangle)
         );
 
-        for cell in grid.entity_iter(ReferenceCellType::Point) {
+        for cell in mesh.entity_iter(ReferenceCellType::Point) {
             assert_eq!(
                 space
                     .entity_dofs(ReferenceCellType::Point, cell.local_index())
@@ -459,7 +459,7 @@ mod test {
                 1
             );
         }
-        for cell in grid.entity_iter(ReferenceCellType::Interval) {
+        for cell in mesh.entity_iter(ReferenceCellType::Interval) {
             assert_eq!(
                 space
                     .entity_dofs(ReferenceCellType::Interval, cell.local_index())
@@ -475,7 +475,7 @@ mod test {
                 4
             );
         }
-        for cell in grid.entity_iter(ReferenceCellType::Triangle) {
+        for cell in mesh.entity_iter(ReferenceCellType::Triangle) {
             assert_eq!(
                 space
                     .entity_dofs(ReferenceCellType::Triangle, cell.local_index())
@@ -495,17 +495,17 @@ mod test {
 
     #[test]
     fn test_p1_quad() {
-        let grid = unit_cube_boundary::<f64>(2, 2, 2, ReferenceCellType::Quadrilateral);
+        let mesh = unit_cube_boundary::<f64>(2, 2, 2, ReferenceCellType::Quadrilateral);
         let family = LagrangeElementFamily::<f64>::new(1, Continuity::Standard);
 
-        let space = FunctionSpaceImpl::new(&grid, &family);
+        let space = FunctionSpaceImpl::new(&mesh, &family);
 
         assert_eq!(
             space.local_size(),
-            grid.entity_count(ReferenceCellType::Point)
+            mesh.entity_count(ReferenceCellType::Point)
         );
 
-        for cell in grid.entity_iter(ReferenceCellType::Point) {
+        for cell in mesh.entity_iter(ReferenceCellType::Point) {
             assert_eq!(
                 space
                     .entity_dofs(ReferenceCellType::Point, cell.local_index())
@@ -521,7 +521,7 @@ mod test {
                 1
             );
         }
-        for cell in grid.entity_iter(ReferenceCellType::Interval) {
+        for cell in mesh.entity_iter(ReferenceCellType::Interval) {
             assert_eq!(
                 space
                     .entity_dofs(ReferenceCellType::Interval, cell.local_index())
@@ -537,7 +537,7 @@ mod test {
                 2
             );
         }
-        for cell in grid.entity_iter(ReferenceCellType::Quadrilateral) {
+        for cell in mesh.entity_iter(ReferenceCellType::Quadrilateral) {
             assert_eq!(
                 space
                     .entity_dofs(ReferenceCellType::Quadrilateral, cell.local_index())
@@ -557,19 +557,19 @@ mod test {
 
     #[test]
     fn test_p2_quad() {
-        let grid = unit_cube_boundary::<f64>(2, 2, 2, ReferenceCellType::Quadrilateral);
+        let mesh = unit_cube_boundary::<f64>(2, 2, 2, ReferenceCellType::Quadrilateral);
         let family = LagrangeElementFamily::<f64>::new(2, Continuity::Standard);
 
-        let space = FunctionSpaceImpl::new(&grid, &family);
+        let space = FunctionSpaceImpl::new(&mesh, &family);
 
         assert_eq!(
             space.local_size(),
-            grid.entity_count(ReferenceCellType::Point)
-                + grid.entity_count(ReferenceCellType::Interval)
-                + grid.entity_count(ReferenceCellType::Quadrilateral)
+            mesh.entity_count(ReferenceCellType::Point)
+                + mesh.entity_count(ReferenceCellType::Interval)
+                + mesh.entity_count(ReferenceCellType::Quadrilateral)
         );
 
-        for cell in grid.entity_iter(ReferenceCellType::Point) {
+        for cell in mesh.entity_iter(ReferenceCellType::Point) {
             assert_eq!(
                 space
                     .entity_dofs(ReferenceCellType::Point, cell.local_index())
@@ -585,7 +585,7 @@ mod test {
                 1
             );
         }
-        for cell in grid.entity_iter(ReferenceCellType::Interval) {
+        for cell in mesh.entity_iter(ReferenceCellType::Interval) {
             assert_eq!(
                 space
                     .entity_dofs(ReferenceCellType::Interval, cell.local_index())
@@ -601,7 +601,7 @@ mod test {
                 3
             );
         }
-        for cell in grid.entity_iter(ReferenceCellType::Quadrilateral) {
+        for cell in mesh.entity_iter(ReferenceCellType::Quadrilateral) {
             assert_eq!(
                 space
                     .entity_dofs(ReferenceCellType::Quadrilateral, cell.local_index())

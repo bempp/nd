@@ -56,7 +56,7 @@ jobs:
         run: |
           echo "<html><head><title>nd docs</title></head><body>" > doc/index.html
           echo "<h1>ndelement</h1><center><a href='rust/ndelement'>Rust docs</a><br /><a href='python/ndelement'>Python docs</a></center>" >> doc/index.html
-          echo "<h1>ndgrid</h1><center><a href='rust/ndgrid'>Rust docs</a></center>" >> doc/index.html
+          echo "<h1>ndmesh</h1><center><a href='rust/ndmesh'>Rust docs</a></center>" >> doc/index.html
           echo "</body></html>" >> doc/index.html
 
       - name: Setup Pages

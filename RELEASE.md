@@ -39,9 +39,9 @@ To make a new release of ndelement, follow the following steps:
 
 8) Add the release to the next issue of [Scientific Computing in Rust Monthly](https://github.com/rust-scicomp/scientific-computing-in-rust-monthly)
 
-## ndgrid
+## ndmesh
 
-To make a new release of ndgrid, follow the following steps:
+To make a new release of ndmesh, follow the following steps:
 
 0) If you are yet to make a release on your current computer, run `cargo login` and copy an API
    key from https://crates.io/me
@@ -60,14 +60,14 @@ To make a new release of ndgrid, follow the following steps:
    If you are releasing a minor version, you should increment `[y]` and set `[z]`
    to zero. If you are releasing a bugfix, you should increment `[z]`.
 
-3) Update the version number in the "Using ndgrid" section of README.md.
+3) Update the version number in the "Using ndmesh" section of README.md.
 
 4) Run `cargo publish --dry-run` and fix any errors.
 
 5) Commit your changes and push to GitHub, open a pull request to merge changes back into main, and merge the
    pull request.
 
-6) [Create a release on GitHub](https://github.com/bempp/ndgrid/releases/new) from the `main` branch.
+6) [Create a release on GitHub](https://github.com/bempp/ndmesh/releases/new) from the `main` branch.
    The release tag and title should be `v[x].[y].[z]` (where `[x]`, `[y]` and `[z]` are as in step 2).
    In the "Describe this release" box, you should bullet point the main changes since the last
    release.

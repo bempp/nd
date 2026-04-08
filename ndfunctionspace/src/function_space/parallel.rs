@@ -11,8 +11,8 @@ use ndelement::{
     traits::{ElementFamily, MappedFiniteElement},
     types::ReferenceCellType,
 };
-use ndgrid::{
-    traits::{Entity, Grid, ParallelGrid},
+use ndmesh::{
+    traits::{Entity, Mesh, ParallelMesh},
     types::Ownership,
 };
 use rlst::distributed_tools::array_tools::all_to_allv;
@@ -45,11 +45,11 @@ impl<S: FunctionSpace> LocalFunctionSpace<S> {
 
 impl<S: FunctionSpace> FunctionSpace for LocalFunctionSpace<S> {
     type EntityDescriptor = S::EntityDescriptor;
-    type Grid = S::Grid;
+    type Mesh = S::Mesh;
     type FiniteElement = S::FiniteElement;
 
-    fn grid(&self) -> &S::Grid {
-        self.space.grid()
+    fn mesh(&self) -> &S::Mesh {
+        self.space.mesh()
     }
 
     fn elements(&self) -> &[S::FiniteElement] {
@@ -97,12 +97,12 @@ impl<S: FunctionSpace> FunctionSpace for LocalFunctionSpace<S> {
 pub struct ParallelFunctionSpaceImpl<
     'a,
     E: Debug + PartialEq + Eq + Clone + Copy + Hash,
-    G: Grid<EntityDescriptor = E>,
-    PG: ParallelGrid<LocalGrid = G>,
+    G: Mesh<EntityDescriptor = E>,
+    PG: ParallelMesh<LocalMesh = G>,
     F: MappedFiniteElement<CellType = E>,
-    S: FunctionSpace<Grid = G, EntityDescriptor = E, FiniteElement = F>,
+    S: FunctionSpace<Mesh = G, EntityDescriptor = E, FiniteElement = F>,
 > {
-    grid: &'a PG,
+    mesh: &'a PG,
     local_space: LocalFunctionSpace<S>,
     global_size: usize,
 }
@@ -135,8 +135,8 @@ impl GhostEntity {
 
 impl<
     'a,
-    G: Grid<EntityDescriptor = ReferenceCellType>,
-    PG: ParallelGrid<LocalGrid = G>,
+    G: Mesh<EntityDescriptor = ReferenceCellType>,
+    PG: ParallelMesh<LocalMesh = G>,
     F: MappedFiniteElement<CellType = ReferenceCellType>,
 >
     ParallelFunctionSpaceImpl<
@@ -150,12 +150,12 @@ impl<
 {
     /// Create a new parallel function space
     pub fn new<EF: ElementFamily<FiniteElement = F, CellType = ReferenceCellType>>(
-        grid: &'a PG,
+        mesh: &'a PG,
         family: &EF,
     ) -> Self {
-        let comm = grid.comm();
-        let local_grid = grid.local_grid();
-        let serial_space = FunctionSpaceImpl::new(local_grid, family);
+        let comm = mesh.comm();
+        let local_mesh = mesh.local_mesh();
+        let serial_space = FunctionSpaceImpl::new(local_mesh, family);
 
         let mut dof_indices = vec![DofIndex::None; serial_space.local_size()];
 
@@ -163,9 +163,9 @@ impl<
         let mut ask_for = vec![vec![]; comm.size() as usize];
 
         // Identify which DOFs are associated with owned entities and which are associated with ghosts
-        for dim in 0..=local_grid.topology_dim() {
-            for entity_type in local_grid.entity_types(dim) {
-                for entity in local_grid.entity_iter(*entity_type) {
+        for dim in 0..=local_mesh.topology_dim() {
+            for entity_type in local_mesh.entity_types(dim) {
+                for entity in local_mesh.entity_iter(*entity_type) {
                     let dofs = serial_space
                         .entity_dofs(*entity_type, entity.local_index())
                         .unwrap();
@@ -290,7 +290,7 @@ impl<
         let local_space =
             LocalFunctionSpace::new(serial_space, global_size, global_dof_indices, ownership);
         Self {
-            grid,
+            mesh,
             local_space,
             global_size,
         }
@@ -300,17 +300,17 @@ impl<
 impl<
     'a,
     E: Debug + PartialEq + Eq + Clone + Copy + Hash,
-    G: Grid<EntityDescriptor = E>,
-    PG: ParallelGrid<LocalGrid = G>,
+    G: Mesh<EntityDescriptor = E>,
+    PG: ParallelMesh<LocalMesh = G>,
     F: MappedFiniteElement<CellType = E>,
-    S: FunctionSpace<Grid = G, EntityDescriptor = E, FiniteElement = F>,
+    S: FunctionSpace<Mesh = G, EntityDescriptor = E, FiniteElement = F>,
 > ParallelFunctionSpace for ParallelFunctionSpaceImpl<'a, E, G, PG, F, S>
 {
     type LocalSpace = LocalFunctionSpace<S>;
     type C = PG::C;
 
     fn comm(&self) -> &PG::C {
-        self.grid.comm()
+        self.mesh.comm()
     }
 
     fn local_space(&self) -> &LocalFunctionSpace<S> {

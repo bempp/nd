@@ -7,19 +7,19 @@ use ndelement::{
     types::{Continuity, ReferenceCellType},
 };
 use ndfunctionspace::{FunctionSpaceImpl, traits::FunctionSpace};
-use ndgrid::{
+use ndmesh::{
     shapes::regular_sphere,
-    traits::{Entity, GeometryMap, Grid},
+    traits::{Entity, GeometryMap, Mesh},
 };
 use quadraturerules::{Domain, QuadratureRule, single_integral_quadrature};
 use rlst::{DynArray, rlst_dynamic_array};
 
 /// Test values in Lagrange mass matrix
 fn test_lagrange_mass_matrix() {
-    let grid = regular_sphere(0, ReferenceCellType::Triangle);
+    let mesh = regular_sphere(0, ReferenceCellType::Triangle);
 
     let family = LagrangeElementFamily::<f64>::new(1, Continuity::Standard);
-    let space = FunctionSpaceImpl::new(&grid, &family);
+    let space = FunctionSpaceImpl::new(&mesh, &family);
 
     let mut mass_matrix = rlst_dynamic_array!(f64, [space.local_size(), space.local_size()]);
 
@@ -43,12 +43,12 @@ fn test_lagrange_mass_matrix() {
     let mut table = DynArray::<f64, 4>::from_shape(element.tabulate_array_shape(0, npts));
     element.tabulate(&pts, 0, &mut table);
 
-    let gmap = grid.geometry_map(ReferenceCellType::Triangle, 1, &pts);
-    let mut jacobians = rlst_dynamic_array!(f64, [grid.geometry_dim(), grid.topology_dim(), npts]);
-    let mut jinv = rlst_dynamic_array!(f64, [grid.topology_dim(), grid.geometry_dim(), npts]);
+    let gmap = mesh.geometry_map(ReferenceCellType::Triangle, 1, &pts);
+    let mut jacobians = rlst_dynamic_array!(f64, [mesh.geometry_dim(), mesh.topology_dim(), npts]);
+    let mut jinv = rlst_dynamic_array!(f64, [mesh.topology_dim(), mesh.geometry_dim(), npts]);
     let mut jdets = vec![0.0; npts];
 
-    for cell in grid.entity_iter(ReferenceCellType::Triangle) {
+    for cell in mesh.entity_iter(ReferenceCellType::Triangle) {
         let dofs = space
             .entity_closure_dofs(ReferenceCellType::Triangle, cell.local_index())
             .unwrap();
@@ -84,10 +84,10 @@ fn test_lagrange_mass_matrix() {
 
 /// Test values in Raviart-Thomas mass matrix
 fn test_rt_mass_matrix() {
-    let grid = regular_sphere(0, ReferenceCellType::Triangle);
+    let mesh = regular_sphere(0, ReferenceCellType::Triangle);
 
     let family = RaviartThomasElementFamily::<f64>::new(1, Continuity::Standard);
-    let space = FunctionSpaceImpl::new(&grid, &family);
+    let space = FunctionSpaceImpl::new(&mesh, &family);
 
     let mut mass_matrix = rlst_dynamic_array!(f64, [space.local_size(), space.local_size()]);
 
@@ -115,12 +115,12 @@ fn test_rt_mass_matrix() {
         [table.shape()[0], table.shape()[1], table.shape()[2], 3]
     );
 
-    let gmap = grid.geometry_map(ReferenceCellType::Triangle, 1, &pts);
-    let mut jacobians = rlst_dynamic_array!(f64, [grid.geometry_dim(), grid.topology_dim(), npts]);
-    let mut jinv = rlst_dynamic_array!(f64, [grid.topology_dim(), grid.geometry_dim(), npts]);
+    let gmap = mesh.geometry_map(ReferenceCellType::Triangle, 1, &pts);
+    let mut jacobians = rlst_dynamic_array!(f64, [mesh.geometry_dim(), mesh.topology_dim(), npts]);
+    let mut jinv = rlst_dynamic_array!(f64, [mesh.topology_dim(), mesh.geometry_dim(), npts]);
     let mut jdets = vec![0.0; npts];
 
-    for cell in grid.entity_iter(ReferenceCellType::Triangle) {
+    for cell in mesh.entity_iter(ReferenceCellType::Triangle) {
         let dofs = space
             .entity_closure_dofs(ReferenceCellType::Triangle, cell.local_index())
             .unwrap();

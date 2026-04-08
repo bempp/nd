@@ -35,16 +35,16 @@ The Python functionality of the library can be tested by running:
 python -m pytest ndelement/python/test
 ```
 
-### [ndgrid](ndgrid/)
-[![crates.io](https://img.shields.io/crates/v/ndgrid?color=blue)](https://crates.io/crates/ndgrid)
+### [ndmesh](ndmesh/)
+[![crates.io](https://img.shields.io/crates/v/ndmesh?color=blue)](https://crates.io/crates/ndmesh)
 
-ndgrid is an open-source Rust library for handling finite element grids/meshes.
+ndmesh is an open-source Rust library for handling finite element meshes.
 
-#### Using ndgrid
-You can use the latest release of ndgrid by adding the following to `[dependencies]` section of your Cargo.toml file:
+#### Using ndmesh
+You can use the latest release of ndmesh by adding the following to `[dependencies]` section of your Cargo.toml file:
 
 ```toml
-ndgrid = "0.1.5"
+ndmesh = "0.1.5"
 ```
 
 ### [ndfunctionspace](ndfunctionspace/)
@@ -71,7 +71,7 @@ cargo test
 ## Examples
 Examples of use can be found in the examples folder of each crate, for example
 [the ndelement examples are in the folder ndelement/examples](ndelement/examples/) and
-[the ndgrid examples are in the folder ndgrid/examples](ndgrid/examples/).
+[the ndmesh examples are in the folder ndmesh/examples](ndmesh/examples/).
 
 ## Getting help
 Errors in the library should be added to the [Codeberg issue tracker](https://codeberg.org/nd-project/nd/issues).

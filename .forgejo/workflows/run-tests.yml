@@ -70,7 +70,7 @@ jobs:
       matrix:
         rust-version: ["stable"]
         mpi: ["openmpi"]
-        crate: ["ndelement", "ndgrid", "ndfunctionspace"]
+        crate: ["ndelement", "ndmesh", "ndfunctionspace"]
     steps:
       - name: Set up Rust
         uses: https://github.com/dtolnay/rust-toolchain@v1

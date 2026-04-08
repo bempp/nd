@@ -1,0 +1,268 @@
+//! Serial meshes
+#[cfg(feature = "serde")]
+use crate::traits::ConvertToSerializable;
+use crate::{
+    traits::{Entity, Mesh},
+    types::Ownership,
+};
+#[cfg(feature = "serde")]
+use itertools::izip;
+use rlst::{Array, ValueArrayImpl};
+#[cfg(feature = "serde")]
+use std::hash::Hash;
+use std::{collections::HashMap, fmt::Debug};
+
+mod single_element;
+pub use single_element::{SingleElementMesh, SingleElementMeshBuilder};
+
+mod mixed;
+pub use mixed::{MixedMesh, MixedMeshBuilder};
+
+/// Mesh entity
+#[derive(Debug)]
+pub struct MeshEntity<E: Entity> {
+    serial_entity: E,
+    ownership: Ownership,
+    global_index: usize,
+}
+
+impl<E: Entity> MeshEntity<E> {
+    /// Create new
+    pub fn new(serial_entity: E, ownership: &[Ownership], global_indices: &[usize]) -> Self {
+        let index = serial_entity.local_index();
+        Self {
+            serial_entity,
+            ownership: ownership[index],
+            global_index: global_indices[index],
+        }
+    }
+}
+impl<E: Entity> Entity for MeshEntity<E> {
+    type T = E::T;
+    type EntityDescriptor = E::EntityDescriptor;
+    type Topology<'a>
+        = E::Topology<'a>
+    where
+        Self: 'a;
+    type Geometry<'a>
+        = E::Geometry<'a>
+    where
+        Self: 'a;
+    fn entity_type(&self) -> E::EntityDescriptor {
+        self.serial_entity.entity_type()
+    }
+    fn local_index(&self) -> usize {
+        self.serial_entity.local_index()
+    }
+    fn global_index(&self) -> usize {
+        self.global_index
+    }
+    fn geometry(&self) -> Self::Geometry<'_> {
+        self.serial_entity.geometry()
+    }
+    fn topology(&self) -> Self::Topology<'_> {
+        self.serial_entity.topology()
+    }
+    fn ownership(&self) -> Ownership {
+        self.ownership
+    }
+    fn id(&self) -> Option<usize> {
+        self.serial_entity.id()
+    }
+}
+
+/// Mesh entity iterator
+#[derive(Debug)]
+pub struct MeshEntityIter<'a, E: Entity, EntityIter: Iterator<Item = E>> {
+    iter: EntityIter,
+    ownership: &'a [Ownership],
+    global_indices: &'a [usize],
+}
+
+impl<'a, E: Entity, EntityIter: Iterator<Item = E>> MeshEntityIter<'a, E, EntityIter> {
+    /// Create new
+    pub fn new(iter: EntityIter, ownership: &'a [Ownership], global_indices: &'a [usize]) -> Self {
+        Self {
+            iter,
+            ownership,
+            global_indices,
+        }
+    }
+}
+impl<E: Entity, EntityIter: Iterator<Item = E>> Iterator for MeshEntityIter<'_, E, EntityIter> {
+    type Item = MeshEntity<E>;
+
+    fn next(&mut self) -> Option<MeshEntity<E>> {
+        let entity = self.iter.next();
+        entity.map(|e| MeshEntity::new(e, self.ownership, self.global_indices))
+    }
+}
+
+/// Local mesh on a process
+#[derive(Debug)]
+pub struct LocalMesh<G: Mesh + Sync> {
+    serial_mesh: G,
+    ownership: HashMap<G::EntityDescriptor, Vec<Ownership>>,
+    global_indices: HashMap<G::EntityDescriptor, Vec<usize>>,
+}
+
+#[cfg(feature = "serde")]
+#[derive(serde::Serialize, Debug, serde::Deserialize)]
+#[serde(bound = "for<'de2> S: serde::Deserialize<'de2>")]
+/// A serde serializable mesh
+pub struct SerializableLocalMesh<EntityDescriptor: serde::Serialize, S: serde::Serialize>
+where
+    for<'de2> S: serde::Deserialize<'de2>,
+    for<'de2> EntityDescriptor: serde::Deserialize<'de2>,
+{
+    serial_mesh: S,
+    ownership_keys: Vec<EntityDescriptor>,
+    ownership_values: Vec<Vec<Ownership>>,
+    global_indices_keys: Vec<EntityDescriptor>,
+    global_indices_values: Vec<Vec<usize>>,
+}
+
+#[cfg(feature = "serde")]
+impl<
+    S: serde::Serialize,
+    EntityDescriptor: Debug + PartialEq + Eq + Clone + Copy + Hash + serde::Serialize,
+    G: Mesh<EntityDescriptor = EntityDescriptor> + Sync + ConvertToSerializable<SerializableType = S>,
+> ConvertToSerializable for LocalMesh<G>
+where
+    for<'de2> S: serde::Deserialize<'de2>,
+    for<'de2> EntityDescriptor: serde::Deserialize<'de2>,
+{
+    type SerializableType = SerializableLocalMesh<G::EntityDescriptor, S>;
+    fn to_serializable(&self) -> SerializableLocalMesh<G::EntityDescriptor, S> {
+        let mut ownership_keys = vec![];
+        let mut ownership_values = vec![];
+        for (i, j) in &self.ownership {
+            ownership_keys.push(*i);
+            ownership_values.push(j.clone());
+        }
+        let mut global_indices_keys = vec![];
+        let mut global_indices_values = vec![];
+        for (i, j) in &self.global_indices {
+            global_indices_keys.push(*i);
+            global_indices_values.push(j.clone());
+        }
+        SerializableLocalMesh {
+            serial_mesh: self.serial_mesh.to_serializable(),
+            ownership_keys,
+            ownership_values,
+            global_indices_keys,
+            global_indices_values,
+        }
+    }
+    fn from_serializable(s: SerializableLocalMesh<G::EntityDescriptor, S>) -> Self {
+        Self {
+            serial_mesh: G::from_serializable(s.serial_mesh),
+            ownership: {
+                let mut m = HashMap::new();
+                for (i, j) in izip!(s.ownership_keys, s.ownership_values) {
+                    m.insert(i, j);
+                }
+                m
+            },
+            global_indices: {
+                let mut m = HashMap::new();
+                for (i, j) in izip!(s.global_indices_keys, s.global_indices_values) {
+                    m.insert(i, j);
+                }
+                m
+            },
+        }
+    }
+}
+
+impl<G: Mesh + Sync> LocalMesh<G> {
+    /// Create new
+    pub fn new(
+        serial_mesh: G,
+        ownership: HashMap<G::EntityDescriptor, Vec<Ownership>>,
+        global_indices: HashMap<G::EntityDescriptor, Vec<usize>>,
+    ) -> Self {
+        Self {
+            serial_mesh,
+            ownership,
+            global_indices,
+        }
+    }
+}
+impl<G: Mesh + Sync> Mesh for LocalMesh<G> {
+    type T = G::T;
+    type Entity<'a>
+        = MeshEntity<G::Entity<'a>>
+    where
+        Self: 'a;
+    type GeometryMap<'a>
+        = G::GeometryMap<'a>
+    where
+        Self: 'a;
+    type EntityDescriptor = G::EntityDescriptor;
+    type EntityIter<'a>
+        = MeshEntityIter<'a, G::Entity<'a>, G::EntityIter<'a>>
+    where
+        Self: 'a;
+
+    fn geometry_dim(&self) -> usize {
+        self.serial_mesh.geometry_dim()
+    }
+    fn topology_dim(&self) -> usize {
+        self.serial_mesh.topology_dim()
+    }
+
+    fn entity(
+        &self,
+        entity_type: Self::EntityDescriptor,
+        serial_index: usize,
+    ) -> Option<Self::Entity<'_>> {
+        self.serial_mesh.entity(entity_type, serial_index).map(|e| {
+            MeshEntity::new(
+                e,
+                &self.ownership[&entity_type],
+                &self.global_indices[&entity_type],
+            )
+        })
+    }
+
+    fn entity_types(&self, dim: usize) -> &[Self::EntityDescriptor] {
+        self.serial_mesh.entity_types(dim)
+    }
+
+    fn entity_count(&self, entity_type: Self::EntityDescriptor) -> usize {
+        self.serial_mesh.entity_count(entity_type)
+    }
+
+    fn entity_iter(&self, entity_type: Self::EntityDescriptor) -> Self::EntityIter<'_> {
+        MeshEntityIter::new(
+            self.serial_mesh.entity_iter(entity_type),
+            &self.ownership[&entity_type],
+            &self.global_indices[&entity_type],
+        )
+    }
+
+    fn entity_from_id(
+        &self,
+        entity_type: Self::EntityDescriptor,
+        id: usize,
+    ) -> Option<Self::Entity<'_>> {
+        self.serial_mesh.entity_from_id(entity_type, id).map(|e| {
+            MeshEntity::new(
+                e,
+                &self.ownership[&entity_type],
+                &self.global_indices[&entity_type],
+            )
+        })
+    }
+
+    fn geometry_map<Array2Impl: ValueArrayImpl<Self::T, 2>>(
+        &self,
+        entity_type: Self::EntityDescriptor,
+        geometry_degree: usize,
+        points: &Array<Array2Impl, 2>,
+    ) -> Self::GeometryMap<'_> {
+        self.serial_mesh
+            .geometry_map(entity_type, geometry_degree, points)
+    }
+}
