@@ -13,7 +13,7 @@ ndelement is an open-source Rust library for defining and tabulating finite elem
 You can use the latest release of ndelement by adding the following to `[dependencies]` section of your Cargo.toml file:
 
 ```toml
-ndelement = "0.3.0"
+ndelement = "0.4.0"
 ```
 
 ### Python

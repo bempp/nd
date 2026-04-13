@@ -7,7 +7,7 @@ ndmesh is an open-source Rust library for handling finite element meshes.
 You can use the latest release of ndmesh by adding the following to `[dependencies]` section of your Cargo.toml file:
 
 ```toml
-ndmesh = "0.1.5"
+ndmesh = "0.4.0"
 ```
 
 ## Documentation

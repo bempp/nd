@@ -7,7 +7,7 @@ openblas-system = ["dep:openblas-src"]
 
 [package]
 name = "ndelement"
-version = "0.3.0-dev"
+version = "0.4.0"
 edition = "2024"
 authors = ["Matthew Scroggs <rust@mscroggs.co.uk>"]
 description = "Finite element definition library."
