@@ -14,7 +14,7 @@ mod test {
     use approx::assert_relative_eq;
     use itertools::izip;
     use ndelement::{
-        ciarlet::{CiarletElement, LagrangeElementFamily},
+        ciarlet::{CiarletElement, LagrangeElementFamily, LagrangeVariant},
         map::IdentityMap,
         reference_cell,
         traits::FiniteElement,
@@ -40,8 +40,8 @@ mod test {
         *points.get_mut([0, 6]).unwrap() = 2.0;
         *points.get_mut([1, 6]).unwrap() = 2.0;
         let families = vec![
-            LagrangeElementFamily::<f64>::new(1, Continuity::Standard),
-            LagrangeElementFamily::<f64>::new(2, Continuity::Standard),
+            LagrangeElementFamily::<f64>::new(1, Continuity::Standard, LagrangeVariant::Equispaced),
+            LagrangeElementFamily::<f64>::new(2, Continuity::Standard, LagrangeVariant::Equispaced),
         ];
         MixedGeometry::<f64, CiarletElement<f64, IdentityMap, f64>>::new(
             &[ReferenceCellType::Triangle, ReferenceCellType::Triangle],

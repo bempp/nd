@@ -21,7 +21,7 @@ use crate::{
 #[cfg(feature = "mpi")]
 use mpi::traits::{Communicator, Equivalence};
 use ndelement::{
-    ciarlet::{CiarletElement, LagrangeElementFamily},
+    ciarlet::{CiarletElement, LagrangeElementFamily, LagrangeVariant},
     map::IdentityMap,
     reference_cell,
     traits::{ElementFamily, FiniteElement, MappedFiniteElement},
@@ -204,7 +204,11 @@ impl<T: Scalar> SingleElementMesh<T, CiarletElement<T, IdentityMap, T>> {
         let mut points = rlst_dynamic_array!(T, [gdim, npts]);
         points.data_mut().unwrap().copy_from_slice(coordinates);
 
-        let family = LagrangeElementFamily::<T, T>::new(geometry_degree, Continuity::Standard);
+        let family = LagrangeElementFamily::<T, T>::new(
+            geometry_degree,
+            Continuity::Standard,
+            LagrangeVariant::Equispaced,
+        );
 
         let geometry = SingleElementGeometry::<T, CiarletElement<T, IdentityMap, T>>::new(
             cell_type, points, cells, &family,
@@ -362,11 +366,6 @@ mod test {
     use super::*;
     use crate::traits::Topology;
     use itertools::izip;
-    use ndelement::{
-        ciarlet::{CiarletElement, LagrangeElementFamily},
-        reference_cell,
-        types::Continuity,
-    };
     use rlst::rlst_dynamic_array;
 
     fn example_mesh_triangle() -> SingleElementMesh<f64, CiarletElement<f64, IdentityMap, f64>> {
@@ -383,7 +382,8 @@ mod test {
         *points.get_mut([0, 3]).unwrap() = 2.0;
         *points.get_mut([1, 3]).unwrap() = 1.0;
         *points.get_mut([2, 3]).unwrap() = 0.0;
-        let family = LagrangeElementFamily::<f64>::new(1, Continuity::Standard);
+        let family =
+            LagrangeElementFamily::<f64>::new(1, Continuity::Standard, LagrangeVariant::Equispaced);
         SingleElementMesh::new(
             SingleTypeTopology::new(&[0, 1, 2, 2, 1, 3], ReferenceCellType::Triangle, None, None),
             SingleElementGeometry::<f64, CiarletElement<f64, IdentityMap, f64>>::new(

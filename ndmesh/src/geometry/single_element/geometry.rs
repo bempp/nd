@@ -80,7 +80,14 @@ where
             elements: s
                 .elements
                 .iter()
-                .map(|(cell, degree)| lagrange::create(*cell, *degree, Continuity::Standard))
+                .map(|(cell, degree)| {
+                    lagrange::create(
+                        *cell,
+                        *degree,
+                        Continuity::Standard,
+                        lagrange::Variant::Equispaced,
+                    )
+                })
                 .collect::<Vec<_>>(),
         }
     }

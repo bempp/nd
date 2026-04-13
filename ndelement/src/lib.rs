@@ -6,14 +6,14 @@
 //! The following presents a simple example of how to use `ndelement`.
 //!
 //! ```
-//! use ndelement::ciarlet::LagrangeElementFamily;
+//! use ndelement::ciarlet::{LagrangeElementFamily, LagrangeVariant};
 //! use ndelement::traits::{ElementFamily, FiniteElement};
 //! use ndelement::types::{Continuity, ReferenceCellType};
 //! use rlst::DynArray;
 //!
 //! // Create the degree 2 Lagrange element family. A family is a set of finite elements with the
 //! // same family type, degree, and continuity across a set of cells
-//! let family = LagrangeElementFamily::<f64>::new(2, Continuity::Standard);
+//! let family = LagrangeElementFamily::<f64>::new(2, Continuity::Standard, LagrangeVariant::Equispaced);
 //!
 //! // Get the element in the family on a triangle
 //! let element = family.element(ReferenceCellType::Triangle);

@@ -7,8 +7,12 @@ use rlst::{DynArray, rlst_dynamic_array};
 
 fn main() {
     // Create a P2 element on a triangle
-    let element =
-        lagrange::create::<f64, f64>(ReferenceCellType::Triangle, 2, Continuity::Standard);
+    let element = lagrange::create::<f64, f64>(
+        ReferenceCellType::Triangle,
+        2,
+        Continuity::Standard,
+        lagrange::Variant::Equispaced,
+    );
 
     println!("This element has {} basis functions.", element.dim());
 

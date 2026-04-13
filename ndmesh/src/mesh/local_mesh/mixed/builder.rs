@@ -9,7 +9,7 @@ use crate::{
 };
 use itertools::izip;
 use ndelement::{
-    ciarlet::{CiarletElement, LagrangeElementFamily, lagrange},
+    ciarlet::{CiarletElement, LagrangeElementFamily, LagrangeVariant, lagrange},
     map::IdentityMap,
     reference_cell,
     traits::FiniteElement,
@@ -95,6 +95,7 @@ impl<T: Scalar> Builder for MixedMeshBuilder<T> {
                     cell_data.0,
                     cell_data.1,
                     Continuity::Standard,
+                    LagrangeVariant::Equispaced,
                 ));
                 self.points_per_cell.push(self.elements[n].dim());
                 n
@@ -247,6 +248,7 @@ impl<T: Scalar> GeometryBuilder for MixedMeshBuilder<T> {
                 element_families.push(LagrangeElementFamily::<T, T>::new(
                     *degree,
                     Continuity::Standard,
+                    LagrangeVariant::Equispaced,
                 ));
                 n
             }))

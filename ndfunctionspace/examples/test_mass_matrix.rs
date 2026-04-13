@@ -2,7 +2,7 @@
 
 use approx::assert_relative_eq;
 use ndelement::{
-    ciarlet::{LagrangeElementFamily, RaviartThomasElementFamily},
+    ciarlet::{LagrangeElementFamily, LagrangeVariant, RaviartThomasElementFamily},
     traits::{FiniteElement, MappedFiniteElement},
     types::{Continuity, ReferenceCellType},
 };
@@ -18,7 +18,8 @@ use rlst::{DynArray, rlst_dynamic_array};
 fn test_lagrange_mass_matrix() {
     let mesh = regular_sphere(0, ReferenceCellType::Triangle);
 
-    let family = LagrangeElementFamily::<f64>::new(1, Continuity::Standard);
+    let family =
+        LagrangeElementFamily::<f64>::new(1, Continuity::Standard, LagrangeVariant::Equispaced);
     let space = FunctionSpaceImpl::new(&mesh, &family);
 
     let mut mass_matrix = rlst_dynamic_array!(f64, [space.local_size(), space.local_size()]);

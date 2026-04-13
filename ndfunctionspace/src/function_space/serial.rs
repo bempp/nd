@@ -175,7 +175,7 @@ impl<
 mod test {
     use super::*;
     use ndelement::{
-        ciarlet::LagrangeElementFamily,
+        ciarlet::{LagrangeElementFamily, LagrangeVariant},
         types::{Continuity, ReferenceCellType},
     };
     use ndmesh::shapes::unit_cube_boundary;
@@ -183,7 +183,11 @@ mod test {
     #[test]
     fn test_dp0() {
         let mesh = unit_cube_boundary::<f64>(2, 2, 2, ReferenceCellType::Triangle);
-        let family = LagrangeElementFamily::<f64>::new(0, Continuity::Discontinuous);
+        let family = LagrangeElementFamily::<f64>::new(
+            0,
+            Continuity::Discontinuous,
+            LagrangeVariant::Equispaced,
+        );
 
         let space = FunctionSpaceImpl::new(&mesh, &family);
 
@@ -245,7 +249,8 @@ mod test {
     #[test]
     fn test_p1() {
         let mesh = unit_cube_boundary::<f64>(2, 2, 2, ReferenceCellType::Triangle);
-        let family = LagrangeElementFamily::<f64>::new(1, Continuity::Standard);
+        let family =
+            LagrangeElementFamily::<f64>::new(1, Continuity::Standard, LagrangeVariant::Equispaced);
 
         let space = FunctionSpaceImpl::new(&mesh, &family);
 
@@ -307,7 +312,11 @@ mod test {
     #[test]
     fn test_dp1() {
         let mesh = unit_cube_boundary::<f64>(2, 2, 2, ReferenceCellType::Triangle);
-        let family = LagrangeElementFamily::<f64>::new(1, Continuity::Discontinuous);
+        let family = LagrangeElementFamily::<f64>::new(
+            1,
+            Continuity::Discontinuous,
+            LagrangeVariant::Equispaced,
+        );
 
         let space = FunctionSpaceImpl::new(&mesh, &family);
 
@@ -369,7 +378,8 @@ mod test {
     #[test]
     fn test_p2() {
         let mesh = unit_cube_boundary::<f64>(2, 2, 2, ReferenceCellType::Triangle);
-        let family = LagrangeElementFamily::<f64>::new(2, Continuity::Standard);
+        let family =
+            LagrangeElementFamily::<f64>::new(2, Continuity::Standard, LagrangeVariant::Equispaced);
 
         let space = FunctionSpaceImpl::new(&mesh, &family);
 
@@ -432,7 +442,8 @@ mod test {
     #[test]
     fn test_p3() {
         let mesh = unit_cube_boundary::<f64>(2, 2, 2, ReferenceCellType::Triangle);
-        let family = LagrangeElementFamily::<f64>::new(3, Continuity::Standard);
+        let family =
+            LagrangeElementFamily::<f64>::new(3, Continuity::Standard, LagrangeVariant::Equispaced);
 
         let space = FunctionSpaceImpl::new(&mesh, &family);
 
@@ -496,7 +507,8 @@ mod test {
     #[test]
     fn test_p1_quad() {
         let mesh = unit_cube_boundary::<f64>(2, 2, 2, ReferenceCellType::Quadrilateral);
-        let family = LagrangeElementFamily::<f64>::new(1, Continuity::Standard);
+        let family =
+            LagrangeElementFamily::<f64>::new(1, Continuity::Standard, LagrangeVariant::Equispaced);
 
         let space = FunctionSpaceImpl::new(&mesh, &family);
 
@@ -558,7 +570,8 @@ mod test {
     #[test]
     fn test_p2_quad() {
         let mesh = unit_cube_boundary::<f64>(2, 2, 2, ReferenceCellType::Quadrilateral);
-        let family = LagrangeElementFamily::<f64>::new(2, Continuity::Standard);
+        let family =
+            LagrangeElementFamily::<f64>::new(2, Continuity::Standard, LagrangeVariant::Equispaced);
 
         let space = FunctionSpaceImpl::new(&mesh, &family);
 

@@ -22,7 +22,7 @@ use itertools::izip;
 #[cfg(feature = "mpi")]
 use mpi::traits::{Communicator, Equivalence};
 use ndelement::{
-    ciarlet::{CiarletElement, LagrangeElementFamily},
+    ciarlet::{CiarletElement, LagrangeElementFamily, LagrangeVariant},
     map::IdentityMap,
     reference_cell,
     traits::{ElementFamily, FiniteElement, MappedFiniteElement},
@@ -224,8 +224,11 @@ impl<T: Scalar> MixedMesh<T, CiarletElement<T, IdentityMap, T>> {
             .map(|d| {
                 *element_family_indices.entry(*d).or_insert_with(|| {
                     let index = element_families.len();
-                    element_families
-                        .push(LagrangeElementFamily::<T, T>::new(*d, Continuity::Standard));
+                    element_families.push(LagrangeElementFamily::<T, T>::new(
+                        *d,
+                        Continuity::Standard,
+                        LagrangeVariant::Equispaced,
+                    ));
                     index
                 })
             })
@@ -405,11 +408,6 @@ mod test {
     use crate::traits::{GeometryMap, Topology};
     use approx::*;
     use itertools::izip;
-    use ndelement::{
-        ciarlet::{CiarletElement, LagrangeElementFamily},
-        reference_cell,
-        types::Continuity,
-    };
     use rlst::rlst_dynamic_array;
 
     fn example_mesh_triangle() -> MixedMesh<f64, CiarletElement<f64, IdentityMap, f64>> {
@@ -426,7 +424,8 @@ mod test {
         *points.get_mut([0, 3]).unwrap() = 2.0;
         *points.get_mut([1, 3]).unwrap() = 1.0;
         *points.get_mut([2, 3]).unwrap() = 0.0;
-        let family = LagrangeElementFamily::<f64>::new(1, Continuity::Standard);
+        let family =
+            LagrangeElementFamily::<f64>::new(1, Continuity::Standard, LagrangeVariant::Equispaced);
         MixedMesh::new(
             MixedTopology::new(
                 &[0, 1, 2, 2, 1, 3],
@@ -462,7 +461,8 @@ mod test {
         *points.get_mut([1, 6]).unwrap() = 1.0;
         *points.get_mut([0, 7]).unwrap() = 4.0;
         *points.get_mut([1, 7]).unwrap() = 1.0;
-        let family = LagrangeElementFamily::<f64>::new(1, Continuity::Standard);
+        let family =
+            LagrangeElementFamily::<f64>::new(1, Continuity::Standard, LagrangeVariant::Equispaced);
         MixedMesh::new(
             MixedTopology::new(
                 &[0, 5, 4, 0, 1, 5, 1, 2, 5, 6, 2, 3, 6, 7],

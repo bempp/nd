@@ -43,7 +43,7 @@ use std::fmt::{Debug, Formatter};
 pub mod lagrange;
 pub mod nedelec;
 pub mod raviart_thomas;
-pub use lagrange::LagrangeElementFamily;
+pub use lagrange::{LagrangeElementFamily, Variant as LagrangeVariant};
 pub use nedelec::NedelecFirstKindElementFamily;
 pub use raviart_thomas::RaviartThomasElementFamily;
 
@@ -927,7 +927,7 @@ mod test {
     use paste::paste;
     use rlst::rlst_dynamic_array;
 
-    fn check_dofs(e: impl FiniteElement<CellType = ReferenceCellType>) {
+    pub fn check_dofs(e: impl FiniteElement<CellType = ReferenceCellType>) {
         let mut ndofs = 0;
         for (dim, entity_count) in match e.cell_type() {
             ReferenceCellType::Point => vec![1],
@@ -947,494 +947,6 @@ mod test {
             }
         }
         assert_eq!(ndofs, e.dim());
-    }
-
-    #[test]
-    fn test_lagrange_1() {
-        let e = lagrange::create::<f64, f64>(ReferenceCellType::Triangle, 1, Continuity::Standard);
-        assert_eq!(e.value_size(), 1);
-    }
-
-    #[test]
-    fn test_lagrange_0_interval() {
-        let e =
-            lagrange::create::<f64, f64>(ReferenceCellType::Interval, 0, Continuity::Discontinuous);
-        assert_eq!(e.value_size(), 1);
-        let mut data = DynArray::<f64, 4>::from_shape(e.tabulate_array_shape(0, 4));
-        let mut points = rlst_dynamic_array!(f64, [1, 4]);
-        *points.get_mut([0, 0]).unwrap() = 0.0;
-        *points.get_mut([0, 1]).unwrap() = 0.2;
-        *points.get_mut([0, 2]).unwrap() = 0.4;
-        *points.get_mut([0, 3]).unwrap() = 1.0;
-        e.tabulate(&points, 0, &mut data);
-
-        for pt in 0..4 {
-            assert_relative_eq!(*data.get([0, pt, 0, 0]).unwrap(), 1.0);
-        }
-        check_dofs(e);
-    }
-
-    #[test]
-    fn test_lagrange_1_interval() {
-        let e = lagrange::create::<f64, f64>(ReferenceCellType::Interval, 1, Continuity::Standard);
-        assert_eq!(e.value_size(), 1);
-        let mut data = DynArray::<f64, 4>::from_shape(e.tabulate_array_shape(0, 4));
-        let mut points = rlst_dynamic_array!(f64, [1, 4]);
-        *points.get_mut([0, 0]).unwrap() = 0.0;
-        *points.get_mut([0, 1]).unwrap() = 0.2;
-        *points.get_mut([0, 2]).unwrap() = 0.4;
-        *points.get_mut([0, 3]).unwrap() = 1.0;
-        e.tabulate(&points, 0, &mut data);
-
-        for pt in 0..4 {
-            let x = *points.get([0, pt]).unwrap();
-            assert_relative_eq!(*data.get([0, pt, 0, 0]).unwrap(), 1.0 - x);
-            assert_relative_eq!(*data.get([0, pt, 1, 0]).unwrap(), x);
-        }
-        check_dofs(e);
-    }
-
-    #[test]
-    fn test_lagrange_0_triangle() {
-        let e =
-            lagrange::create::<f64, f64>(ReferenceCellType::Triangle, 0, Continuity::Discontinuous);
-        assert_eq!(e.value_size(), 1);
-        let mut data = DynArray::<f64, 4>::from_shape(e.tabulate_array_shape(0, 6));
-
-        let mut points = rlst_dynamic_array!(f64, [2, 6]);
-        *points.get_mut([0, 0]).unwrap() = 0.0;
-        *points.get_mut([1, 0]).unwrap() = 0.0;
-        *points.get_mut([0, 1]).unwrap() = 1.0;
-        *points.get_mut([1, 1]).unwrap() = 0.0;
-        *points.get_mut([0, 2]).unwrap() = 0.0;
-        *points.get_mut([1, 2]).unwrap() = 1.0;
-        *points.get_mut([0, 3]).unwrap() = 0.5;
-        *points.get_mut([1, 3]).unwrap() = 0.0;
-        *points.get_mut([0, 4]).unwrap() = 0.0;
-        *points.get_mut([1, 4]).unwrap() = 0.5;
-        *points.get_mut([0, 5]).unwrap() = 0.5;
-        *points.get_mut([1, 5]).unwrap() = 0.5;
-
-        e.tabulate(&points, 0, &mut data);
-
-        for pt in 0..6 {
-            assert_relative_eq!(*data.get([0, pt, 0, 0]).unwrap(), 1.0);
-        }
-        check_dofs(e);
-    }
-
-    #[test]
-    fn test_lagrange_1_triangle() {
-        let e = lagrange::create::<f64, f64>(ReferenceCellType::Triangle, 1, Continuity::Standard);
-        assert_eq!(e.value_size(), 1);
-        let mut data = DynArray::<f64, 4>::from_shape(e.tabulate_array_shape(0, 6));
-        let mut points = rlst_dynamic_array!(f64, [2, 6]);
-        *points.get_mut([0, 0]).unwrap() = 0.0;
-        *points.get_mut([1, 0]).unwrap() = 0.0;
-        *points.get_mut([0, 1]).unwrap() = 1.0;
-        *points.get_mut([1, 1]).unwrap() = 0.0;
-        *points.get_mut([0, 2]).unwrap() = 0.0;
-        *points.get_mut([1, 2]).unwrap() = 1.0;
-        *points.get_mut([0, 3]).unwrap() = 0.5;
-        *points.get_mut([1, 3]).unwrap() = 0.0;
-        *points.get_mut([0, 4]).unwrap() = 0.0;
-        *points.get_mut([1, 4]).unwrap() = 0.5;
-        *points.get_mut([0, 5]).unwrap() = 0.5;
-        *points.get_mut([1, 5]).unwrap() = 0.5;
-        e.tabulate(&points, 0, &mut data);
-
-        for pt in 0..6 {
-            let x = *points.get([0, pt]).unwrap();
-            let y = *points.get([1, pt]).unwrap();
-            assert_relative_eq!(*data.get([0, pt, 0, 0]).unwrap(), 1.0 - x - y);
-            assert_relative_eq!(*data.get([0, pt, 1, 0]).unwrap(), x);
-            assert_relative_eq!(*data.get([0, pt, 2, 0]).unwrap(), y);
-        }
-        check_dofs(e);
-    }
-
-    #[test]
-    fn test_lagrange_0_quadrilateral() {
-        let e = lagrange::create::<f64, f64>(
-            ReferenceCellType::Quadrilateral,
-            0,
-            Continuity::Discontinuous,
-        );
-        assert_eq!(e.value_size(), 1);
-        let mut data = DynArray::<f64, 4>::from_shape(e.tabulate_array_shape(0, 6));
-        let mut points = rlst_dynamic_array!(f64, [2, 6]);
-        *points.get_mut([0, 0]).unwrap() = 0.0;
-        *points.get_mut([1, 0]).unwrap() = 0.0;
-        *points.get_mut([0, 1]).unwrap() = 1.0;
-        *points.get_mut([1, 1]).unwrap() = 0.0;
-        *points.get_mut([0, 2]).unwrap() = 0.0;
-        *points.get_mut([1, 2]).unwrap() = 1.0;
-        *points.get_mut([0, 3]).unwrap() = 0.5;
-        *points.get_mut([1, 3]).unwrap() = 0.0;
-        *points.get_mut([0, 4]).unwrap() = 0.0;
-        *points.get_mut([1, 4]).unwrap() = 0.5;
-        *points.get_mut([0, 5]).unwrap() = 0.5;
-        *points.get_mut([1, 5]).unwrap() = 0.5;
-        e.tabulate(&points, 0, &mut data);
-
-        for pt in 0..6 {
-            assert_relative_eq!(*data.get([0, pt, 0, 0]).unwrap(), 1.0);
-        }
-        check_dofs(e);
-    }
-
-    #[test]
-    fn test_lagrange_1_quadrilateral() {
-        let e =
-            lagrange::create::<f64, f64>(ReferenceCellType::Quadrilateral, 1, Continuity::Standard);
-        assert_eq!(e.value_size(), 1);
-        let mut data = DynArray::<f64, 4>::from_shape(e.tabulate_array_shape(0, 6));
-        let mut points = rlst_dynamic_array!(f64, [2, 6]);
-        *points.get_mut([0, 0]).unwrap() = 0.0;
-        *points.get_mut([1, 0]).unwrap() = 0.0;
-        *points.get_mut([0, 1]).unwrap() = 1.0;
-        *points.get_mut([1, 1]).unwrap() = 0.0;
-        *points.get_mut([0, 2]).unwrap() = 0.0;
-        *points.get_mut([1, 2]).unwrap() = 1.0;
-        *points.get_mut([0, 3]).unwrap() = 1.0;
-        *points.get_mut([1, 3]).unwrap() = 1.0;
-        *points.get_mut([0, 4]).unwrap() = 0.25;
-        *points.get_mut([1, 4]).unwrap() = 0.5;
-        *points.get_mut([0, 5]).unwrap() = 0.3;
-        *points.get_mut([1, 5]).unwrap() = 0.2;
-
-        e.tabulate(&points, 0, &mut data);
-
-        for pt in 0..6 {
-            let x = *points.get([0, pt]).unwrap();
-            let y = *points.get([1, pt]).unwrap();
-            assert_relative_eq!(*data.get([0, pt, 0, 0]).unwrap(), (1.0 - x) * (1.0 - y));
-            assert_relative_eq!(*data.get([0, pt, 1, 0]).unwrap(), x * (1.0 - y));
-            assert_relative_eq!(*data.get([0, pt, 2, 0]).unwrap(), (1.0 - x) * y);
-            assert_relative_eq!(*data.get([0, pt, 3, 0]).unwrap(), x * y);
-        }
-        check_dofs(e);
-    }
-
-    #[test]
-    fn test_lagrange_2_quadrilateral() {
-        let e =
-            lagrange::create::<f64, f64>(ReferenceCellType::Quadrilateral, 2, Continuity::Standard);
-        assert_eq!(e.value_size(), 1);
-        let mut data = DynArray::<f64, 4>::from_shape(e.tabulate_array_shape(0, 6));
-        let mut points = rlst_dynamic_array!(f64, [2, 6]);
-        *points.get_mut([0, 0]).unwrap() = 0.0;
-        *points.get_mut([1, 0]).unwrap() = 0.0;
-        *points.get_mut([0, 1]).unwrap() = 1.0;
-        *points.get_mut([1, 1]).unwrap() = 0.0;
-        *points.get_mut([0, 2]).unwrap() = 0.0;
-        *points.get_mut([1, 2]).unwrap() = 1.0;
-        *points.get_mut([0, 3]).unwrap() = 1.0;
-        *points.get_mut([1, 3]).unwrap() = 1.0;
-        *points.get_mut([0, 4]).unwrap() = 0.25;
-        *points.get_mut([1, 4]).unwrap() = 0.5;
-        *points.get_mut([0, 5]).unwrap() = 0.3;
-        *points.get_mut([1, 5]).unwrap() = 0.2;
-
-        e.tabulate(&points, 0, &mut data);
-
-        for pt in 0..6 {
-            let x = *points.get([0, pt]).unwrap();
-            let y = *points.get([1, pt]).unwrap();
-            assert_relative_eq!(
-                *data.get([0, pt, 0, 0]).unwrap(),
-                (1.0 - x) * (1.0 - 2.0 * x) * (1.0 - y) * (1.0 - 2.0 * y),
-                epsilon = 1e-14
-            );
-            assert_relative_eq!(
-                *data.get([0, pt, 1, 0]).unwrap(),
-                x * (2.0 * x - 1.0) * (1.0 - y) * (1.0 - 2.0 * y),
-                epsilon = 1e-14
-            );
-            assert_relative_eq!(
-                *data.get([0, pt, 2, 0]).unwrap(),
-                (1.0 - x) * (1.0 - 2.0 * x) * y * (2.0 * y - 1.0),
-                epsilon = 1e-14
-            );
-            assert_relative_eq!(
-                *data.get([0, pt, 3, 0]).unwrap(),
-                x * (2.0 * x - 1.0) * y * (2.0 * y - 1.0),
-                epsilon = 1e-14
-            );
-            assert_relative_eq!(
-                *data.get([0, pt, 4, 0]).unwrap(),
-                4.0 * x * (1.0 - x) * (1.0 - y) * (1.0 - 2.0 * y),
-                epsilon = 1e-14
-            );
-            assert_relative_eq!(
-                *data.get([0, pt, 5, 0]).unwrap(),
-                (1.0 - x) * (1.0 - 2.0 * x) * 4.0 * y * (1.0 - y),
-                epsilon = 1e-14
-            );
-            assert_relative_eq!(
-                *data.get([0, pt, 6, 0]).unwrap(),
-                x * (2.0 * x - 1.0) * 4.0 * y * (1.0 - y),
-                epsilon = 1e-14
-            );
-            assert_relative_eq!(
-                *data.get([0, pt, 7, 0]).unwrap(),
-                4.0 * x * (1.0 - x) * y * (2.0 * y - 1.0),
-                epsilon = 1e-14
-            );
-            assert_relative_eq!(
-                *data.get([0, pt, 8, 0]).unwrap(),
-                4.0 * x * (1.0 - x) * 4.0 * y * (1.0 - y),
-                epsilon = 1e-14
-            );
-        }
-        check_dofs(e);
-    }
-
-    #[test]
-    fn test_lagrange_0_tetrahedron() {
-        let e = lagrange::create::<f64, f64>(
-            ReferenceCellType::Tetrahedron,
-            0,
-            Continuity::Discontinuous,
-        );
-        assert_eq!(e.value_size(), 1);
-        let mut data = DynArray::<f64, 4>::from_shape(e.tabulate_array_shape(0, 6));
-        let mut points = rlst_dynamic_array!(f64, [3, 6]);
-        *points.get_mut([0, 0]).unwrap() = 0.0;
-        *points.get_mut([1, 0]).unwrap() = 0.0;
-        *points.get_mut([2, 0]).unwrap() = 0.0;
-        *points.get_mut([0, 1]).unwrap() = 1.0;
-        *points.get_mut([1, 1]).unwrap() = 0.0;
-        *points.get_mut([2, 1]).unwrap() = 0.0;
-        *points.get_mut([0, 2]).unwrap() = 0.0;
-        *points.get_mut([1, 2]).unwrap() = 1.0;
-        *points.get_mut([2, 2]).unwrap() = 0.0;
-        *points.get_mut([0, 3]).unwrap() = 0.5;
-        *points.get_mut([1, 3]).unwrap() = 0.0;
-        *points.get_mut([2, 3]).unwrap() = 0.5;
-        *points.get_mut([0, 4]).unwrap() = 0.0;
-        *points.get_mut([1, 4]).unwrap() = 0.5;
-        *points.get_mut([2, 4]).unwrap() = 0.5;
-        *points.get_mut([0, 5]).unwrap() = 0.5;
-        *points.get_mut([1, 5]).unwrap() = 0.2;
-        *points.get_mut([2, 5]).unwrap() = 0.3;
-        e.tabulate(&points, 0, &mut data);
-
-        for pt in 0..6 {
-            assert_relative_eq!(*data.get([0, pt, 0, 0]).unwrap(), 1.0);
-        }
-        check_dofs(e);
-    }
-
-    #[test]
-    fn test_lagrange_1_tetrahedron() {
-        let e =
-            lagrange::create::<f64, f64>(ReferenceCellType::Tetrahedron, 1, Continuity::Standard);
-        assert_eq!(e.value_size(), 1);
-        let mut data = DynArray::<f64, 4>::from_shape(e.tabulate_array_shape(0, 6));
-        let mut points = rlst_dynamic_array!(f64, [3, 6]);
-        *points.get_mut([0, 0]).unwrap() = 0.0;
-        *points.get_mut([1, 0]).unwrap() = 0.0;
-        *points.get_mut([2, 0]).unwrap() = 0.0;
-        *points.get_mut([0, 1]).unwrap() = 1.0;
-        *points.get_mut([1, 1]).unwrap() = 0.0;
-        *points.get_mut([2, 1]).unwrap() = 0.0;
-        *points.get_mut([0, 2]).unwrap() = 0.0;
-        *points.get_mut([1, 2]).unwrap() = 0.8;
-        *points.get_mut([2, 2]).unwrap() = 0.2;
-        *points.get_mut([0, 3]).unwrap() = 0.0;
-        *points.get_mut([1, 3]).unwrap() = 0.0;
-        *points.get_mut([2, 3]).unwrap() = 0.8;
-        *points.get_mut([0, 4]).unwrap() = 0.25;
-        *points.get_mut([1, 4]).unwrap() = 0.5;
-        *points.get_mut([2, 4]).unwrap() = 0.1;
-        *points.get_mut([0, 5]).unwrap() = 0.2;
-        *points.get_mut([1, 5]).unwrap() = 0.1;
-        *points.get_mut([2, 5]).unwrap() = 0.15;
-
-        e.tabulate(&points, 0, &mut data);
-
-        for pt in 0..6 {
-            let x = *points.get([0, pt]).unwrap();
-            let y = *points.get([1, pt]).unwrap();
-            let z = *points.get([2, pt]).unwrap();
-            assert_relative_eq!(
-                *data.get([0, pt, 0, 0]).unwrap(),
-                1.0 - x - y - z,
-                epsilon = 1e-14
-            );
-            assert_relative_eq!(*data.get([0, pt, 1, 0]).unwrap(), x, epsilon = 1e-14);
-            assert_relative_eq!(*data.get([0, pt, 2, 0]).unwrap(), y, epsilon = 1e-14);
-            assert_relative_eq!(*data.get([0, pt, 3, 0]).unwrap(), z, epsilon = 1e-14);
-        }
-        check_dofs(e);
-    }
-
-    #[test]
-    fn test_lagrange_0_hexahedron() {
-        let e = lagrange::create::<f64, f64>(
-            ReferenceCellType::Hexahedron,
-            0,
-            Continuity::Discontinuous,
-        );
-        assert_eq!(e.value_size(), 1);
-        let mut data = DynArray::<f64, 4>::from_shape(e.tabulate_array_shape(0, 6));
-        let mut points = rlst_dynamic_array!(f64, [3, 6]);
-        *points.get_mut([0, 0]).unwrap() = 0.0;
-        *points.get_mut([1, 0]).unwrap() = 0.0;
-        *points.get_mut([2, 0]).unwrap() = 0.0;
-        *points.get_mut([0, 1]).unwrap() = 1.0;
-        *points.get_mut([1, 1]).unwrap() = 0.0;
-        *points.get_mut([2, 1]).unwrap() = 0.0;
-        *points.get_mut([0, 2]).unwrap() = 0.0;
-        *points.get_mut([1, 2]).unwrap() = 1.0;
-        *points.get_mut([2, 2]).unwrap() = 0.0;
-        *points.get_mut([0, 3]).unwrap() = 0.5;
-        *points.get_mut([1, 3]).unwrap() = 0.0;
-        *points.get_mut([2, 3]).unwrap() = 0.5;
-        *points.get_mut([0, 4]).unwrap() = 0.0;
-        *points.get_mut([1, 4]).unwrap() = 0.5;
-        *points.get_mut([2, 4]).unwrap() = 0.5;
-        *points.get_mut([0, 5]).unwrap() = 0.5;
-        *points.get_mut([1, 5]).unwrap() = 0.5;
-        *points.get_mut([2, 5]).unwrap() = 0.5;
-        e.tabulate(&points, 0, &mut data);
-
-        for pt in 0..6 {
-            assert_relative_eq!(*data.get([0, pt, 0, 0]).unwrap(), 1.0);
-        }
-        check_dofs(e);
-    }
-
-    #[test]
-    fn test_lagrange_1_hexahedron() {
-        let e =
-            lagrange::create::<f64, f64>(ReferenceCellType::Hexahedron, 1, Continuity::Standard);
-        assert_eq!(e.value_size(), 1);
-        let mut data = DynArray::<f64, 4>::from_shape(e.tabulate_array_shape(0, 6));
-        let mut points = rlst_dynamic_array!(f64, [3, 6]);
-        *points.get_mut([0, 0]).unwrap() = 0.0;
-        *points.get_mut([1, 0]).unwrap() = 0.0;
-        *points.get_mut([2, 0]).unwrap() = 0.0;
-        *points.get_mut([0, 1]).unwrap() = 1.0;
-        *points.get_mut([1, 1]).unwrap() = 0.0;
-        *points.get_mut([2, 1]).unwrap() = 0.0;
-        *points.get_mut([0, 2]).unwrap() = 0.0;
-        *points.get_mut([1, 2]).unwrap() = 1.0;
-        *points.get_mut([2, 2]).unwrap() = 1.0;
-        *points.get_mut([0, 3]).unwrap() = 1.0;
-        *points.get_mut([1, 3]).unwrap() = 1.0;
-        *points.get_mut([2, 3]).unwrap() = 1.0;
-        *points.get_mut([0, 4]).unwrap() = 0.25;
-        *points.get_mut([1, 4]).unwrap() = 0.5;
-        *points.get_mut([2, 4]).unwrap() = 0.1;
-        *points.get_mut([0, 5]).unwrap() = 0.3;
-        *points.get_mut([1, 5]).unwrap() = 0.2;
-        *points.get_mut([2, 5]).unwrap() = 0.4;
-
-        e.tabulate(&points, 0, &mut data);
-
-        for pt in 0..6 {
-            let x = *points.get([0, pt]).unwrap();
-            let y = *points.get([1, pt]).unwrap();
-            let z = *points.get([2, pt]).unwrap();
-            assert_relative_eq!(
-                *data.get([0, pt, 0, 0]).unwrap(),
-                (1.0 - x) * (1.0 - y) * (1.0 - z),
-                epsilon = 1e-14
-            );
-            assert_relative_eq!(
-                *data.get([0, pt, 1, 0]).unwrap(),
-                x * (1.0 - y) * (1.0 - z),
-                epsilon = 1e-14
-            );
-            assert_relative_eq!(
-                *data.get([0, pt, 2, 0]).unwrap(),
-                (1.0 - x) * y * (1.0 - z),
-                epsilon = 1e-14
-            );
-            assert_relative_eq!(
-                *data.get([0, pt, 3, 0]).unwrap(),
-                x * y * (1.0 - z),
-                epsilon = 1e-14
-            );
-            assert_relative_eq!(
-                *data.get([0, pt, 4, 0]).unwrap(),
-                (1.0 - x) * (1.0 - y) * z,
-                epsilon = 1e-14
-            );
-            assert_relative_eq!(
-                *data.get([0, pt, 5, 0]).unwrap(),
-                x * (1.0 - y) * z,
-                epsilon = 1e-14
-            );
-            assert_relative_eq!(
-                *data.get([0, pt, 6, 0]).unwrap(),
-                (1.0 - x) * y * z,
-                epsilon = 1e-14
-            );
-            assert_relative_eq!(
-                *data.get([0, pt, 7, 0]).unwrap(),
-                x * y * z,
-                epsilon = 1e-14
-            );
-        }
-        check_dofs(e);
-    }
-
-    #[test]
-    fn test_lagrange_higher_degree_triangle() {
-        lagrange::create::<f64, f64>(ReferenceCellType::Triangle, 2, Continuity::Standard);
-        lagrange::create::<f64, f64>(ReferenceCellType::Triangle, 3, Continuity::Standard);
-        lagrange::create::<f64, f64>(ReferenceCellType::Triangle, 4, Continuity::Standard);
-        lagrange::create::<f64, f64>(ReferenceCellType::Triangle, 5, Continuity::Standard);
-
-        lagrange::create::<f64, f64>(ReferenceCellType::Triangle, 2, Continuity::Discontinuous);
-        lagrange::create::<f64, f64>(ReferenceCellType::Triangle, 3, Continuity::Discontinuous);
-        lagrange::create::<f64, f64>(ReferenceCellType::Triangle, 4, Continuity::Discontinuous);
-        lagrange::create::<f64, f64>(ReferenceCellType::Triangle, 5, Continuity::Discontinuous);
-    }
-
-    #[test]
-    fn test_lagrange_higher_degree_interval() {
-        lagrange::create::<f64, f64>(ReferenceCellType::Interval, 2, Continuity::Standard);
-        lagrange::create::<f64, f64>(ReferenceCellType::Interval, 3, Continuity::Standard);
-        lagrange::create::<f64, f64>(ReferenceCellType::Interval, 4, Continuity::Standard);
-        lagrange::create::<f64, f64>(ReferenceCellType::Interval, 5, Continuity::Standard);
-
-        lagrange::create::<f64, f64>(ReferenceCellType::Interval, 2, Continuity::Discontinuous);
-        lagrange::create::<f64, f64>(ReferenceCellType::Interval, 3, Continuity::Discontinuous);
-        lagrange::create::<f64, f64>(ReferenceCellType::Interval, 4, Continuity::Discontinuous);
-        lagrange::create::<f64, f64>(ReferenceCellType::Interval, 5, Continuity::Discontinuous);
-    }
-
-    #[test]
-    fn test_lagrange_higher_degree_quadrilateral() {
-        lagrange::create::<f64, f64>(ReferenceCellType::Quadrilateral, 2, Continuity::Standard);
-        lagrange::create::<f64, f64>(ReferenceCellType::Quadrilateral, 3, Continuity::Standard);
-        lagrange::create::<f64, f64>(ReferenceCellType::Quadrilateral, 4, Continuity::Standard);
-        lagrange::create::<f64, f64>(ReferenceCellType::Quadrilateral, 5, Continuity::Standard);
-
-        lagrange::create::<f64, f64>(
-            ReferenceCellType::Quadrilateral,
-            2,
-            Continuity::Discontinuous,
-        );
-        lagrange::create::<f64, f64>(
-            ReferenceCellType::Quadrilateral,
-            3,
-            Continuity::Discontinuous,
-        );
-        lagrange::create::<f64, f64>(
-            ReferenceCellType::Quadrilateral,
-            4,
-            Continuity::Discontinuous,
-        );
-        lagrange::create::<f64, f64>(
-            ReferenceCellType::Quadrilateral,
-            5,
-            Continuity::Discontinuous,
-        );
     }
 
     #[test]
@@ -1842,7 +1354,7 @@ mod test {
             paste! {
                 #[test]
                 fn [<test_entity_closure_dofs_ $cell:lower _ $degree>]() {
-                    let e = lagrange::create::<f64, f64>(ReferenceCellType::[<$cell>], [<$degree>], Continuity::Standard);
+                    let e = lagrange::create::<f64, f64>(ReferenceCellType::[<$cell>], [<$degree>], Continuity::Standard, LagrangeVariant::Equispaced);
                     let c = reference_cell::connectivity(ReferenceCellType::[<$cell>]);
 
                     for (dim, entities) in c.iter().enumerate() {
@@ -1886,12 +1398,12 @@ mod test {
     test_entity_closure_dofs_lagrange!(Hexahedron, 3);
 
     macro_rules! test_dof_transformations {
-        ($cell:ident, $element:ident, $degree:expr) => {
+        ($cell:ident, $element:ident, $degree:expr $(, $variant:expr)*) => {
             paste! {
 
                 #[test]
                 fn [<test_dof_transformations_ $cell:lower _ $element:lower _ $degree>]() {
-                    let e = [<$element>]::create::<f64, f64>(ReferenceCellType::[<$cell>], [<$degree>], Continuity::Standard);
+                    let e = [<$element>]::create::<f64, f64>(ReferenceCellType::[<$cell>], [<$degree>], Continuity::Standard, $($variant),*);
                     let tdim = reference_cell::dim(ReferenceCellType::[<$cell>]);
                     for edim in 1..tdim {
                         for entity in &reference_cell::entity_types(ReferenceCellType::[<$cell>])[edim] {
@@ -1939,18 +1451,18 @@ mod test {
         };
     }
 
-    test_dof_transformations!(Triangle, lagrange, 1);
-    test_dof_transformations!(Triangle, lagrange, 2);
-    test_dof_transformations!(Triangle, lagrange, 3);
-    test_dof_transformations!(Quadrilateral, lagrange, 1);
-    test_dof_transformations!(Quadrilateral, lagrange, 2);
-    test_dof_transformations!(Quadrilateral, lagrange, 3);
-    test_dof_transformations!(Tetrahedron, lagrange, 1);
-    test_dof_transformations!(Tetrahedron, lagrange, 2);
-    test_dof_transformations!(Tetrahedron, lagrange, 3);
-    test_dof_transformations!(Hexahedron, lagrange, 1);
-    test_dof_transformations!(Hexahedron, lagrange, 2);
-    test_dof_transformations!(Hexahedron, lagrange, 3);
+    test_dof_transformations!(Triangle, lagrange, 1, LagrangeVariant::Equispaced);
+    test_dof_transformations!(Triangle, lagrange, 2, LagrangeVariant::Equispaced);
+    test_dof_transformations!(Triangle, lagrange, 3, LagrangeVariant::Equispaced);
+    test_dof_transformations!(Quadrilateral, lagrange, 1, LagrangeVariant::Equispaced);
+    test_dof_transformations!(Quadrilateral, lagrange, 2, LagrangeVariant::Equispaced);
+    test_dof_transformations!(Quadrilateral, lagrange, 3, LagrangeVariant::Equispaced);
+    test_dof_transformations!(Tetrahedron, lagrange, 1, LagrangeVariant::Equispaced);
+    test_dof_transformations!(Tetrahedron, lagrange, 2, LagrangeVariant::Equispaced);
+    test_dof_transformations!(Tetrahedron, lagrange, 3, LagrangeVariant::Equispaced);
+    test_dof_transformations!(Hexahedron, lagrange, 1, LagrangeVariant::Equispaced);
+    test_dof_transformations!(Hexahedron, lagrange, 2, LagrangeVariant::Equispaced);
+    test_dof_transformations!(Hexahedron, lagrange, 3, LagrangeVariant::Equispaced);
     test_dof_transformations!(Triangle, nedelec, 1);
     test_dof_transformations!(Triangle, nedelec, 2);
     test_dof_transformations!(Triangle, nedelec, 3);
@@ -2164,8 +1676,12 @@ mod test {
 
     #[test]
     fn test_lagrange4_tetrahedron_dof_transformations() {
-        let e =
-            lagrange::create::<f64, f64>(ReferenceCellType::Tetrahedron, 4, Continuity::Standard);
+        let e = lagrange::create::<f64, f64>(
+            ReferenceCellType::Tetrahedron,
+            4,
+            Continuity::Standard,
+            LagrangeVariant::Equispaced,
+        );
         if let DofTransformation::Permutation(p) = e
             .dof_transformation(ReferenceCellType::Interval, Transformation::Reflection)
             .unwrap()
@@ -2209,7 +1725,12 @@ mod test {
 
     #[test]
     fn test_dof_permuting_triangle() {
-        let e = lagrange::create::<f64, f64>(ReferenceCellType::Triangle, 3, Continuity::Standard);
+        let e = lagrange::create::<f64, f64>(
+            ReferenceCellType::Triangle,
+            3,
+            Continuity::Standard,
+            LagrangeVariant::Equispaced,
+        );
 
         let mut n = (0..10).collect::<Vec<_>>();
         e.apply_dof_permutations(&mut n, 7);
@@ -2231,8 +1752,12 @@ mod test {
 
     #[test]
     fn test_dof_permuting_tetrahedron() {
-        let e =
-            lagrange::create::<f64, f64>(ReferenceCellType::Tetrahedron, 3, Continuity::Standard);
+        let e = lagrange::create::<f64, f64>(
+            ReferenceCellType::Tetrahedron,
+            3,
+            Continuity::Standard,
+            LagrangeVariant::Equispaced,
+        );
 
         let mut n = (0..20).collect::<Vec<_>>();
         e.apply_dof_permutations(&mut n, 63);

@@ -14,7 +14,7 @@ mod test {
     use approx::assert_relative_eq;
     use itertools::izip;
     use ndelement::{
-        ciarlet::{CiarletElement, LagrangeElementFamily},
+        ciarlet::{CiarletElement, LagrangeElementFamily, LagrangeVariant},
         map::IdentityMap,
         reference_cell,
         traits::FiniteElement,
@@ -29,7 +29,8 @@ mod test {
         *points.get_mut([0, 0]).unwrap() = 0.0;
         *points.get_mut([0, 1]).unwrap() = 1.0;
         *points.get_mut([0, 2]).unwrap() = 2.0;
-        let family = LagrangeElementFamily::<f64>::new(1, Continuity::Standard);
+        let family =
+            LagrangeElementFamily::<f64>::new(1, Continuity::Standard, LagrangeVariant::Equispaced);
         SingleElementGeometry::<f64, CiarletElement<f64, IdentityMap, f64>>::new(
             ReferenceCellType::Interval,
             points,
@@ -47,7 +48,8 @@ mod test {
         *points.get_mut([1, 1]).unwrap() = 1.0;
         *points.get_mut([0, 2]).unwrap() = 2.0;
         *points.get_mut([1, 2]).unwrap() = 0.0;
-        let family = LagrangeElementFamily::<f64>::new(1, Continuity::Standard);
+        let family =
+            LagrangeElementFamily::<f64>::new(1, Continuity::Standard, LagrangeVariant::Equispaced);
         SingleElementGeometry::<f64, CiarletElement<f64, IdentityMap, f64>>::new(
             ReferenceCellType::Interval,
             points,
@@ -68,7 +70,8 @@ mod test {
         *points.get_mut([0, 2]).unwrap() = 2.0;
         *points.get_mut([1, 2]).unwrap() = 0.0;
         *points.get_mut([2, 2]).unwrap() = 0.0;
-        let family = LagrangeElementFamily::<f64>::new(1, Continuity::Standard);
+        let family =
+            LagrangeElementFamily::<f64>::new(1, Continuity::Standard, LagrangeVariant::Equispaced);
         SingleElementGeometry::<f64, CiarletElement<f64, IdentityMap, f64>>::new(
             ReferenceCellType::Interval,
             points,
@@ -90,7 +93,8 @@ mod test {
         *points.get_mut([1, 3]).unwrap() = 0.0;
         *points.get_mut([0, 4]).unwrap() = 1.5;
         *points.get_mut([1, 4]).unwrap() = 0.5;
-        let family = LagrangeElementFamily::<f64>::new(2, Continuity::Standard);
+        let family =
+            LagrangeElementFamily::<f64>::new(2, Continuity::Standard, LagrangeVariant::Equispaced);
         SingleElementGeometry::<f64, CiarletElement<f64, IdentityMap, f64>>::new(
             ReferenceCellType::Interval,
             points,
@@ -110,7 +114,8 @@ mod test {
         *points.get_mut([1, 2]).unwrap() = 1.0;
         *points.get_mut([0, 3]).unwrap() = 2.0;
         *points.get_mut([1, 3]).unwrap() = 1.0;
-        let family = LagrangeElementFamily::<f64>::new(1, Continuity::Standard);
+        let family =
+            LagrangeElementFamily::<f64>::new(1, Continuity::Standard, LagrangeVariant::Equispaced);
         SingleElementGeometry::<f64, CiarletElement<f64, IdentityMap, f64>>::new(
             ReferenceCellType::Triangle,
             points,
@@ -134,7 +139,8 @@ mod test {
         *points.get_mut([0, 3]).unwrap() = 2.0;
         *points.get_mut([1, 3]).unwrap() = 1.0;
         *points.get_mut([2, 3]).unwrap() = 0.0;
-        let family = LagrangeElementFamily::<f64>::new(1, Continuity::Standard);
+        let family =
+            LagrangeElementFamily::<f64>::new(1, Continuity::Standard, LagrangeVariant::Equispaced);
         SingleElementGeometry::<f64, CiarletElement<f64, IdentityMap, f64>>::new(
             ReferenceCellType::Triangle,
             points,
@@ -164,7 +170,8 @@ mod test {
         *points.get_mut([1, 7]).unwrap() = 0.5;
         *points.get_mut([0, 8]).unwrap() = 0.5;
         *points.get_mut([1, 8]).unwrap() = 1.2;
-        let family = LagrangeElementFamily::<f64>::new(2, Continuity::Standard);
+        let family =
+            LagrangeElementFamily::<f64>::new(2, Continuity::Standard, LagrangeVariant::Equispaced);
         SingleElementGeometry::<f64, CiarletElement<f64, IdentityMap, f64>>::new(
             ReferenceCellType::Triangle,
             points,
@@ -188,7 +195,8 @@ mod test {
         *points.get_mut([1, 4]).unwrap() = 2.0;
         *points.get_mut([0, 5]).unwrap() = 3.0;
         *points.get_mut([1, 5]).unwrap() = 2.0;
-        let family = LagrangeElementFamily::<f64>::new(1, Continuity::Standard);
+        let family =
+            LagrangeElementFamily::<f64>::new(1, Continuity::Standard, LagrangeVariant::Equispaced);
         SingleElementGeometry::<f64, CiarletElement<f64, IdentityMap, f64>>::new(
             ReferenceCellType::Quadrilateral,
             points,

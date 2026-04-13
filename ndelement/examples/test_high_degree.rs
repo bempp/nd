@@ -9,7 +9,7 @@ fn main() {
         ($cell:ident, $degree:expr) => {
             paste! {
                 println!("Constructing Lagrange(degree={}, cell={:?})", [<$degree>], ReferenceCellType::[<$cell>]);
-                let _e = lagrange::create::<f64, f64>(ReferenceCellType::[<$cell>], [<$degree>], Continuity::Standard);
+                let _e = lagrange::create::<f64, f64>(ReferenceCellType::[<$cell>], [<$degree>], Continuity::Standard, lagrange::Variant::Equispaced);
             }
         };
     }

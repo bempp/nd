@@ -103,7 +103,12 @@ where
                         .map(|(cell, degree)| {
                             (
                                 *cell,
-                                lagrange::create(*cell, *degree, Continuity::Standard),
+                                lagrange::create(
+                                    *cell,
+                                    *degree,
+                                    Continuity::Standard,
+                                    lagrange::Variant::Equispaced,
+                                ),
                             )
                         })
                         .collect::<HashMap<_, _>>()

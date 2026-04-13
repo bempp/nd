@@ -251,7 +251,7 @@ pub mod polynomials {
 pub mod ciarlet {
     use crate::{
         ciarlet,
-        ciarlet::CiarletElement,
+        ciarlet::{CiarletElement, LagrangeVariant},
         map::{ContravariantPiolaMap, CovariantPiolaMap, IdentityMap},
         reference_cell,
         traits::{ElementFamily, FiniteElement, Map, MappedFiniteElement},
@@ -291,6 +291,7 @@ pub mod ciarlet {
     pub extern "C" fn create_lagrange_family(
         degree: usize,
         continuity: Continuity,
+        variant: LagrangeVariant,
         dtype: DType,
     ) -> *mut ElementFamilyT {
         let family = element_family_t_create();
@@ -298,16 +299,16 @@ pub mod ciarlet {
 
         *family_inner = match dtype {
             DType::F32 => Box::new(ciarlet::LagrangeElementFamily::<f32>::new(
-                degree, continuity,
+                degree, continuity, variant,
             )),
             DType::F64 => Box::new(ciarlet::LagrangeElementFamily::<f64>::new(
-                degree, continuity,
+                degree, continuity, variant,
             )),
             DType::C32 => Box::new(ciarlet::LagrangeElementFamily::<c32>::new(
-                degree, continuity,
+                degree, continuity, variant,
             )),
             DType::C64 => Box::new(ciarlet::LagrangeElementFamily::<c64>::new(
-                degree, continuity,
+                degree, continuity, variant,
             )),
             _ => panic!("Unsupported dtype"),
         };

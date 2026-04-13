@@ -8,7 +8,7 @@ use crate::{
     types::Scalar,
 };
 use ndelement::{
-    ciarlet::{CiarletElement, LagrangeElementFamily, lagrange},
+    ciarlet::{CiarletElement, LagrangeElementFamily, LagrangeVariant, lagrange},
     map::IdentityMap,
     reference_cell,
     traits::FiniteElement,
@@ -70,7 +70,12 @@ impl<T: Scalar> SingleElementMeshBuilder<T> {
         ncells: usize,
         data: (ReferenceCellType, usize),
     ) -> Self {
-        let element = lagrange::create::<T, T>(data.0, data.1, Continuity::Standard);
+        let element = lagrange::create::<T, T>(
+            data.0,
+            data.1,
+            Continuity::Standard,
+            LagrangeVariant::Equispaced,
+        );
         let points_per_cell = element.dim();
         Self {
             gdim,
@@ -245,7 +250,11 @@ impl<T: Scalar> GeometryBuilder for SingleElementMeshBuilder<T> {
         let mut points = rlst_dynamic_array!(T, [self.gdim(), npts]);
         points.data_mut().unwrap().copy_from_slice(coordinates);
 
-        let family = LagrangeElementFamily::<T, T>::new(self.element_data.1, Continuity::Standard);
+        let family = LagrangeElementFamily::<T, T>::new(
+            self.element_data.1,
+            Continuity::Standard,
+            LagrangeVariant::Equispaced,
+        );
 
         SingleElementGeometry::<T, CiarletElement<T, IdentityMap, T>>::new(
             self.element_data.0,

@@ -1,6 +1,6 @@
 use mpi::{environment::Universe, traits::Communicator};
 use ndelement::{
-    ciarlet::LagrangeElementFamily,
+    ciarlet::{LagrangeElementFamily, LagrangeVariant},
     types::{Continuity, ReferenceCellType},
 };
 use ndfunctionspace::{
@@ -23,7 +23,8 @@ fn test_parallel_function_space<C: Communicator>(comm: &C) {
         ReferenceCellType::Tetrahedron,
     );
 
-    let family = LagrangeElementFamily::<f64>::new(2, Continuity::Standard);
+    let family =
+        LagrangeElementFamily::<f64>::new(2, Continuity::Standard, LagrangeVariant::Equispaced);
     let space = ParallelFunctionSpaceImpl::new(&mesh, &family);
     let serial_mesh = unit_cube::<f64>(4, 4, 4, ReferenceCellType::Tetrahedron);
     let serial_space = FunctionSpaceImpl::new(&serial_mesh, &family);

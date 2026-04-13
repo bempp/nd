@@ -22,7 +22,12 @@ fn test_lagrange_push_forward() {
     b.add_cell(1, &[1, 2, 3]);
     let mesh = b.create_mesh();
 
-    let e = lagrange::create::<f64, f64>(ReferenceCellType::Triangle, 4, Continuity::Standard);
+    let e = lagrange::create::<f64, f64>(
+        ReferenceCellType::Triangle,
+        4,
+        Continuity::Standard,
+        lagrange::Variant::Equispaced,
+    );
 
     let npts = 5;
 

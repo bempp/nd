@@ -430,7 +430,12 @@ mod test {
 
     #[test]
     fn test_geometry_map_3_2() {
-        let e = lagrange::create::<f64, f64>(ReferenceCellType::Triangle, 1, Continuity::Standard);
+        let e = lagrange::create::<f64, f64>(
+            ReferenceCellType::Triangle,
+            1,
+            Continuity::Standard,
+            lagrange::Variant::Equispaced,
+        );
         let mut rng = ChaCha8Rng::seed_from_u64(13);
 
         let npts = 4;
