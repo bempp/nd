@@ -251,7 +251,7 @@ pub mod polynomials {
 pub mod ciarlet {
     use crate::{
         ciarlet,
-        ciarlet::{CiarletElement, LagrangeVariant},
+        ciarlet::CiarletElement,
         map::{ContravariantPiolaMap, CovariantPiolaMap, IdentityMap},
         reference_cell,
         traits::{ElementFamily, FiniteElement, Map, MappedFiniteElement},
@@ -266,9 +266,9 @@ pub mod ciarlet {
     #[derive(Debug, PartialEq, Clone, Copy)]
     #[repr(u8)]
     pub enum ElementType {
-        Lagrange = 0,
-        RaviartThomas = 1,
-        NedelecFirstKind = 2,
+        Lagrange,
+        RaviartThomas,
+        NedelecFirstKind,
     }
 
     #[cfuncs(name = "ciarlet_element_t", create, free, unwrap)]
@@ -291,7 +291,7 @@ pub mod ciarlet {
     pub extern "C" fn create_lagrange_family(
         degree: usize,
         continuity: Continuity,
-        variant: LagrangeVariant,
+        variant: ciarlet::lagrange::Variant,
         dtype: DType,
     ) -> *mut ElementFamilyT {
         let family = element_family_t_create();

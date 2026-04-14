@@ -24,6 +24,13 @@ class Family(Enum):
     NedelecFirstKind = 2
 
 
+class LagrangeVariant(Enum):
+    """Variant of Lagrange element."""
+
+    Equispaced = _lib.Variant_Equispaced
+    GLL = _lib.Variant_GLL
+
+
 _rtypes = {
     np.float32: _lib.DType_F32,
     np.float64: _lib.DType_F64,
@@ -340,6 +347,7 @@ class ElementFamily(object):
         family: Family,
         degree: int,
         continuity: Continuity,
+        lagrange_variant: LagrangeVariant | None,
         rs_family: _CDataBase,
         owned: bool = True,
     ):
@@ -349,6 +357,7 @@ class ElementFamily(object):
         self._family = family
         self._degree = degree
         self._continuity = continuity
+        self._lagrange_variant = lagrange_variant
 
     def __del__(self):
         """Delete object."""
@@ -384,29 +393,41 @@ def create_family(
     family: Family,
     degree: int,
     continuity: Continuity = Continuity.Standard,
+    lagrange_variant: LagrangeVariant | None = None,
     dtype: typing.Type[np.floating] = np.float64,
 ) -> ElementFamily:
     """Create a new element family."""
     rust_type = _rtypes[dtype]
     if family == Family.Lagrange:
+        if lagrange_variant is None:
+            lagrange_variant = LagrangeVariant.Equispaced
         return ElementFamily(
             family,
             degree,
             continuity,
-            _lib.create_lagrange_family(degree, continuity.value, rust_type),
+            lagrange_variant,
+            _lib.create_lagrange_family(
+                degree, continuity.value, lagrange_variant.value, rust_type
+            ),
         )
     elif family == Family.RaviartThomas:
+        if lagrange_variant is not None:
+            raise ValueError("Lagrange variant cannot be used with this element type")
         return ElementFamily(
             family,
             degree,
             continuity,
+            None,
             _lib.create_raviart_thomas_family(degree, continuity.value, rust_type),
         )
     elif family == Family.NedelecFirstKind:
+        if lagrange_variant is not None:
+            raise ValueError("Lagrange variant cannot be used with this element type")
         return ElementFamily(
             family,
             degree,
             continuity,
+            None,
             _lib.create_nedelec_family(degree, continuity.value, rust_type),
         )
     else:
