@@ -26,3 +26,5 @@ _*.msh
 ndelement/python/ndelement/_ndelementrs
 *.pyc
 python/docs/_build
+
+joss/paper.pdf
