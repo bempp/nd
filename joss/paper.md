@@ -32,7 +32,7 @@ the definition of a set of (usually) polynomial basis functions on each cell. A 
 one of these methods will typically be built around two core pieces of functionality:
 the creation and storage of a mesh, and the definition of basis functions on a cell.
 
-The Rust programming language [@rust] has recieved significant attention in recent years, and
+The Rust programming language [@rust] has received significant attention in recent years, and
 the community using it for scientific applications is steadily growing. Rust is a compiled language,
 with strict typing and memory safety enforced by the compiler, supported by high quality modern tooling
 and package management. There are a number of features of Rust that make it a highly powerful
@@ -310,7 +310,7 @@ degree-of-freedom (DOF) numbers to each cell. These function spaces can be used 
 boundary element methods, and so this development is our next step towards implementing these methods
 in Rust.
 
-# AI usage
+# AI usage disclosure
 AI inline suggestions from Github Copilot were used for code documentation and as general coding
 support tool. No agentic tools were used in the development of the libraries. All AI suggestions
 were thoroughly checked before being merged into the main branch.
