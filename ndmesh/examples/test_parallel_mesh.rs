@@ -1,3 +1,4 @@
+use itertools::izip;
 use mpi::{
     collective::SystemOperation, environment::Universe, topology::Communicator,
     traits::CommunicatorCollectives,
@@ -43,14 +44,13 @@ fn run_partitioner_test<C: Communicator>(comm: &C, partitioner: GraphPartitioner
     };
 
     // Check that owned cells are sorted ahead of ghost cells
-
     let cell_count_owned = mesh
         .local_mesh()
         .entity_iter(ReferenceCellType::Quadrilateral)
         .filter(|entity| entity.is_owned())
         .count();
 
-    // Now check that the first `cell_count_owned` entities are actually owned.
+    // Check that the first `cell_count_owned` entities are actually owned.
     for cell in mesh
         .local_mesh()
         .entity_iter(ReferenceCellType::Quadrilateral)
@@ -59,17 +59,14 @@ fn run_partitioner_test<C: Communicator>(comm: &C, partitioner: GraphPartitioner
         assert!(cell.is_owned())
     }
 
-    // Now make sure that the indices of the global cells are in consecutive order
-
-    let mut cell_global_count = mesh.cell_layout().local_range().0;
-
-    for cell in mesh
-        .local_mesh()
-        .entity_iter(ReferenceCellType::Quadrilateral)
-        .take(cell_count_owned)
-    {
+    // Make sure that the indices of the global cells are in consecutive order
+    for (cell_global_count, cell) in izip!(
+        mesh.cell_layout().local_range().0..,
+        mesh.local_mesh()
+            .entity_iter(ReferenceCellType::Quadrilateral)
+            .take(cell_count_owned)
+    ) {
         assert_eq!(cell.global_index(), cell_global_count);
-        cell_global_count += 1;
     }
 
     // Get the global indices.

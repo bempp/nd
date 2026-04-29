@@ -1,3 +1,4 @@
+use itertools::izip;
 use mpi::{
     collective::SystemOperation, environment::Universe, topology::Communicator,
     traits::CommunicatorCollectives,
@@ -63,15 +64,13 @@ fn main() {
     }
 
     // Now make sure that the indices of the global cells are in consecutive order
-    let mut cell_global_count = mesh.cell_layout().local_range().0;
-
-    for cell in mesh
-        .local_mesh()
-        .entity_iter(ReferenceCellType::Quadrilateral)
-        .take(cell_count_owned)
-    {
+    for (cell_global_count, cell) in izip!(
+        mesh.cell_layout().local_range().0..,
+        mesh.local_mesh()
+            .entity_iter(ReferenceCellType::Quadrilateral)
+            .take(cell_count_owned)
+    ) {
         assert_eq!(cell.global_index(), cell_global_count);
-        cell_global_count += 1;
     }
 
     // Get the global indices
