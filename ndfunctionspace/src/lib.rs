@@ -3,6 +3,7 @@
 #![cfg_attr(feature = "strict", deny(warnings), deny(unused_crate_dependencies))]
 #![warn(missing_docs)]
 
+pub mod function;
 mod function_space;
 pub mod traits;
 pub use function_space::FunctionSpaceImpl;
