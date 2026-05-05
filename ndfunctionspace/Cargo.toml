@@ -36,7 +36,7 @@ rlst = "0.6"
 
 [package.metadata.docs.rs]
 cargo-args = ["-Zunstable-options", "-Zrustdoc-scrape-examples"]
-rustdoc-args = [ "--html-in-header", "../katex-header.html" ]
+rustdoc-args = [ "--html-in-header", "katex-header.html" ]
 
 [lints.clippy]
 wildcard_imports = "forbid"
