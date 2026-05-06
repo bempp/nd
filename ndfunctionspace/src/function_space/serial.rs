@@ -10,6 +10,7 @@ use ndmesh::{
     traits::{Entity, Mesh, Topology},
     types::Ownership,
 };
+use rlst::RlstScalar;
 use std::collections::HashMap;
 use std::fmt::Debug;
 use std::hash::Hash;
@@ -17,9 +18,11 @@ use std::hash::Hash;
 /// Function space.
 pub struct FunctionSpaceImpl<
     'a,
+    T: RlstScalar,
+    TMesh: RlstScalar,
     E: Debug + PartialEq + Eq + Clone + Copy + Hash,
-    G: Mesh<EntityDescriptor = E>,
-    F: MappedFiniteElement<CellType = E>,
+    G: Mesh<EntityDescriptor = E, T = TMesh>,
+    F: MappedFiniteElement<CellType = E, T = T>,
 > {
     mesh: &'a G,
     elements: Vec<F>,
@@ -31,9 +34,11 @@ pub struct FunctionSpaceImpl<
 
 impl<
     'a,
-    G: Mesh<EntityDescriptor = ReferenceCellType>,
-    F: MappedFiniteElement<CellType = ReferenceCellType>,
-> FunctionSpaceImpl<'a, ReferenceCellType, G, F>
+    T: RlstScalar,
+    TMesh: RlstScalar,
+    G: Mesh<EntityDescriptor = ReferenceCellType, T = TMesh>,
+    F: MappedFiniteElement<CellType = ReferenceCellType, T = T>,
+> FunctionSpaceImpl<'a, T, TMesh, ReferenceCellType, G, F>
 {
     /// Create a new serial function space
     pub fn new<EF: ElementFamily<FiniteElement = F, CellType = ReferenceCellType>>(
@@ -107,11 +112,15 @@ impl<
 
 impl<
     'a,
+    T: RlstScalar,
+    TMesh: RlstScalar,
     E: Debug + PartialEq + Eq + Clone + Copy + Hash,
-    G: Mesh<EntityDescriptor = E>,
-    F: MappedFiniteElement<CellType = E>,
-> FunctionSpace for FunctionSpaceImpl<'a, E, G, F>
+    G: Mesh<EntityDescriptor = E, T = TMesh>,
+    F: MappedFiniteElement<CellType = E, T = T>,
+> FunctionSpace for FunctionSpaceImpl<'a, T, TMesh, E, G, F>
 {
+    type T = T;
+    type TMesh = TMesh;
     type EntityDescriptor = E;
     type Mesh = G;
     type FiniteElement = F;
@@ -154,7 +163,11 @@ impl<
         }
     }
 
-    fn local_size(&self) -> usize {
+    fn process_size(&self) -> usize {
+        self.ndofs
+    }
+
+    fn process_owned_size(&self) -> usize {
         self.ndofs
     }
 
@@ -162,11 +175,11 @@ impl<
         self.ndofs
     }
 
-    fn global_dof_index(&self, local_dof_index: usize) -> usize {
-        local_dof_index
+    fn global_dof_index(&self, process_dof_index: usize) -> usize {
+        process_dof_index
     }
 
-    fn ownership(&self, _local_dof_index: usize) -> Ownership {
+    fn ownership(&self, _process_dof_index: usize) -> Ownership {
         Ownership::Owned
     }
 }
@@ -192,7 +205,7 @@ mod test {
         let space = FunctionSpaceImpl::new(&mesh, &family);
 
         assert_eq!(
-            space.local_size(),
+            space.process_size(),
             mesh.entity_count(ReferenceCellType::Triangle)
         );
 
@@ -255,7 +268,7 @@ mod test {
         let space = FunctionSpaceImpl::new(&mesh, &family);
 
         assert_eq!(
-            space.local_size(),
+            space.process_size(),
             mesh.entity_count(ReferenceCellType::Point)
         );
 
@@ -321,7 +334,7 @@ mod test {
         let space = FunctionSpaceImpl::new(&mesh, &family);
 
         assert_eq!(
-            space.local_size(),
+            space.process_size(),
             3 * mesh.entity_count(ReferenceCellType::Triangle)
         );
 
@@ -384,7 +397,7 @@ mod test {
         let space = FunctionSpaceImpl::new(&mesh, &family);
 
         assert_eq!(
-            space.local_size(),
+            space.process_size(),
             mesh.entity_count(ReferenceCellType::Point)
                 + mesh.entity_count(ReferenceCellType::Interval)
         );
@@ -448,7 +461,7 @@ mod test {
         let space = FunctionSpaceImpl::new(&mesh, &family);
 
         assert_eq!(
-            space.local_size(),
+            space.process_size(),
             mesh.entity_count(ReferenceCellType::Point)
                 + 2 * mesh.entity_count(ReferenceCellType::Interval)
                 + mesh.entity_count(ReferenceCellType::Triangle)
@@ -513,7 +526,7 @@ mod test {
         let space = FunctionSpaceImpl::new(&mesh, &family);
 
         assert_eq!(
-            space.local_size(),
+            space.process_size(),
             mesh.entity_count(ReferenceCellType::Point)
         );
 
@@ -576,7 +589,7 @@ mod test {
         let space = FunctionSpaceImpl::new(&mesh, &family);
 
         assert_eq!(
-            space.local_size(),
+            space.process_size(),
             mesh.entity_count(ReferenceCellType::Point)
                 + mesh.entity_count(ReferenceCellType::Interval)
                 + mesh.entity_count(ReferenceCellType::Quadrilateral)

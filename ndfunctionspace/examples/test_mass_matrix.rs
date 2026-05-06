@@ -22,7 +22,7 @@ fn test_lagrange_mass_matrix() {
         LagrangeElementFamily::<f64>::new(1, Continuity::Standard, LagrangeVariant::Equispaced);
     let space = FunctionSpaceImpl::new(&mesh, &family);
 
-    let mut mass_matrix = rlst_dynamic_array!(f64, [space.local_size(), space.local_size()]);
+    let mut mass_matrix = rlst_dynamic_array!(f64, [space.process_size(), space.process_size()]);
 
     let element = &space.elements()[0];
 
@@ -90,7 +90,7 @@ fn test_rt_mass_matrix() {
     let family = RaviartThomasElementFamily::<f64>::new(1, Continuity::Standard);
     let space = FunctionSpaceImpl::new(&mesh, &family);
 
-    let mut mass_matrix = rlst_dynamic_array!(f64, [space.local_size(), space.local_size()]);
+    let mut mass_matrix = rlst_dynamic_array!(f64, [space.process_size(), space.process_size()]);
 
     let element = &space.elements()[0];
 

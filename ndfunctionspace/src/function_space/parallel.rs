@@ -15,19 +15,19 @@ use ndmesh::{
     traits::{Entity, Mesh, ParallelMesh},
     types::Ownership,
 };
-use rlst::distributed_tools::array_tools::all_to_allv;
+use rlst::{RlstScalar, distributed_tools::array_tools::all_to_allv};
 use std::fmt::Debug;
 use std::hash::Hash;
 
-/// Local function space on a process
-pub struct LocalFunctionSpace<S: FunctionSpace> {
+/// Function space on a process
+pub struct ProcessFunctionSpace<S: FunctionSpace> {
     space: S,
     global_size: usize,
     global_dof_indices: Vec<usize>,
     ownership: Vec<Ownership>,
 }
 
-impl<S: FunctionSpace> LocalFunctionSpace<S> {
+impl<S: FunctionSpace> ProcessFunctionSpace<S> {
     fn new(
         space: S,
         global_size: usize,
@@ -43,7 +43,9 @@ impl<S: FunctionSpace> LocalFunctionSpace<S> {
     }
 }
 
-impl<S: FunctionSpace> FunctionSpace for LocalFunctionSpace<S> {
+impl<S: FunctionSpace> FunctionSpace for ProcessFunctionSpace<S> {
+    type T = S::T;
+    type TMesh = S::TMesh;
     type EntityDescriptor = S::EntityDescriptor;
     type Mesh = S::Mesh;
     type FiniteElement = S::FiniteElement;
@@ -76,34 +78,43 @@ impl<S: FunctionSpace> FunctionSpace for LocalFunctionSpace<S> {
         self.space.entity_closure_dofs(entity_type, entity_number)
     }
 
-    fn local_size(&self) -> usize {
-        self.space.local_size()
+    fn process_size(&self) -> usize {
+        self.space.process_size()
+    }
+
+    fn process_owned_size(&self) -> usize {
+        self.ownership
+            .iter()
+            .filter(|x| matches!(x, Ownership::Owned))
+            .count()
     }
 
     fn global_size(&self) -> usize {
         self.global_size
     }
 
-    fn global_dof_index(&self, local_dof_index: usize) -> usize {
-        self.global_dof_indices[local_dof_index]
+    fn global_dof_index(&self, process_dof_index: usize) -> usize {
+        self.global_dof_indices[process_dof_index]
     }
 
-    fn ownership(&self, local_dof_index: usize) -> Ownership {
-        self.ownership[local_dof_index]
+    fn ownership(&self, process_dof_index: usize) -> Ownership {
+        self.ownership[process_dof_index]
     }
 }
 
 /// Parallel function space.
 pub struct ParallelFunctionSpaceImpl<
     'a,
+    T: RlstScalar,
+    TMesh: RlstScalar,
     E: Debug + PartialEq + Eq + Clone + Copy + Hash,
-    G: Mesh<EntityDescriptor = E>,
+    G: Mesh<EntityDescriptor = E, T = TMesh>,
     PG: ParallelMesh<LocalMesh = G>,
-    F: MappedFiniteElement<CellType = E>,
+    F: MappedFiniteElement<CellType = E, T = T>,
     S: FunctionSpace<Mesh = G, EntityDescriptor = E, FiniteElement = F>,
 > {
     mesh: &'a PG,
-    local_space: LocalFunctionSpace<S>,
+    process_space: ProcessFunctionSpace<S>,
     global_size: usize,
 }
 
@@ -112,8 +123,8 @@ pub struct ParallelFunctionSpaceImpl<
 enum DofIndex {
     /// No value. This should only be used as a placeholder value
     None,
-    /// A local DOF
-    Local,
+    /// An owned DOF
+    Owned,
     /// A DOF owned by another process, storing the process id, index of ghost in the list of ghosts, and DOF index on that entity
     Ghost(usize, usize, usize),
 }
@@ -135,17 +146,21 @@ impl GhostEntity {
 
 impl<
     'a,
-    G: Mesh<EntityDescriptor = ReferenceCellType>,
+    T: RlstScalar,
+    TMesh: RlstScalar,
+    G: Mesh<EntityDescriptor = ReferenceCellType, T = TMesh>,
     PG: ParallelMesh<LocalMesh = G>,
-    F: MappedFiniteElement<CellType = ReferenceCellType>,
+    F: MappedFiniteElement<CellType = ReferenceCellType, T = T>,
 >
     ParallelFunctionSpaceImpl<
         'a,
+        T,
+        TMesh,
         ReferenceCellType,
         G,
         PG,
         F,
-        FunctionSpaceImpl<'a, ReferenceCellType, G, F>,
+        FunctionSpaceImpl<'a, T, TMesh, ReferenceCellType, G, F>,
     >
 {
     /// Create a new parallel function space
@@ -157,7 +172,7 @@ impl<
         let local_mesh = mesh.local_mesh();
         let serial_space = FunctionSpaceImpl::new(local_mesh, family);
 
-        let mut dof_indices = vec![DofIndex::None; serial_space.local_size()];
+        let mut dof_indices = vec![DofIndex::None; serial_space.process_size()];
 
         // Entities to ask other processes about
         let mut ask_for = vec![vec![]; comm.size() as usize];
@@ -173,7 +188,7 @@ impl<
                         match entity.ownership() {
                             Ownership::Owned => {
                                 for j in dofs {
-                                    dof_indices[*j] = DofIndex::Local
+                                    dof_indices[*j] = DofIndex::Owned
                                 }
                             }
                             Ownership::Ghost(process, entity_index) => {
@@ -194,10 +209,10 @@ impl<
 
         // Number the DOFs owned by this process, starting at 0
         let mut ndofs = 0;
-        let mut local_dof_indices = vec![None; serial_space.local_size()];
+        let mut process_dof_indices = vec![None; serial_space.process_size()];
         for (i, j) in dof_indices.iter().enumerate() {
-            if let DofIndex::Local = j {
-                local_dof_indices[i] = Some(ndofs);
+            if let DofIndex::Owned = j {
+                process_dof_indices[i] = Some(ndofs);
                 ndofs += 1;
             }
         }
@@ -230,20 +245,20 @@ impl<
         let asked_for_global = asked_for_local
             .iter()
             .map(|i| {
-                let dof = local_dof_indices[*i].unwrap();
+                let dof = process_dof_indices[*i].unwrap();
                 dof + offset
             })
             .collect::<Vec<_>>();
 
         // Get indices of ghosts from other processes
-        let (_, local_ghost_data) = all_to_allv(comm, &recv_counts, &asked_for_local);
+        let (_, process_ghost_data) = all_to_allv(comm, &recv_counts, &asked_for_local);
         let (_, global_ghost_data) = all_to_allv(comm, &recv_counts, &asked_for_global);
 
         let mut start = 0;
-        let local_ghost_indices = counts
+        let process_ghost_indices = counts
             .iter()
             .map(|c| {
-                let data = &local_ghost_data[start..start + c];
+                let data = &process_ghost_data[start..start + c];
                 start += c;
                 data.to_vec()
             })
@@ -265,7 +280,7 @@ impl<
             .iter()
             .enumerate()
             .map(|(i, index)| match index {
-                DofIndex::Local => offset + local_dof_indices[i].unwrap(),
+                DofIndex::Owned => offset + process_dof_indices[i].unwrap(),
                 DofIndex::Ghost(process, index, number) => {
                     global_ghost_indices[*process][*index] + *number
                 }
@@ -277,9 +292,9 @@ impl<
         let ownership = dof_indices
             .iter()
             .map(|i| match i {
-                DofIndex::Local => Ownership::Owned,
+                DofIndex::Owned => Ownership::Owned,
                 DofIndex::Ghost(process, index, number) => {
-                    Ownership::Ghost(*process, local_ghost_indices[*process][*index] + *number)
+                    Ownership::Ghost(*process, process_ghost_indices[*process][*index] + *number)
                 }
                 DofIndex::None => {
                     panic!("Unset DOF index");
@@ -287,11 +302,11 @@ impl<
             })
             .collect::<Vec<_>>();
 
-        let local_space =
-            LocalFunctionSpace::new(serial_space, global_size, global_dof_indices, ownership);
+        let process_space =
+            ProcessFunctionSpace::new(serial_space, global_size, global_dof_indices, ownership);
         Self {
             mesh,
-            local_space,
+            process_space,
             global_size,
         }
     }
@@ -299,22 +314,24 @@ impl<
 
 impl<
     'a,
+    T: RlstScalar,
+    TMesh: RlstScalar,
     E: Debug + PartialEq + Eq + Clone + Copy + Hash,
-    G: Mesh<EntityDescriptor = E>,
+    G: Mesh<EntityDescriptor = E, T = TMesh>,
     PG: ParallelMesh<LocalMesh = G>,
-    F: MappedFiniteElement<CellType = E>,
+    F: MappedFiniteElement<CellType = E, T = T>,
     S: FunctionSpace<Mesh = G, EntityDescriptor = E, FiniteElement = F>,
-> ParallelFunctionSpace for ParallelFunctionSpaceImpl<'a, E, G, PG, F, S>
+> ParallelFunctionSpace for ParallelFunctionSpaceImpl<'a, T, TMesh, E, G, PG, F, S>
 {
-    type LocalSpace = LocalFunctionSpace<S>;
+    type ProcessSpace = ProcessFunctionSpace<S>;
     type C = PG::C;
 
     fn comm(&self) -> &PG::C {
         self.mesh.comm()
     }
 
-    fn local_space(&self) -> &LocalFunctionSpace<S> {
-        &self.local_space
+    fn process_space(&self) -> &ProcessFunctionSpace<S> {
+        &self.process_space
     }
 
     fn global_size(&self) -> usize {

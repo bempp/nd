@@ -1,6 +1,7 @@
 //! Functions in function spaces
 
 use crate::traits::FunctionSpace;
+use num::Zero;
 
 /// A function in a function space
 pub struct FunctionImpl<'a, S: FunctionSpace> {
@@ -9,12 +10,12 @@ pub struct FunctionImpl<'a, S: FunctionSpace> {
     space: &'a S,
     /// The coefficients that define this function
     #[allow(unused)]
-    coefficients: Vec<f64>,
+    coefficients: Vec<S::T>,
 }
 
 impl<'a, S: FunctionSpace> FunctionImpl<'a, S> {
     /// Create a new function
-    pub fn new(space: &'a S, coefficients: Vec<f64>) -> Self {
+    pub fn new(space: &'a S, coefficients: Vec<S::T>) -> Self {
         Self {
             space,
             coefficients,
@@ -22,7 +23,7 @@ impl<'a, S: FunctionSpace> FunctionImpl<'a, S> {
     }
     /// Create a zero function
     pub fn zero(space: &'a S) -> Self {
-        let coefficients = vec![0.0; space.local_size()];
+        let coefficients = vec![S::T::zero(); space.process_size()];
         Self {
             space,
             coefficients,
