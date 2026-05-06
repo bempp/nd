@@ -15,7 +15,7 @@ use std::marker::PhantomData;
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Debug, PartialEq, Eq, Clone, Copy, Hash)]
 #[repr(u8)]
-pub enum Variant {
+pub enum LagrangeVariant {
     /// Element defined using equispaced points
     Equispaced,
     /// Element defined using Guass-Lobatto-Legendre (GLL) points
@@ -27,7 +27,7 @@ pub fn create<T: RlstScalar + Getrf + Getri, TGeo: RlstScalar>(
     cell_type: ReferenceCellType,
     degree: usize,
     continuity: Continuity,
-    variant: Variant,
+    variant: LagrangeVariant,
 ) -> CiarletElement<T, IdentityMap, TGeo> {
     let dim = polynomial_count(cell_type, degree);
     let tdim = reference_cell::dim(cell_type);
@@ -78,10 +78,10 @@ pub fn create<T: RlstScalar + Getrf + Getri, TGeo: RlstScalar>(
         }
 
         let pts1d = match variant {
-            Variant::Equispaced => (1..degree)
+            LagrangeVariant::Equispaced => (1..degree)
                 .map(|i| num::cast::<_, TGeo>(i).unwrap() / num::cast::<_, TGeo>(degree).unwrap())
                 .collect::<Vec<_>>(),
-            Variant::GLL => {
+            LagrangeVariant::GLL => {
                 let (points, _weights) = single_integral_quadrature(
                     QuadratureRule::GaussLobattoLegendre,
                     Domain::Interval,
@@ -141,7 +141,7 @@ pub fn create<T: RlstScalar + Getrf + Getri, TGeo: RlstScalar>(
 
             match face_type {
                 ReferenceCellType::Triangle => {
-                    if variant != Variant::Equispaced {
+                    if variant != LagrangeVariant::Equispaced {
                         unimplemented!();
                     }
                     let mut n = 0;
@@ -208,7 +208,7 @@ pub fn create<T: RlstScalar + Getrf + Getri, TGeo: RlstScalar>(
 
             match volume_type {
                 ReferenceCellType::Tetrahedron => {
-                    if variant != Variant::Equispaced {
+                    if variant != LagrangeVariant::Equispaced {
                         unimplemented!();
                     }
                     let [vn0, vn1, vn2, vn3] = volumes[e][..4] else {
@@ -300,14 +300,14 @@ pub fn create<T: RlstScalar + Getrf + Getri, TGeo: RlstScalar>(
 pub struct LagrangeElementFamily<T: RlstScalar + Getrf + Getri = f64, TGeo: RlstScalar = f64> {
     degree: usize,
     continuity: Continuity,
-    variant: Variant,
+    variant: LagrangeVariant,
     _t: PhantomData<T>,
     _tgeo: PhantomData<TGeo>,
 }
 
 impl<T: RlstScalar + Getrf + Getri, TGeo: RlstScalar> LagrangeElementFamily<T, TGeo> {
     /// Create new family with given `degree` and `continuity`.
-    pub fn new(degree: usize, continuity: Continuity, variant: Variant) -> Self {
+    pub fn new(degree: usize, continuity: Continuity, variant: LagrangeVariant) -> Self {
         Self {
             degree,
             continuity,
@@ -343,7 +343,7 @@ mod test {
             ReferenceCellType::Triangle,
             1,
             Continuity::Standard,
-            Variant::Equispaced,
+            LagrangeVariant::Equispaced,
         );
         assert_eq!(e.value_size(), 1);
     }
@@ -354,7 +354,7 @@ mod test {
             ReferenceCellType::Interval,
             0,
             Continuity::Discontinuous,
-            Variant::Equispaced,
+            LagrangeVariant::Equispaced,
         );
         assert_eq!(e.value_size(), 1);
         let mut data = DynArray::<f64, 4>::from_shape(e.tabulate_array_shape(0, 4));
@@ -377,7 +377,7 @@ mod test {
             ReferenceCellType::Interval,
             1,
             Continuity::Standard,
-            Variant::Equispaced,
+            LagrangeVariant::Equispaced,
         );
         assert_eq!(e.value_size(), 1);
         let mut data = DynArray::<f64, 4>::from_shape(e.tabulate_array_shape(0, 4));
@@ -402,7 +402,7 @@ mod test {
             ReferenceCellType::Triangle,
             0,
             Continuity::Discontinuous,
-            Variant::Equispaced,
+            LagrangeVariant::Equispaced,
         );
         assert_eq!(e.value_size(), 1);
         let mut data = DynArray::<f64, 4>::from_shape(e.tabulate_array_shape(0, 6));
@@ -435,7 +435,7 @@ mod test {
             ReferenceCellType::Triangle,
             1,
             Continuity::Standard,
-            Variant::Equispaced,
+            LagrangeVariant::Equispaced,
         );
         assert_eq!(e.value_size(), 1);
         let mut data = DynArray::<f64, 4>::from_shape(e.tabulate_array_shape(0, 6));
@@ -470,7 +470,7 @@ mod test {
             ReferenceCellType::Quadrilateral,
             0,
             Continuity::Discontinuous,
-            Variant::Equispaced,
+            LagrangeVariant::Equispaced,
         );
         assert_eq!(e.value_size(), 1);
         let mut data = DynArray::<f64, 4>::from_shape(e.tabulate_array_shape(0, 6));
@@ -501,7 +501,7 @@ mod test {
             ReferenceCellType::Quadrilateral,
             1,
             Continuity::Standard,
-            Variant::Equispaced,
+            LagrangeVariant::Equispaced,
         );
         assert_eq!(e.value_size(), 1);
         let mut data = DynArray::<f64, 4>::from_shape(e.tabulate_array_shape(0, 6));
@@ -538,7 +538,7 @@ mod test {
             ReferenceCellType::Quadrilateral,
             2,
             Continuity::Standard,
-            Variant::Equispaced,
+            LagrangeVariant::Equispaced,
         );
         assert_eq!(e.value_size(), 1);
         let mut data = DynArray::<f64, 4>::from_shape(e.tabulate_array_shape(0, 6));
@@ -616,7 +616,7 @@ mod test {
             ReferenceCellType::Tetrahedron,
             0,
             Continuity::Discontinuous,
-            Variant::Equispaced,
+            LagrangeVariant::Equispaced,
         );
         assert_eq!(e.value_size(), 1);
         let mut data = DynArray::<f64, 4>::from_shape(e.tabulate_array_shape(0, 6));
@@ -653,7 +653,7 @@ mod test {
             ReferenceCellType::Tetrahedron,
             1,
             Continuity::Standard,
-            Variant::Equispaced,
+            LagrangeVariant::Equispaced,
         );
         assert_eq!(e.value_size(), 1);
         let mut data = DynArray::<f64, 4>::from_shape(e.tabulate_array_shape(0, 6));
@@ -701,7 +701,7 @@ mod test {
             ReferenceCellType::Hexahedron,
             0,
             Continuity::Discontinuous,
-            Variant::Equispaced,
+            LagrangeVariant::Equispaced,
         );
         assert_eq!(e.value_size(), 1);
         let mut data = DynArray::<f64, 4>::from_shape(e.tabulate_array_shape(0, 6));
@@ -738,7 +738,7 @@ mod test {
             ReferenceCellType::Hexahedron,
             1,
             Continuity::Standard,
-            Variant::Equispaced,
+            LagrangeVariant::Equispaced,
         );
         assert_eq!(e.value_size(), 1);
         let mut data = DynArray::<f64, 4>::from_shape(e.tabulate_array_shape(0, 6));
@@ -818,50 +818,50 @@ mod test {
             ReferenceCellType::Triangle,
             2,
             Continuity::Standard,
-            Variant::Equispaced,
+            LagrangeVariant::Equispaced,
         );
         create::<f64, f64>(
             ReferenceCellType::Triangle,
             3,
             Continuity::Standard,
-            Variant::Equispaced,
+            LagrangeVariant::Equispaced,
         );
         create::<f64, f64>(
             ReferenceCellType::Triangle,
             4,
             Continuity::Standard,
-            Variant::Equispaced,
+            LagrangeVariant::Equispaced,
         );
         create::<f64, f64>(
             ReferenceCellType::Triangle,
             5,
             Continuity::Standard,
-            Variant::Equispaced,
+            LagrangeVariant::Equispaced,
         );
 
         create::<f64, f64>(
             ReferenceCellType::Triangle,
             2,
             Continuity::Discontinuous,
-            Variant::Equispaced,
+            LagrangeVariant::Equispaced,
         );
         create::<f64, f64>(
             ReferenceCellType::Triangle,
             3,
             Continuity::Discontinuous,
-            Variant::Equispaced,
+            LagrangeVariant::Equispaced,
         );
         create::<f64, f64>(
             ReferenceCellType::Triangle,
             4,
             Continuity::Discontinuous,
-            Variant::Equispaced,
+            LagrangeVariant::Equispaced,
         );
         create::<f64, f64>(
             ReferenceCellType::Triangle,
             5,
             Continuity::Discontinuous,
-            Variant::Equispaced,
+            LagrangeVariant::Equispaced,
         );
     }
 
@@ -871,50 +871,50 @@ mod test {
             ReferenceCellType::Interval,
             2,
             Continuity::Standard,
-            Variant::Equispaced,
+            LagrangeVariant::Equispaced,
         );
         create::<f64, f64>(
             ReferenceCellType::Interval,
             3,
             Continuity::Standard,
-            Variant::Equispaced,
+            LagrangeVariant::Equispaced,
         );
         create::<f64, f64>(
             ReferenceCellType::Interval,
             4,
             Continuity::Standard,
-            Variant::Equispaced,
+            LagrangeVariant::Equispaced,
         );
         create::<f64, f64>(
             ReferenceCellType::Interval,
             5,
             Continuity::Standard,
-            Variant::Equispaced,
+            LagrangeVariant::Equispaced,
         );
 
         create::<f64, f64>(
             ReferenceCellType::Interval,
             2,
             Continuity::Discontinuous,
-            Variant::Equispaced,
+            LagrangeVariant::Equispaced,
         );
         create::<f64, f64>(
             ReferenceCellType::Interval,
             3,
             Continuity::Discontinuous,
-            Variant::Equispaced,
+            LagrangeVariant::Equispaced,
         );
         create::<f64, f64>(
             ReferenceCellType::Interval,
             4,
             Continuity::Discontinuous,
-            Variant::Equispaced,
+            LagrangeVariant::Equispaced,
         );
         create::<f64, f64>(
             ReferenceCellType::Interval,
             5,
             Continuity::Discontinuous,
-            Variant::Equispaced,
+            LagrangeVariant::Equispaced,
         );
     }
 
@@ -924,50 +924,50 @@ mod test {
             ReferenceCellType::Quadrilateral,
             2,
             Continuity::Standard,
-            Variant::Equispaced,
+            LagrangeVariant::Equispaced,
         );
         create::<f64, f64>(
             ReferenceCellType::Quadrilateral,
             3,
             Continuity::Standard,
-            Variant::Equispaced,
+            LagrangeVariant::Equispaced,
         );
         create::<f64, f64>(
             ReferenceCellType::Quadrilateral,
             4,
             Continuity::Standard,
-            Variant::Equispaced,
+            LagrangeVariant::Equispaced,
         );
         create::<f64, f64>(
             ReferenceCellType::Quadrilateral,
             5,
             Continuity::Standard,
-            Variant::Equispaced,
+            LagrangeVariant::Equispaced,
         );
 
         create::<f64, f64>(
             ReferenceCellType::Quadrilateral,
             2,
             Continuity::Discontinuous,
-            Variant::Equispaced,
+            LagrangeVariant::Equispaced,
         );
         create::<f64, f64>(
             ReferenceCellType::Quadrilateral,
             3,
             Continuity::Discontinuous,
-            Variant::Equispaced,
+            LagrangeVariant::Equispaced,
         );
         create::<f64, f64>(
             ReferenceCellType::Quadrilateral,
             4,
             Continuity::Discontinuous,
-            Variant::Equispaced,
+            LagrangeVariant::Equispaced,
         );
         create::<f64, f64>(
             ReferenceCellType::Quadrilateral,
             5,
             Continuity::Discontinuous,
-            Variant::Equispaced,
+            LagrangeVariant::Equispaced,
         );
     }
 
@@ -977,7 +977,7 @@ mod test {
             ReferenceCellType::Interval,
             4,
             Continuity::Discontinuous,
-            Variant::Equispaced,
+            LagrangeVariant::Equispaced,
         );
 
         let mut data = DynArray::<f64, 4>::from_shape(e.tabulate_array_shape(0, 2));
@@ -1003,7 +1003,7 @@ mod test {
             ReferenceCellType::Interval,
             4,
             Continuity::Discontinuous,
-            Variant::GLL,
+            LagrangeVariant::GLL,
         );
 
         let mut data = DynArray::<f64, 4>::from_shape(e.tabulate_array_shape(0, 2));
@@ -1026,7 +1026,7 @@ mod test {
             ReferenceCellType::Quadrilateral,
             4,
             Continuity::Discontinuous,
-            Variant::Equispaced,
+            LagrangeVariant::Equispaced,
         );
 
         let mut data = DynArray::<f64, 4>::from_shape(e.tabulate_array_shape(0, 4));
@@ -1058,7 +1058,7 @@ mod test {
             ReferenceCellType::Quadrilateral,
             4,
             Continuity::Discontinuous,
-            Variant::GLL,
+            LagrangeVariant::GLL,
         );
 
         let mut data = DynArray::<f64, 4>::from_shape(e.tabulate_array_shape(0, 4));

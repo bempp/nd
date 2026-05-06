@@ -26,7 +26,7 @@ fn test_lagrange_push_forward() {
         ReferenceCellType::Triangle,
         4,
         Continuity::Standard,
-        lagrange::Variant::Equispaced,
+        lagrange::LagrangeVariant::Equispaced,
     );
 
     let npts = 5;

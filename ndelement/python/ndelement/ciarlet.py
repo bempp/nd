@@ -27,8 +27,8 @@ class Family(Enum):
 class LagrangeVariant(Enum):
     """Variant of Lagrange element."""
 
-    Equispaced = _lib.Variant_Equispaced
-    GLL = _lib.Variant_GLL
+    Equispaced = _lib.LagrangeVariant_Equispaced
+    GLL = _lib.LagrangeVariant_GLL
 
 
 _rtypes = {

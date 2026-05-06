@@ -107,7 +107,7 @@ where
                                     *cell,
                                     *degree,
                                     Continuity::Standard,
-                                    lagrange::Variant::Equispaced,
+                                    lagrange::LagrangeVariant::Equispaced,
                                 ),
                             )
                         })

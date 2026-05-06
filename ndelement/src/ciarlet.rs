@@ -43,7 +43,7 @@ use std::fmt::{Debug, Formatter};
 pub mod lagrange;
 pub mod nedelec;
 pub mod raviart_thomas;
-pub use lagrange::{LagrangeElementFamily, Variant as LagrangeVariant};
+pub use lagrange::{LagrangeElementFamily, LagrangeVariant};
 pub use nedelec::NedelecFirstKindElementFamily;
 pub use raviart_thomas::RaviartThomasElementFamily;
 

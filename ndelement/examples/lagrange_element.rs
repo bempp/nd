@@ -11,7 +11,7 @@ fn main() {
         ReferenceCellType::Triangle,
         2,
         Continuity::Standard,
-        lagrange::Variant::Equispaced,
+        lagrange::LagrangeVariant::Equispaced,
     );
 
     println!("This element has {} basis functions.", element.dim());

@@ -434,7 +434,7 @@ mod test {
             ReferenceCellType::Triangle,
             1,
             Continuity::Standard,
-            lagrange::Variant::Equispaced,
+            lagrange::LagrangeVariant::Equispaced,
         );
         let mut rng = ChaCha8Rng::seed_from_u64(13);
 
