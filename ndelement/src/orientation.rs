@@ -90,10 +90,10 @@ mod test {
     fn test_compute_orientations_triangle() {
         for (v, o) in [
             ([0, 1, 2], 0),
-            ([0, 2, 1], 1),
-            ([1, 0, 2], 4),
-            ([1, 2, 0], 3),
-            ([2, 0, 1], 6),
+            ([0, 2, 1], 4),
+            ([1, 0, 2], 1),
+            ([1, 2, 0], 6),
+            ([2, 0, 1], 3),
             ([2, 1, 0], 7),
         ] {
             assert_eq!(compute_orientation(ReferenceCellType::Triangle, &v), o);
@@ -124,9 +124,9 @@ mod test {
     fn test_compute_orientations_tetrahedron() {
         for (v, o) in [
             ([0, 1, 2, 3], 0),
-            ([0, 3, 2, 1], 149895), // 100 100 100 110 000111
-            ([1, 2, 0, 3], 68436),  // 010 000 101 101 010100
-            ([1, 3, 2, 0], 140687), // 100 010 010 110 001111
+            ([0, 3, 2, 1], 215352), // 110 100 100 100 111000
+            ([1, 2, 0, 3], 184458), // 101 101 000 010 001010
+            ([1, 3, 2, 0], 206140), // 110 010 010 100 111100
         ] {
             assert_eq!(compute_orientation(ReferenceCellType::Tetrahedron, &v), o);
         }

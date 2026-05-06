@@ -509,9 +509,9 @@ mod test {
         assert_eq!(cell1.sub_entity(ReferenceCellType::Point, 0), 1);
         assert_eq!(cell1.sub_entity(ReferenceCellType::Point, 1), 3);
         assert_eq!(cell1.sub_entity(ReferenceCellType::Point, 2), 4);
-        assert_eq!(cell1.sub_entity(ReferenceCellType::Interval, 0), 4);
-        assert_eq!(cell1.sub_entity(ReferenceCellType::Interval, 1), 5);
-        assert_eq!(cell1.sub_entity(ReferenceCellType::Interval, 2), 2);
+        assert_eq!(cell1.sub_entity(ReferenceCellType::Interval, 0), 2);
+        assert_eq!(cell1.sub_entity(ReferenceCellType::Interval, 1), 4);
+        assert_eq!(cell1.sub_entity(ReferenceCellType::Interval, 2), 5);
         assert_eq!(cell1.sub_entity(ReferenceCellType::Triangle, 0), 0);
 
         let edge0 = MixedEntityTopology::new(&t, ReferenceCellType::Interval, 0);
@@ -531,11 +531,11 @@ mod test {
         assert_eq!(edge3.sub_entity(ReferenceCellType::Point, 1), 3);
         assert_eq!(edge3.sub_entity(ReferenceCellType::Interval, 0), 3);
         let edge4 = MixedEntityTopology::new(&t, ReferenceCellType::Interval, 4);
-        assert_eq!(edge4.sub_entity(ReferenceCellType::Point, 0), 3);
+        assert_eq!(edge4.sub_entity(ReferenceCellType::Point, 0), 1);
         assert_eq!(edge4.sub_entity(ReferenceCellType::Point, 1), 4);
         assert_eq!(edge4.sub_entity(ReferenceCellType::Interval, 0), 4);
         let edge5 = MixedEntityTopology::new(&t, ReferenceCellType::Interval, 5);
-        assert_eq!(edge5.sub_entity(ReferenceCellType::Point, 0), 1);
+        assert_eq!(edge5.sub_entity(ReferenceCellType::Point, 0), 3);
         assert_eq!(edge5.sub_entity(ReferenceCellType::Point, 1), 4);
         assert_eq!(edge5.sub_entity(ReferenceCellType::Interval, 0), 5);
 

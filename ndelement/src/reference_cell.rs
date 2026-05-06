@@ -8,6 +8,10 @@
 //! - The reference hexahedron is \(\left\{(x,y,z)\,\middle|\,0\leqslant x\leqslant1,\,0\leqslant y\leqslant1,\,0\leqslant z\leqslant1\right\}\).
 //! - The reference prism is \(\left\{(x,y,z)\,\middle|\,0\leqslant x,\,0\leqslant y,\,x+y\leqslant1,\,0\leqslant z\leqslant1\right\}\).
 //! - The reference pyramid is \(\left\{(x,y,z)\,\middle|\,0\leqslant x,\,0\leqslant y,\,0\leqslant z\leqslant1,\,x+z\leqslant1,\,y+z\leqslant1\right\}\).
+//!
+//! The sub-entities of reference cells in ndelement are ordered following the DefElement
+//! ordering conventions, as given in conventions 1 and 2 in
+//! [the DefElement paper](https://doi.org/10.1007/s44207-026-00011-0).
 
 use crate::types::ReferenceCellType;
 use rlst::RlstScalar;
@@ -112,15 +116,15 @@ pub fn edges(cell: ReferenceCellType) -> Vec<Vec<usize>> {
     match cell {
         ReferenceCellType::Point => vec![],
         ReferenceCellType::Interval => vec![vec![0, 1]],
-        ReferenceCellType::Triangle => vec![vec![1, 2], vec![0, 2], vec![0, 1]],
+        ReferenceCellType::Triangle => vec![vec![0, 1], vec![0, 2], vec![1, 2]],
         ReferenceCellType::Quadrilateral => vec![vec![0, 1], vec![0, 2], vec![1, 3], vec![2, 3]],
         ReferenceCellType::Tetrahedron => vec![
-            vec![2, 3],
-            vec![1, 3],
-            vec![1, 2],
-            vec![0, 3],
-            vec![0, 2],
             vec![0, 1],
+            vec![0, 2],
+            vec![0, 3],
+            vec![1, 2],
+            vec![1, 3],
+            vec![2, 3],
         ],
         ReferenceCellType::Hexahedron => vec![
             vec![0, 1],
@@ -168,7 +172,7 @@ pub fn faces(cell: ReferenceCellType) -> Vec<Vec<usize>> {
         ReferenceCellType::Triangle => vec![vec![0, 1, 2]],
         ReferenceCellType::Quadrilateral => vec![vec![0, 1, 2, 3]],
         ReferenceCellType::Tetrahedron => {
-            vec![vec![1, 2, 3], vec![0, 2, 3], vec![0, 1, 3], vec![0, 1, 2]]
+            vec![vec![0, 1, 2], vec![0, 1, 3], vec![0, 2, 3], vec![1, 2, 3]]
         }
         ReferenceCellType::Hexahedron => vec![
             vec![0, 1, 2, 3],
@@ -264,7 +268,7 @@ pub fn facet_normals<T: RlstScalar>(cell: ReferenceCellType) -> Vec<Vec<T>> {
     match cell {
         ReferenceCellType::Point => vec![],
         ReferenceCellType::Interval => vec![vec![one], vec![one]],
-        ReferenceCellType::Triangle => vec![vec![-one, -one], vec![-one, zero], vec![zero, one]],
+        ReferenceCellType::Triangle => vec![vec![zero, one], vec![-one, zero], vec![-one, -one]],
         ReferenceCellType::Quadrilateral => vec![
             vec![zero, one],
             vec![-one, zero],
@@ -272,10 +276,10 @@ pub fn facet_normals<T: RlstScalar>(cell: ReferenceCellType) -> Vec<Vec<T>> {
             vec![zero, one],
         ],
         ReferenceCellType::Tetrahedron => vec![
-            vec![one, one, one],
-            vec![one, zero, zero],
-            vec![zero, -one, zero],
             vec![zero, zero, one],
+            vec![zero, -one, zero],
+            vec![one, zero, zero],
+            vec![one, one, one],
         ],
         ReferenceCellType::Hexahedron => vec![
             vec![zero, zero, one],
@@ -437,14 +441,14 @@ pub fn connectivity(cell: ReferenceCellType) -> Vec<Vec<Vec<Vec<usize>>>> {
         ],
         ReferenceCellType::Triangle => vec![
             vec![
-                vec![vec![0], vec![1, 2], vec![0]],
+                vec![vec![0], vec![0, 1], vec![0]],
                 vec![vec![1], vec![0, 2], vec![0]],
-                vec![vec![2], vec![0, 1], vec![0]],
+                vec![vec![2], vec![1, 2], vec![0]],
             ],
             vec![
-                vec![vec![1, 2], vec![0], vec![0]],
+                vec![vec![0, 1], vec![0], vec![0]],
                 vec![vec![0, 2], vec![1], vec![0]],
-                vec![vec![0, 1], vec![2], vec![0]],
+                vec![vec![1, 2], vec![2], vec![0]],
             ],
             vec![vec![vec![0, 1, 2], vec![0, 1, 2], vec![0]]],
         ],
@@ -465,24 +469,24 @@ pub fn connectivity(cell: ReferenceCellType) -> Vec<Vec<Vec<Vec<usize>>>> {
         ],
         ReferenceCellType::Tetrahedron => vec![
             vec![
-                vec![vec![0], vec![3, 4, 5], vec![1, 2, 3], vec![0]],
-                vec![vec![1], vec![1, 2, 5], vec![0, 2, 3], vec![0]],
-                vec![vec![2], vec![0, 2, 4], vec![0, 1, 3], vec![0]],
-                vec![vec![3], vec![0, 1, 3], vec![0, 1, 2], vec![0]],
+                vec![vec![0], vec![0, 1, 2], vec![0, 1, 2], vec![0]],
+                vec![vec![1], vec![0, 3, 4], vec![0, 1, 3], vec![0]],
+                vec![vec![2], vec![1, 3, 5], vec![0, 2, 3], vec![0]],
+                vec![vec![3], vec![2, 4, 5], vec![1, 2, 3], vec![0]],
             ],
             vec![
-                vec![vec![2, 3], vec![0], vec![0, 1], vec![0]],
-                vec![vec![1, 3], vec![1], vec![0, 2], vec![0]],
-                vec![vec![1, 2], vec![2], vec![0, 3], vec![0]],
-                vec![vec![0, 3], vec![3], vec![1, 2], vec![0]],
-                vec![vec![0, 2], vec![4], vec![1, 3], vec![0]],
-                vec![vec![0, 1], vec![5], vec![2, 3], vec![0]],
+                vec![vec![0, 1], vec![0], vec![0, 1], vec![0]],
+                vec![vec![0, 2], vec![1], vec![0, 2], vec![0]],
+                vec![vec![0, 3], vec![2], vec![1, 2], vec![0]],
+                vec![vec![1, 2], vec![3], vec![0, 3], vec![0]],
+                vec![vec![1, 3], vec![4], vec![1, 3], vec![0]],
+                vec![vec![2, 3], vec![5], vec![2, 3], vec![0]],
             ],
             vec![
-                vec![vec![1, 2, 3], vec![0, 1, 2], vec![0], vec![0]],
-                vec![vec![0, 2, 3], vec![0, 3, 4], vec![1], vec![0]],
-                vec![vec![0, 1, 3], vec![1, 3, 5], vec![2], vec![0]],
-                vec![vec![0, 1, 2], vec![2, 4, 5], vec![3], vec![0]],
+                vec![vec![0, 1, 2], vec![0, 1, 3], vec![0], vec![0]],
+                vec![vec![0, 1, 3], vec![0, 2, 4], vec![1], vec![0]],
+                vec![vec![0, 2, 3], vec![1, 2, 5], vec![2], vec![0]],
+                vec![vec![1, 2, 3], vec![3, 4, 5], vec![3], vec![0]],
             ],
             vec![vec![
                 vec![0, 1, 2, 3],

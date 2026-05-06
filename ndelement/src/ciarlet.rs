@@ -300,7 +300,7 @@ where
             ReferenceCellType::Interval => vec![],
             ReferenceCellType::Triangle => vec![(
                 ReferenceCellType::Interval,
-                0,
+                2,
                 Transformation::Reflection,
                 (|x| vec![x[1], x[0]]) as fn(&[TGeo]) -> Vec<TGeo>,
             )],
@@ -313,19 +313,19 @@ where
             ReferenceCellType::Tetrahedron => vec![
                 (
                     ReferenceCellType::Interval,
-                    0,
+                    5,
                     Transformation::Reflection,
                     (|x| vec![x[0], x[2], x[1]]) as fn(&[TGeo]) -> Vec<TGeo>,
                 ),
                 (
                     ReferenceCellType::Triangle,
-                    0,
+                    3,
                     Transformation::Rotation,
                     (|x| vec![x[1], x[2], x[0]]) as fn(&[TGeo]) -> Vec<TGeo>,
                 ),
                 (
                     ReferenceCellType::Triangle,
-                    0,
+                    3,
                     Transformation::Reflection,
                     (|x| vec![x[0], x[2], x[1]]) as fn(&[TGeo]) -> Vec<TGeo>,
                 ),
@@ -976,7 +976,7 @@ mod test {
         for pt in 0..6 {
             let x = *points.get([0, pt]).unwrap();
             let y = *points.get([1, pt]).unwrap();
-            for (i, basis_f) in [[-x, -y], [x - 1.0, y], [-x, 1.0 - y]].iter().enumerate() {
+            for (i, basis_f) in [[-x, 1.0 - y], [x - 1.0, y], [-x, -y]].iter().enumerate() {
                 for (d, value) in basis_f.iter().enumerate() {
                     assert_relative_eq!(*data.get([0, pt, i, d]).unwrap(), value, epsilon = 1e-14);
                 }
@@ -1188,7 +1188,7 @@ mod test {
         for pt in 0..6 {
             let x = *points.get([0, pt]).unwrap();
             let y = *points.get([1, pt]).unwrap();
-            for (i, basis_f) in [[-y, x], [y, 1.0 - x], [1.0 - y, x]].iter().enumerate() {
+            for (i, basis_f) in [[1.0 - y, x], [y, 1.0 - x], [-y, x]].iter().enumerate() {
                 for (d, value) in basis_f.iter().enumerate() {
                     assert_relative_eq!(*data.get([0, pt, i, d]).unwrap(), value, epsilon = 1e-14);
                 }

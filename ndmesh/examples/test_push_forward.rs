@@ -62,7 +62,7 @@ fn test_lagrange_push_forward() {
     // Check that basis functions are continuous between cells
     for (cell0_dof, cell1_dof) in izip!(
         e.entity_closure_dofs(1, 1).unwrap(),
-        e.entity_closure_dofs(1, 0).unwrap()
+        e.entity_closure_dofs(1, 2).unwrap()
     ) {
         for i in 0..npts {
             assert_relative_eq!(
@@ -121,7 +121,7 @@ fn test_rt_push_forward() {
 
     // Check that basis functions dotted with normal to edge are continuous between cells
     for (cell0_dof, cell1_dof) in izip!(
-        e.entity_closure_dofs(1, 0).unwrap(),
+        e.entity_closure_dofs(1, 2).unwrap(),
         e.entity_closure_dofs(1, 1).unwrap()
     ) {
         for i in 0..npts {
@@ -184,7 +184,7 @@ fn test_nc_push_forward() {
 
     // Check that basis functions dotted with tangent to edge are continuous between cells
     for (cell0_dof, cell1_dof) in izip!(
-        e.entity_closure_dofs(1, 0).unwrap(),
+        e.entity_closure_dofs(1, 2).unwrap(),
         e.entity_closure_dofs(1, 1).unwrap()
     ) {
         for i in 0..npts {
