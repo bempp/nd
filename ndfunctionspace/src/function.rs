@@ -16,6 +16,11 @@ pub struct FunctionImpl<'a, S: FunctionSpace> {
 impl<'a, S: FunctionSpace> FunctionImpl<'a, S> {
     /// Create a new function
     pub fn new(space: &'a S, coefficients: Vec<S::T>) -> Self {
+        assert_eq!(
+            coefficients.len(),
+            space.process_size(),
+            "Incorrect number of coefficients!",
+        );
         Self {
             space,
             coefficients,
@@ -70,5 +75,17 @@ mod test {
         let function = FunctionImpl::zero(&space);
 
         assert_eq!(function.coefficients.len(), 6);
+    }
+    #[test]
+    #[should_panic(expected = "Incorrect number of coefficients!")]
+    fn test_function_with_incorrect_coefficients() {
+        let mesh = unit_square::<f64>(1, 1, ReferenceCellType::Triangle);
+        let family = LagrangeElementFamily::<f64>::new(
+            0,
+            Continuity::Discontinuous,
+            LagrangeVariant::Equispaced,
+        );
+        let space = FunctionSpaceImpl::new(&mesh, &family);
+        let _function = FunctionImpl::new(&space, vec![0.0; space.process_size() + 1]);
     }
 }
