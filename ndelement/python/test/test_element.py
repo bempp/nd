@@ -44,9 +44,9 @@ def test_lagrange_2_triangle_tabulate(dtype):
             lambda x, y: (x + y - 1) * (2 * x + 2 * y - 1),
             lambda x, y: x * (2 * x - 1),
             lambda x, y: y * (2 * y - 1),
-            lambda x, y: 4 * x * y,
-            lambda x, y: 4 * (1 - x - y) * y,
             lambda x, y: 4 * x * (1 - x - y),
+            lambda x, y: 4 * (1 - x - y) * y,
+            lambda x, y: 4 * x * y,
         ]
     ):
         for j, p in enumerate(points):
@@ -57,9 +57,9 @@ def test_lagrange_2_triangle_tabulate(dtype):
             lambda x, y: 4 * x + 4 * y - 3,
             lambda x, y: 4 * x - 1,
             lambda x, y: 0,
-            lambda x, y: 4 * y,
-            lambda x, y: -4 * y,
             lambda x, y: 4 - 8 * x - 4 * y,
+            lambda x, y: -4 * y,
+            lambda x, y: 4 * y,
         ]
     ):
         for j, p in enumerate(points):
@@ -70,9 +70,9 @@ def test_lagrange_2_triangle_tabulate(dtype):
             lambda x, y: 4 * x + 4 * y - 3,
             lambda x, y: 0,
             lambda x, y: 4 * y - 1,
-            lambda x, y: 4 * x,
-            lambda x, y: 4 - 4 * x - 8 * y,
             lambda x, y: -4 * x,
+            lambda x, y: 4 - 4 * x - 8 * y,
+            lambda x, y: 4 * x,
         ]
     ):
         for j, p in enumerate(points):
@@ -106,9 +106,9 @@ def test_lagrange_1_triangle(continuity):
         assert element.entity_closure_dofs(0, 0) == [0]
         assert element.entity_closure_dofs(0, 1) == [1]
         assert element.entity_closure_dofs(0, 2) == [2]
-        assert element.entity_closure_dofs(1, 0) == [1, 2]
+        assert element.entity_closure_dofs(1, 0) == [0, 1]
         assert element.entity_closure_dofs(1, 1) == [0, 2]
-        assert element.entity_closure_dofs(1, 2) == [0, 1]
+        assert element.entity_closure_dofs(1, 2) == [1, 2]
         assert element.entity_closure_dofs(2, 0) == [0, 1, 2]
 
         ip = element.interpolation_points()

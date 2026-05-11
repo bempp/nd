@@ -95,7 +95,7 @@ def test_connectivity(cell):
     ("cell", "vertices", "expected"),
     [
         (ReferenceCellType.Triangle, [0, 1, 2], 0),
-        (ReferenceCellType.Triangle, [0, 2, 1], 1),
+        (ReferenceCellType.Triangle, [0, 2, 1], 4),
         (ReferenceCellType.Triangle, [2, 1, 0], 7),
     ],
 )
