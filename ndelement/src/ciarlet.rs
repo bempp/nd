@@ -1715,9 +1715,9 @@ mod test {
             assert_eq!(p.len(), 3);
             let mut indices = vec![0, 1, 2];
             math::apply_permutation(p, &mut indices);
-            assert_eq!(indices[0], 1);
-            assert_eq!(indices[1], 2);
-            assert_eq!(indices[2], 0);
+            assert_eq!(indices[0], 2);
+            assert_eq!(indices[1], 0);
+            assert_eq!(indices[2], 1);
         } else {
             panic!("Should be a permutation");
         }

@@ -145,8 +145,8 @@ pub fn create<T: RlstScalar + Getrf + Getri, TGeo: RlstScalar>(
                         unimplemented!();
                     }
                     let mut n = 0;
-                    for i0 in 1..degree {
-                        for i1 in 1..degree - i0 {
+                    for i1 in 1..degree {
+                        for i0 in 1..degree - i1 {
                             for j in 0..tdim {
                                 *pts.get_mut([j, n]).unwrap() = num::cast::<_, TGeo>(v0[j])
                                     .unwrap()
@@ -163,8 +163,8 @@ pub fn create<T: RlstScalar + Getrf + Getri, TGeo: RlstScalar>(
                 }
                 ReferenceCellType::Quadrilateral => {
                     let mut n = 0;
-                    for p0 in &pts1d {
-                        for p1 in &pts1d {
+                    for p1 in &pts1d {
+                        for p0 in &pts1d {
                             for j in 0..tdim {
                                 *pts.get_mut([j, n]).unwrap() = num::cast::<_, TGeo>(v0[j])
                                     .unwrap()
@@ -220,9 +220,9 @@ pub fn create<T: RlstScalar + Getrf + Getri, TGeo: RlstScalar>(
                     let v3 = &vertices[vn3];
 
                     let mut n = 0;
-                    for i0 in 1..degree {
-                        for i1 in 1..degree - i0 {
-                            for i2 in 1..degree - i0 - i1 {
+                    for i2 in 1..degree {
+                        for i1 in 1..degree - i2 {
+                            for i0 in 1..degree - i2 - i1 {
                                 for j in 0..tdim {
                                     *pts.get_mut([j, n]).unwrap() = num::cast::<_, TGeo>(v0[j])
                                         .unwrap()
@@ -251,9 +251,9 @@ pub fn create<T: RlstScalar + Getrf + Getri, TGeo: RlstScalar>(
                     let v3 = &vertices[vn3];
 
                     let mut n = 0;
-                    for p0 in &pts1d {
+                    for p2 in &pts1d {
                         for p1 in &pts1d {
-                            for p2 in &pts1d {
+                            for p0 in &pts1d {
                                 for j in 0..tdim {
                                     *pts.get_mut([j, n]).unwrap() = num::cast::<_, TGeo>(v0[j])
                                         .unwrap()
@@ -335,6 +335,7 @@ mod test {
     use super::*;
     use crate::traits::FiniteElement;
     use approx::*;
+    use paste::paste;
     use rlst::DynArray;
 
     #[test]
@@ -1080,4 +1081,47 @@ mod test {
             }
         }
     }
+
+    fn ordered(x: &[f64], y: &[f64]) -> bool {
+        assert_eq!(x.len(), y.len());
+        if x.is_empty() {
+            false
+        } else if (x[x.len() - 1] - y[y.len() - 1]).abs() < 1e-8 {
+            ordered(&x[..x.len() - 1], &y[..y.len() - 1])
+        } else {
+            x[x.len() - 1] < y[y.len() - 1]
+        }
+    }
+
+    macro_rules! test_point_ordering {
+        ($cell:ident, $max_degree:expr) => {
+            paste! {
+                #[test]
+                fn [<test_point_ordering_ $cell:lower>]() {
+                    for degree in 3..=[<$max_degree>] {
+                        let e = create::<f64, f64>(
+                            ReferenceCellType::[<$cell>],
+                            degree,
+                            Continuity::Standard,
+                            LagrangeVariant::Equispaced,
+                        );
+                        for pt_sets in &e.interpolation_points {
+                            for pts in pt_sets {
+                                if pts.shape()[1] > 0 {
+                                    for i in 0..pts.shape()[1] - 1 {
+                                        assert!(ordered(&pts.r().col(i).data().unwrap(), &pts.r().col(i + 1).data().unwrap()));
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        };
+    }
+
+    test_point_ordering!(Triangle, 7);
+    test_point_ordering!(Quadrilateral, 7);
+    test_point_ordering!(Tetrahedron, 6);
+    test_point_ordering!(Hexahedron, 4);
 }
