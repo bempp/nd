@@ -6,7 +6,7 @@ ndfunctionspace is an open-source Rust library for creating finite element DOF m
 You can use the latest release of ndfunctionspace by adding the following to `[dependencies]` section of your Cargo.toml file:
 
 ```toml
-ndfunctionspace = { git = "https://codeberg.org/nd-project/nd/issues" }
+ndfunctionspace = "0.4.0"
 ```
 
 ## Documentation
