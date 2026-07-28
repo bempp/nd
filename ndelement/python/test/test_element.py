@@ -1,7 +1,7 @@
-import pytest
 import numpy as np
-from ndelement.reference_cell import ReferenceCellType
+import pytest
 from ndelement.ciarlet import Continuity, Family, create_family
+from ndelement.reference_cell import ReferenceCellType
 
 cells = [
     ReferenceCellType.Interval,

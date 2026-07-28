@@ -1,10 +1,12 @@
 """Reference cell information."""
 
-import typing
+from enum import Enum
+
 import numpy as np
 import numpy.typing as npt
-from ndelement._ndelementrs import lib as _lib, ffi as _ffi
-from enum import Enum
+
+from ndelement._ndelementrs import ffi as _ffi
+from ndelement._ndelementrs import lib as _lib
 
 
 class ReferenceCellType(Enum):
@@ -30,7 +32,7 @@ def is_simplex(cell: ReferenceCellType) -> bool:
     return _lib.is_simplex(cell.value)
 
 
-def vertices(cell: ReferenceCellType, dtype: typing.Type[np.floating] = np.float64) -> npt.NDArray:
+def vertices(cell: ReferenceCellType, dtype: type[np.floating] = np.float64) -> npt.NDArray:
     """Get the vertices of a reference cell."""
     vertices = np.empty((entity_counts(cell)[0], dim(cell)), dtype=dtype)
     if dtype == np.float64:
@@ -42,7 +44,7 @@ def vertices(cell: ReferenceCellType, dtype: typing.Type[np.floating] = np.float
     return vertices
 
 
-def midpoint(cell: ReferenceCellType, dtype: typing.Type[np.floating] = np.float64) -> npt.NDArray:
+def midpoint(cell: ReferenceCellType, dtype: type[np.floating] = np.float64) -> npt.NDArray:
     """Get the midpoint of a reference cell."""
     point = np.empty(dim(cell), dtype=dtype)
     if dtype == np.float64:
@@ -54,7 +56,7 @@ def midpoint(cell: ReferenceCellType, dtype: typing.Type[np.floating] = np.float
     return point
 
 
-def edges(cell: ReferenceCellType) -> typing.List[typing.List[int]]:
+def edges(cell: ReferenceCellType) -> list[list[int]]:
     """Get the edges of a reference cell."""
     edges = []
     e = np.empty(2 * entity_counts(cell)[1], dtype=np.uintp)
@@ -64,7 +66,7 @@ def edges(cell: ReferenceCellType) -> typing.List[typing.List[int]]:
     return edges
 
 
-def faces(cell: ReferenceCellType) -> typing.List[typing.List[int]]:
+def faces(cell: ReferenceCellType) -> list[list[int]]:
     """Get the faces of a reference cell."""
     faces = []
     flen = 0
@@ -80,7 +82,7 @@ def faces(cell: ReferenceCellType) -> typing.List[typing.List[int]]:
     return faces
 
 
-def volumes(cell: ReferenceCellType) -> typing.List[typing.List[int]]:
+def volumes(cell: ReferenceCellType) -> list[list[int]]:
     """Get the volumes of a reference cell."""
     volumes = []
     vlen = 0
@@ -96,7 +98,7 @@ def volumes(cell: ReferenceCellType) -> typing.List[typing.List[int]]:
     return volumes
 
 
-def entity_types(cell: ReferenceCellType) -> typing.List[typing.List[ReferenceCellType]]:
+def entity_types(cell: ReferenceCellType) -> list[list[ReferenceCellType]]:
     """Get the types of the sub-entities of a reference cell."""
     t = np.empty(sum(entity_counts(cell)), dtype=np.uint8)
     _lib.entity_types(cell.value, _ffi.cast("uint8_t* ", t.ctypes.data))
@@ -108,7 +110,7 @@ def entity_types(cell: ReferenceCellType) -> typing.List[typing.List[ReferenceCe
     return types
 
 
-def entity_counts(cell: ReferenceCellType) -> typing.List[int]:
+def entity_counts(cell: ReferenceCellType) -> list[int]:
     """Get the number of the sub-entities of each dimension for a reference cell."""
     counts = np.empty(4, dtype=np.uintp)
     _lib.entity_counts(cell.value, _ffi.cast("uintptr_t* ", counts.ctypes.data))
@@ -117,7 +119,7 @@ def entity_counts(cell: ReferenceCellType) -> typing.List[int]:
 
 def connectivity(
     cell: ReferenceCellType,
-) -> typing.List[typing.List[typing.List[typing.List[int]]]]:
+) -> list[list[list[list[int]]]]:
     """Get the connectivity of a reference cell."""
     tdim = dim(cell)
     ec = entity_counts(cell)[: tdim + 1]
@@ -141,7 +143,7 @@ def connectivity(
 
 def compute_orientation(
     cell: ReferenceCellType,
-    vertices: typing.List[int],
+    vertices: list[int],
 ) -> np.int32:
     """Compute a 32-bit integer encoding the orientation differences between the reference cell and a cell."""
     return _lib.compute_orientation(

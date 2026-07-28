@@ -1,12 +1,14 @@
 """Ciarlet elements."""
 
-import typing
+from enum import Enum
+
 import numpy as np
 import numpy.typing as npt
-from ndelement._ndelementrs import lib as _lib, ffi as _ffi
-from ndelement.reference_cell import ReferenceCellType, entity_counts, dim
-from enum import Enum
 from _cffi_backend import _CDataBase
+
+from ndelement._ndelementrs import ffi as _ffi
+from ndelement._ndelementrs import lib as _lib
+from ndelement.reference_cell import ReferenceCellType, dim, entity_counts
 
 
 class Continuity(Enum):
@@ -41,7 +43,7 @@ _rtypes = {
 _dtypes = {j: i for i, j in _rtypes.items()}
 
 
-class CiarletElement(object):
+class CiarletElement:
     """Ciarlet element."""
 
     def __init__(self, rs_element: _CDataBase, owned: bool = True):
@@ -55,12 +57,12 @@ class CiarletElement(object):
             _lib.ciarlet_element_t_free(self._rs_element)
 
     @property
-    def dtype(self) -> typing.Type[np.floating]:
+    def dtype(self) -> type[np.floating]:
         """Data type."""
         return _dtypes[_lib.ciarlet_element_dtype(self._rs_element)]
 
     @property
-    def geo_dtype(self) -> typing.Type[np.floating]:
+    def geo_dtype(self) -> type[np.floating]:
         """Data type."""
         return _dtypes[_lib.ciarlet_element_geo_dtype(self._rs_element)]
 
@@ -339,7 +341,7 @@ class CiarletElement(object):
         )
 
 
-class ElementFamily(object):
+class ElementFamily:
     """Ciarlet element."""
 
     def __init__(
@@ -365,7 +367,7 @@ class ElementFamily(object):
             _lib.element_family_t_free(self._rs_family)
 
     @property
-    def dtype(self) -> typing.Type[np.floating]:
+    def dtype(self) -> type[np.floating]:
         """Data type."""
         return _dtypes[_lib.element_family_dtype(self._rs_family)]
 
@@ -394,7 +396,7 @@ def create_family(
     degree: int,
     continuity: Continuity = Continuity.Standard,
     lagrange_variant: LagrangeVariant | None = None,
-    dtype: typing.Type[np.floating] = np.float64,
+    dtype: type[np.floating] = np.float64,
 ) -> ElementFamily:
     """Create a new element family."""
     rust_type = _rtypes[dtype]

@@ -1,8 +1,8 @@
-import pytest
 import numpy as np
-from ndelement.reference_cell import ReferenceCellType
+import pytest
 from ndelement.polynomials import tabulate_legendre_polynomials
 from ndelement.quadrature import make_gauss_jacobi_quadrature
+from ndelement.reference_cell import ReferenceCellType
 
 cells = [
     ReferenceCellType.Interval,
@@ -26,4 +26,3 @@ def test_orthogonal(cell, degree):
                 assert np.isclose(integral, 1.0)
             else:
                 assert np.isclose(integral, 0.0)
-            pass

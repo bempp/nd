@@ -1,18 +1,18 @@
-import pytest
 import numpy as np
+import pytest
 from ndelement.reference_cell import (
-    dim,
     ReferenceCellType,
+    compute_orientation,
+    connectivity,
+    dim,
+    edges,
+    entity_counts,
+    entity_types,
+    faces,
+    is_simplex,
     midpoint,
     vertices,
-    entity_counts,
-    edges,
-    faces,
     volumes,
-    is_simplex,
-    entity_types,
-    connectivity,
-    compute_orientation,
 )
 
 cells = [
@@ -66,12 +66,16 @@ def test_entity_counts(cell):
 
 @pytest.mark.parametrize("cell", cells)
 def test_is_simplex(cell):
-    is_simplex(cell) == cell in [
-        ReferenceCellType.Point,
-        ReferenceCellType.Interval,
-        ReferenceCellType.Triangle,
-        ReferenceCellType.Tetrahedron,
-    ]
+    assert (
+        is_simplex(cell)
+        == cell
+        in [
+            ReferenceCellType.Point,
+            ReferenceCellType.Interval,
+            ReferenceCellType.Triangle,
+            ReferenceCellType.Tetrahedron,
+        ]
+    )
 
 
 @pytest.mark.parametrize("cell", cells)
@@ -82,13 +86,9 @@ def test_connectivity(cell):
     for d, (c_d, e_d) in enumerate(zip(connectivity(cell), entities)):
         for i, (c_di, e_di) in enumerate(zip(c_d, e_d)):
             for c_dij, e_j in zip(c_di[: d + 1], entities[: d + 1]):
-                assert set([j for j, e in enumerate(e_j) if all([k in e_di for k in e])]) == set(
-                    c_dij
-                )
+                assert {j for j, e in enumerate(e_j) if all(k in e_di for k in e)} == set(c_dij)
             for c_dij, e_j in zip(c_di[d + 1 :], entities[d + 1 :]):
-                assert set([j for j, e in enumerate(e_j) if all([k in e for k in e_di])]) == set(
-                    c_dij
-                )
+                assert {j for j, e in enumerate(e_j) if all(k in e for k in e_di)} == set(c_dij)
 
 
 @pytest.mark.parametrize(

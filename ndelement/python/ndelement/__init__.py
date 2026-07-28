@@ -1,3 +1,3 @@
 """ndelement."""
 
-from ndelement import reference_cell, quadrature, polynomials, ciarlet
+from ndelement import ciarlet, polynomials, quadrature, reference_cell

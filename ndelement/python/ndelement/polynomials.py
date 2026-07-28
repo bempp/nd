@@ -1,9 +1,10 @@
 """Polynomials."""
 
-import typing
 import numpy as np
 import numpy.typing as npt
-from ndelement._ndelementrs import lib as _lib, ffi as _ffi
+
+from ndelement._ndelementrs import ffi as _ffi
+from ndelement._ndelementrs import lib as _lib
 from ndelement.reference_cell import ReferenceCellType
 
 
@@ -12,7 +13,7 @@ def tabulate_legendre_polynomials(
     points: npt.NDArray[np.floating],
     degree: int,
     derivatives: int,
-    dtype: typing.Optional[typing.Type[np.floating]] = None,
+    dtype: type[np.floating] | None = None,
 ) -> npt.NDArray:
     """Tabulate Legendre orthonormal polynomials."""
     if dtype is None:
