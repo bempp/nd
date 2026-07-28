@@ -19,7 +19,6 @@ affiliations:
    index: 2
 date: xx March 2026
 bibliography: paper.bib
-rsecon26: accepted
 ---
 
 # Summary
