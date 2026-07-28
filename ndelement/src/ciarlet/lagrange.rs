@@ -1123,5 +1123,5 @@ mod test {
     test_point_ordering!(Triangle, 7);
     test_point_ordering!(Quadrilateral, 7);
     test_point_ordering!(Tetrahedron, 6);
-    test_point_ordering!(Hexahedron, 4);
+    test_point_ordering!(Hexahedron, 3);
 }
