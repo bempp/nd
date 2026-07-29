@@ -66,9 +66,8 @@ def test_entity_counts(cell):
 
 @pytest.mark.parametrize("cell", cells)
 def test_is_simplex(cell):
-    assert (
-        is_simplex(cell)
-        == cell
+    assert is_simplex(cell) == (
+        cell
         in [
             ReferenceCellType.Point,
             ReferenceCellType.Interval,
