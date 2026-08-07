@@ -10,6 +10,7 @@ use crate::{
 #[cfg(feature = "mpi")]
 use mpi::traits::{Communicator, Equivalence};
 use ndelement::{ciarlet::CiarletElement, map::IdentityMap, types::ReferenceCellType};
+use rlst::RlstScalar;
 use std::collections::{HashMap, hash_map::Entry::Vacant};
 
 /// Add points and cells for regular sphere to builder
@@ -185,10 +186,13 @@ fn regular_sphere_quadrilateral_add_points_and_cells<T: Scalar>(
 /// A regular sphere is created by starting with a regular octahedron. The shape is then refined `refinement_level` times.
 /// Each time the mesh is refined, each triangle is split into four triangles (by adding lines connecting the midpoints of
 /// each edge). The new points are then scaled so that they are a distance of 1 from the origin.
-pub fn regular_sphere<T: Scalar>(
+pub fn regular_sphere<T: Scalar + RlstScalar<Real = T>>(
     refinement_level: u32,
     cell_type: ReferenceCellType,
-) -> SingleElementMesh<T, CiarletElement<T, IdentityMap, T>> {
+    degree: usize,
+) -> SingleElementMesh<T, CiarletElement<T, IdentityMap, T>>
+where
+{
     let mut b = SingleElementMeshBuilder::new_with_capacity(
         3,
         match cell_type {
@@ -218,7 +222,23 @@ pub fn regular_sphere<T: Scalar>(
             panic!("Unsupported cell type: {cell_type:?}");
         }
     }
-    b.create_mesh()
+
+    let mesh = b.create_mesh();
+
+    if degree == 1 {
+        return mesh;
+    }
+
+    let new_mesh = mesh.resample_as_degree(degree);
+    let (topology, mut geometry) = new_mesh.into_topology_and_geometry();
+
+    // Rescale all points to be of unit length
+    geometry.points.col_iter_mut().for_each(|mut col| {
+        let norm = T::sqrt(col.r_mut().square().iter_value().sum());
+        col /= norm;
+    });
+
+    SingleElementMesh::new(topology, geometry)
 }
 
 /// Create a mesh of a regular sphere distributed in parallel
@@ -261,7 +281,7 @@ mod test {
             paste! {
                 #[test]
                 fn [<test_regular_sphere_ $cell:lower _ $order>]() {
-                    let _g = regular_sphere::<f64>([<$order>], ReferenceCellType::[<$cell>]);
+                    let _g = regular_sphere::<f64>([<$order>], ReferenceCellType::[<$cell>], 1);
                 }
             }
         };
@@ -281,7 +301,7 @@ mod test {
             paste! {
                 #[test]
                 fn [<test_normal_is_outward_ $cell:lower _ $order>]() {
-                    let g = regular_sphere::<f64>([<$order>], ReferenceCellType::[<$cell>]);
+                    let g = regular_sphere::<f64>([<$order>], ReferenceCellType::[<$cell>], 1);
                     let mut points = rlst_dynamic_array!(f64, [2, 1]);
                     points[[0, 0]] = 1.0 / 3.0;
                     points[[1, 0]] = 1.0 / 3.0;
@@ -305,7 +325,7 @@ mod test {
 
                 #[test]
                 fn [<test_normal_is_unit_ $cell:lower _ $order>]() {
-                    let g = regular_sphere::<f64>([<$order>], ReferenceCellType::[<$cell>]);
+                    let g = regular_sphere::<f64>([<$order>], ReferenceCellType::[<$cell>], 1);
                     let mut points = rlst_dynamic_array!(f64, [2, 1]);
                     points[[0, 0]] = 1.0 / 3.0;
                     points[[1, 0]] = 1.0 / 3.0;

@@ -1,4 +1,6 @@
 //! Entity geometry
+use itertools::Itertools;
+
 use crate::types::Scalar;
 
 /// A point
@@ -35,6 +37,11 @@ pub trait Geometry {
 
     /// Points
     fn points(&self) -> Self::PointIter<'_>;
+
+    /// Indices of the points
+    fn point_indices(&self) -> Vec<usize> {
+        self.points().map(|p| p.index()).collect_vec()
+    }
 
     /// Point count
     fn point_count(&self) -> usize;

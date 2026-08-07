@@ -1,41 +1,40 @@
+use itertools::{self, izip};
 use ndelement::ciarlet::lagrange;
+use ndelement::reference_cell::faces;
 use ndelement::{
     traits::FiniteElement,
     types::{Continuity, ReferenceCellType},
 };
-use rlst::{DynArray, rlst_dynamic_array};
 
 fn main() {
-    // Create a P2 element on a triangle
+    // Create a hexahedron of degree 4
     let element = lagrange::create::<f64, f64>(
-        ReferenceCellType::Triangle,
-        2,
+        ReferenceCellType::Hexahedron,
+        4,
         Continuity::Standard,
         lagrange::LagrangeVariant::Equispaced,
     );
 
-    println!("This element has {} basis functions.", element.dim());
+    // We want the dofs and dof position associated with the sixth face
+    let entity_number = 5; // Entity 5 is the sixth face
 
-    // Create an array to store the basis function values
-    let mut basis_values = DynArray::<f64, 4>::from_shape(element.tabulate_array_shape(0, 1));
-    // Create array containing the point [1/3, 1/3]
-    let mut points = rlst_dynamic_array!(f64, [2, 1]);
-    points[[0, 0]] = 1.0 / 3.0;
-    points[[1, 0]] = 1.0 / 3.0;
-    // Tabulate the element's basis functions at the point
-    element.tabulate(&points, 0, &mut basis_values);
+    // Print all topological vertex indices associated with this face
+    let face_indices = faces(ReferenceCellType::Hexahedron);
     println!(
-        "The values of the basis functions at the point (1/3, 1/3) are: {:?}",
-        basis_values.data().unwrap()
+        "Vertices of face {}:{:#?}",
+        entity_number, face_indices[entity_number]
     );
 
-    // Set point to [1, 0]
-    points[[0, 0]] = 1.0;
-    points[[1, 0]] = 0.0;
-    // Tabulate the element's basis functions at the point
-    element.tabulate(&points, 0, &mut basis_values);
-    println!(
-        "The values of the basis functions at the point (1, 0) are: {:?}",
-        basis_values.data().unwrap()
-    );
+    // We now print the dof indices and the associated points for that face
+    let dofs = element.entity_dofs(2, entity_number).unwrap();
+    let int_points = element.interpolation_points();
+    for (dof, int_point) in izip!(dofs, int_points[2][entity_number].col_iter()) {
+        println!(
+            "{}: [{}, {}, {}]",
+            dof,
+            int_point[[0]],
+            int_point[[1]],
+            int_point[[2]]
+        );
+    }
 }

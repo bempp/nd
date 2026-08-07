@@ -307,7 +307,10 @@ impl<T: Scalar> TopologyBuilder for SingleElementMeshBuilder<T> {
         _cell_degrees: &[usize],
     ) -> Vec<usize> {
         let mut vertices = vec![];
+        // Iterate over the number of vertices in the cell
         for v in 0..reference_cell::entity_counts(self.element_data.0)[0] {
+            // Get the dofs associated with each vertex. Typically, only a single dof
+            // is associated with each vertex. So the next loop only runs once.
             for d in self.element.entity_dofs(0, v).unwrap() {
                 vertices.push(*d);
             }

@@ -12,7 +12,7 @@ use ndmesh::{SingleElementMesh, SingleElementMeshBuilder, shapes};
 /// Parallel I/O is demonstrated in the example `parallel_io.rs`
 fn main() {
     // Create a mesh using the shapes module: unit_cube_boundary will mesh the surface of a cube
-    let g = shapes::unit_cube_boundary::<f64>(4, 5, 4, ReferenceCellType::Triangle);
+    let g = shapes::unit_cube_boundary::<f64>(4, 5, 4, ReferenceCellType::Triangle, 1);
 
     // If the serde option is used, the raw mesh data can be exported in RON format
     g.export_as_ron("_unit_cube_boundary.ron");

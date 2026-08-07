@@ -5,7 +5,7 @@ on: [pull_request]
 jobs:
   style-checks-rust:
     name: 🦀 style (${{ matrix.feature-flags }})
-    runs-on: codeberg-medium
+    runs-on: docker
     strategy:
       matrix:
         feature-flags:
@@ -39,7 +39,7 @@ jobs:
 
   style-checks-python:
     name: 🐍 style
-    runs-on: codeberg-small
+    runs-on: docker
     steps:
       - name: Set up Python
         uses: https://github.com/actions/setup-python@v5

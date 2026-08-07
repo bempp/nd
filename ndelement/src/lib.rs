@@ -47,6 +47,7 @@ pub mod orientation;
 pub mod polynomials;
 pub mod quadrature;
 pub mod reference_cell;
+pub mod reorderings;
 pub mod traits;
 pub mod types;
 

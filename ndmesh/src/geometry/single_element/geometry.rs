@@ -19,8 +19,14 @@ use std::fmt::{Debug, Formatter};
 
 /// Single element geometry
 pub struct SingleElementGeometry<T: Scalar, E: MappedFiniteElement> {
-    points: DynArray<T, 2>,
-    cells: DynArray<usize, 2>,
+    /// The points of the geometry.
+    ///
+    /// Column j of `points` contains the coordinates of the jth point.
+    pub points: DynArray<T, 2>,
+    /// The cells of the geometry.
+    ///
+    /// Column j of `cells` contains the cell definition of the jth cell.
+    pub cells: DynArray<usize, 2>,
     elements: Vec<E>,
 }
 

@@ -5,7 +5,7 @@ on: [pull_request]
 jobs:
   run-unit-tests-rust:
     name: 🦀 unit tests (${{ matrix.feature-flags }})
-    runs-on: codeberg-medium
+    runs-on: docker
     strategy:
       matrix:
         rust-version: ["stable"]
@@ -36,7 +36,7 @@ jobs:
 
   run-tests-rust:
     name: 🦀 tests
-    runs-on: codeberg-medium
+    runs-on: docker
     strategy:
       matrix:
         rust-version: ["stable"]
@@ -65,7 +65,7 @@ jobs:
 
   run-examples-rust:
     name: 🦀 examples (${{ matrix.crate }})
-    runs-on: codeberg-medium
+    runs-on: docker
     strategy:
       matrix:
         rust-version: ["stable"]

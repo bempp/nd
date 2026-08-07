@@ -26,7 +26,7 @@ fn test_parallel_function_space<C: Communicator>(comm: &C) {
     let family =
         LagrangeElementFamily::<f64>::new(2, Continuity::Standard, LagrangeVariant::Equispaced);
     let space = ParallelFunctionSpaceImpl::new(&mesh, &family);
-    let serial_mesh = unit_cube::<f64>(4, 4, 4, ReferenceCellType::Tetrahedron);
+    let serial_mesh = unit_cube::<f64>(4, 4, 4, ReferenceCellType::Tetrahedron, 1);
     let serial_space = FunctionSpaceImpl::new(&serial_mesh, &family);
 
     assert_eq!(space.global_size(), serial_space.global_size());

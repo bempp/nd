@@ -125,9 +125,9 @@ fn unit_cube_add_points_and_cells<T: Scalar>(
     nz: usize,
     cell_type: ReferenceCellType,
 ) {
-    for i in 0..nx + 1 {
-        for j in 0..ny + 1 {
-            for k in 0..nz + 1 {
+    for i in 0..=nx {
+        for j in 0..=ny {
+            for k in 0..=nz {
                 b.add_point(
                     (i * (ny + 1) + j) * (nz + 1) + k,
                     &[
@@ -188,11 +188,11 @@ fn unit_cube_add_points_and_cells<T: Scalar>(
                                 origin,
                                 origin + dx,
                                 origin + dy,
-                                origin + dy,
+                                origin + dx + dy,
                                 origin + dz,
                                 origin + dx + dz,
                                 origin + dy + dz,
-                                origin + dy + dz,
+                                origin + dx + dy + dz,
                             ],
                         );
                     }
@@ -434,6 +434,7 @@ pub fn unit_square<T: Scalar>(
     nx: usize,
     ny: usize,
     cell_type: ReferenceCellType,
+    degree: usize,
 ) -> SingleElementMesh<T, CiarletElement<T, IdentityMap, T>> {
     let mut b = SingleElementMeshBuilder::new_with_capacity(
         2,
@@ -448,7 +449,12 @@ pub fn unit_square<T: Scalar>(
         (cell_type, 1),
     );
     unit_square_add_points_and_cells(&mut b, nx, ny, cell_type);
-    b.create_mesh()
+    if degree == 1 {
+        b.create_mesh()
+    } else {
+        let mesh = b.create_mesh();
+        mesh.resample_as_degree(degree)
+    }
 }
 
 /// Create a unit square mesh distributed in parallel
@@ -475,6 +481,7 @@ pub fn unit_square_distributed<T: Scalar + Equivalence, C: Communicator>(
 pub fn unit_square_boundary<T: Scalar>(
     nx: usize,
     ny: usize,
+    degree: usize,
 ) -> SingleElementMesh<T, CiarletElement<T, IdentityMap, T>> {
     let mut b = SingleElementMeshBuilder::new_with_capacity(
         2,
@@ -483,7 +490,12 @@ pub fn unit_square_boundary<T: Scalar>(
         (ReferenceCellType::Interval, 1),
     );
     unit_square_boundary_add_points_and_cells(&mut b, nx, ny);
-    b.create_mesh()
+    if degree == 1 {
+        b.create_mesh()
+    } else {
+        let mesh = b.create_mesh();
+        mesh.resample_as_degree(degree)
+    }
 }
 
 /// Create a mesh of the boundary distributed in parallel
@@ -513,6 +525,7 @@ pub fn unit_cube<T: Scalar>(
     ny: usize,
     nz: usize,
     cell_type: ReferenceCellType,
+    degree: usize,
 ) -> SingleElementMesh<T, CiarletElement<T, IdentityMap, T>> {
     let mut b = SingleElementMeshBuilder::new_with_capacity(
         3,
@@ -528,7 +541,13 @@ pub fn unit_cube<T: Scalar>(
     );
 
     unit_cube_add_points_and_cells(&mut b, nx, ny, nz, cell_type);
-    b.create_mesh()
+
+    if degree == 1 {
+        b.create_mesh()
+    } else {
+        let mesh = b.create_mesh();
+        mesh.resample_as_degree(degree)
+    }
 }
 
 /// Create a unit cube mesh distributed in parallel
@@ -559,6 +578,7 @@ pub fn unit_cube_boundary<T: Scalar>(
     ny: usize,
     nz: usize,
     cell_type: ReferenceCellType,
+    degree: usize,
 ) -> SingleElementMesh<T, CiarletElement<T, IdentityMap, T>> {
     let mut b = SingleElementMeshBuilder::new_with_capacity(
         3,
@@ -573,7 +593,12 @@ pub fn unit_cube_boundary<T: Scalar>(
         (cell_type, 1),
     );
     unit_cube_boundary_add_points_and_cells(&mut b, nx, ny, nz, cell_type);
-    b.create_mesh()
+    if degree == 1 {
+        b.create_mesh()
+    } else {
+        let mesh = b.create_mesh();
+        mesh.resample_as_degree(degree)
+    }
 }
 
 /// Create a mesh of the boundary of a unit cube distributed in parallel
@@ -603,6 +628,7 @@ pub fn unit_cube_edges<T: Scalar>(
     nx: usize,
     ny: usize,
     nz: usize,
+    degree: usize,
 ) -> SingleElementMesh<T, CiarletElement<T, IdentityMap, T>> {
     let mut b = SingleElementMeshBuilder::new_with_capacity(
         3,
@@ -611,7 +637,13 @@ pub fn unit_cube_edges<T: Scalar>(
         (ReferenceCellType::Interval, 1),
     );
     unit_cube_edges_add_points_and_cells(&mut b, nx, ny, nz);
-    b.create_mesh()
+
+    if degree == 1 {
+        b.create_mesh()
+    } else {
+        let mesh = b.create_mesh();
+        mesh.resample_as_degree(degree)
+    }
 }
 
 /// Create a mesh of the edges of a unit cube distributed in parallel
@@ -723,56 +755,68 @@ mod test {
 
     #[test]
     fn test_unit_square_triangle() {
-        check_volume(&unit_square::<f64>(1, 1, ReferenceCellType::Triangle), 1.0);
-        check_volume(&unit_square::<f64>(2, 2, ReferenceCellType::Triangle), 1.0);
-        check_volume(&unit_square::<f64>(4, 5, ReferenceCellType::Triangle), 1.0);
-        check_volume(&unit_square::<f64>(7, 6, ReferenceCellType::Triangle), 1.0);
+        check_volume(
+            &unit_square::<f64>(1, 1, ReferenceCellType::Triangle, 1),
+            1.0,
+        );
+        check_volume(
+            &unit_square::<f64>(2, 2, ReferenceCellType::Triangle, 1),
+            1.0,
+        );
+        check_volume(
+            &unit_square::<f64>(4, 5, ReferenceCellType::Triangle, 1),
+            1.0,
+        );
+        check_volume(
+            &unit_square::<f64>(7, 6, ReferenceCellType::Triangle, 1),
+            1.0,
+        );
     }
 
     #[test]
     fn test_unit_square_quadrilateral() {
         check_volume(
-            &unit_square::<f64>(1, 1, ReferenceCellType::Quadrilateral),
+            &unit_square::<f64>(1, 1, ReferenceCellType::Quadrilateral, 1),
             1.0,
         );
         check_volume(
-            &unit_square::<f64>(2, 2, ReferenceCellType::Quadrilateral),
+            &unit_square::<f64>(2, 2, ReferenceCellType::Quadrilateral, 1),
             1.0,
         );
         check_volume(
-            &unit_square::<f64>(4, 5, ReferenceCellType::Quadrilateral),
+            &unit_square::<f64>(4, 5, ReferenceCellType::Quadrilateral, 1),
             1.0,
         );
         check_volume(
-            &unit_square::<f64>(7, 6, ReferenceCellType::Quadrilateral),
+            &unit_square::<f64>(7, 6, ReferenceCellType::Quadrilateral, 1),
             1.0,
         );
     }
 
     #[test]
     fn test_unit_square_boundary() {
-        check_volume(&unit_square_boundary::<f64>(1, 1), 4.0);
-        check_volume(&unit_square_boundary::<f64>(2, 2), 4.0);
-        check_volume(&unit_square_boundary::<f64>(4, 5), 4.0);
-        check_volume(&unit_square_boundary::<f64>(7, 6), 4.0);
+        check_volume(&unit_square_boundary::<f64>(1, 1, 1), 4.0);
+        check_volume(&unit_square_boundary::<f64>(2, 2, 1), 4.0);
+        check_volume(&unit_square_boundary::<f64>(4, 5, 1), 4.0);
+        check_volume(&unit_square_boundary::<f64>(7, 6, 1), 4.0);
     }
 
     #[test]
     fn test_unit_cube_boundary_triangle() {
         check_volume(
-            &unit_cube_boundary::<f64>(1, 1, 1, ReferenceCellType::Triangle),
+            &unit_cube_boundary::<f64>(1, 1, 1, ReferenceCellType::Triangle, 1),
             6.0,
         );
         check_volume(
-            &unit_cube_boundary::<f64>(2, 2, 2, ReferenceCellType::Triangle),
+            &unit_cube_boundary::<f64>(2, 2, 2, ReferenceCellType::Triangle, 1),
             6.0,
         );
         check_volume(
-            &unit_cube_boundary::<f64>(4, 5, 5, ReferenceCellType::Triangle),
+            &unit_cube_boundary::<f64>(4, 5, 5, ReferenceCellType::Triangle, 1),
             6.0,
         );
         check_volume(
-            &unit_cube_boundary::<f64>(7, 6, 4, ReferenceCellType::Triangle),
+            &unit_cube_boundary::<f64>(7, 6, 4, ReferenceCellType::Triangle, 1),
             6.0,
         );
     }
@@ -780,19 +824,19 @@ mod test {
     #[test]
     fn test_unit_cube_boundary_quadrilateral() {
         check_volume(
-            &unit_cube_boundary::<f64>(1, 1, 1, ReferenceCellType::Quadrilateral),
+            &unit_cube_boundary::<f64>(1, 1, 1, ReferenceCellType::Quadrilateral, 1),
             6.0,
         );
         check_volume(
-            &unit_cube_boundary::<f64>(2, 2, 2, ReferenceCellType::Quadrilateral),
+            &unit_cube_boundary::<f64>(2, 2, 2, ReferenceCellType::Quadrilateral, 1),
             6.0,
         );
         check_volume(
-            &unit_cube_boundary::<f64>(4, 5, 5, ReferenceCellType::Quadrilateral),
+            &unit_cube_boundary::<f64>(4, 5, 5, ReferenceCellType::Quadrilateral, 1),
             6.0,
         );
         check_volume(
-            &unit_cube_boundary::<f64>(7, 6, 4, ReferenceCellType::Quadrilateral),
+            &unit_cube_boundary::<f64>(7, 6, 4, ReferenceCellType::Quadrilateral, 1),
             6.0,
         );
     }
@@ -800,47 +844,47 @@ mod test {
     #[test]
     fn test_unit_cube_tetrahedron() {
         check_volume(
-            &unit_cube::<f64>(1, 1, 1, ReferenceCellType::Tetrahedron),
+            &unit_cube::<f64>(1, 1, 1, ReferenceCellType::Tetrahedron, 1),
             1.0,
         );
         check_volume(
-            &unit_cube::<f64>(2, 2, 2, ReferenceCellType::Tetrahedron),
+            &unit_cube::<f64>(2, 2, 2, ReferenceCellType::Tetrahedron, 1),
             1.0,
         );
         check_volume(
-            &unit_cube::<f64>(4, 5, 5, ReferenceCellType::Tetrahedron),
+            &unit_cube::<f64>(4, 5, 5, ReferenceCellType::Tetrahedron, 1),
             1.0,
         );
         check_volume(
-            &unit_cube::<f64>(7, 6, 4, ReferenceCellType::Tetrahedron),
+            &unit_cube::<f64>(7, 6, 4, ReferenceCellType::Tetrahedron, 1),
             1.0,
         );
     }
     #[test]
     fn test_unit_cube_hexahedron() {
         check_volume(
-            &unit_cube::<f64>(1, 1, 1, ReferenceCellType::Hexahedron),
+            &unit_cube::<f64>(1, 1, 1, ReferenceCellType::Hexahedron, 1),
             1.0,
         );
         check_volume(
-            &unit_cube::<f64>(2, 2, 2, ReferenceCellType::Hexahedron),
+            &unit_cube::<f64>(2, 2, 2, ReferenceCellType::Hexahedron, 1),
             1.0,
         );
         check_volume(
-            &unit_cube::<f64>(4, 5, 5, ReferenceCellType::Hexahedron),
+            &unit_cube::<f64>(4, 5, 5, ReferenceCellType::Hexahedron, 1),
             1.0,
         );
         check_volume(
-            &unit_cube::<f64>(7, 6, 4, ReferenceCellType::Hexahedron),
+            &unit_cube::<f64>(7, 6, 4, ReferenceCellType::Hexahedron, 1),
             1.0,
         );
     }
 
     #[test]
     fn test_unit_cube_edges() {
-        check_volume(&unit_cube_edges::<f64>(1, 1, 1), 12.0);
-        check_volume(&unit_cube_edges::<f64>(2, 2, 2), 12.0);
-        check_volume(&unit_cube_edges::<f64>(4, 5, 5), 12.0);
-        check_volume(&unit_cube_edges::<f64>(7, 6, 4), 12.0);
+        check_volume(&unit_cube_edges::<f64>(1, 1, 1, 1), 12.0);
+        check_volume(&unit_cube_edges::<f64>(2, 2, 2, 1), 12.0);
+        check_volume(&unit_cube_edges::<f64>(4, 5, 5, 1), 12.0);
+        check_volume(&unit_cube_edges::<f64>(7, 6, 4, 1), 12.0);
     }
 }

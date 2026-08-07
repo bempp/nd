@@ -40,7 +40,7 @@ mod test {
 
     #[test]
     fn test_ron_export_and_import() {
-        let g = regular_sphere::<f64>(1, ReferenceCellType::Triangle);
+        let g = regular_sphere::<f64>(1, ReferenceCellType::Triangle, 1);
         let n = g.entity_count(ReferenceCellType::Interval);
         g.export_as_ron("_test_export.ron");
 

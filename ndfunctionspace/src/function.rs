@@ -48,7 +48,7 @@ mod test {
 
     #[test]
     fn test_function_with_unit_square() {
-        let mesh = unit_square::<f64>(1, 1, ReferenceCellType::Triangle);
+        let mesh = unit_square::<f64>(1, 1, ReferenceCellType::Triangle, 1);
         let family = LagrangeElementFamily::<f64>::new(
             0,
             Continuity::Discontinuous,
@@ -63,7 +63,7 @@ mod test {
     }
     #[test]
     fn test_function_with_unit_cube() {
-        let mesh = unit_cube::<f64>(1, 1, 1, ReferenceCellType::Tetrahedron);
+        let mesh = unit_cube::<f64>(1, 1, 1, ReferenceCellType::Tetrahedron, 1);
         let family = LagrangeElementFamily::<f64>::new(
             0,
             Continuity::Discontinuous,
@@ -79,7 +79,7 @@ mod test {
     #[test]
     #[should_panic(expected = "Incorrect number of coefficients!")]
     fn test_function_with_incorrect_coefficients() {
-        let mesh = unit_square::<f64>(1, 1, ReferenceCellType::Triangle);
+        let mesh = unit_square::<f64>(1, 1, ReferenceCellType::Triangle, 1);
         let family = LagrangeElementFamily::<f64>::new(
             0,
             Continuity::Discontinuous,

@@ -78,6 +78,7 @@ fn screen_add_points_and_cells<T: Scalar>(
 pub fn screen<T: Scalar>(
     ncells: usize,
     cell_type: ReferenceCellType,
+    degree: usize,
 ) -> SingleElementMesh<T, CiarletElement<T, IdentityMap, T>> {
     let mut b = SingleElementMeshBuilder::new_with_capacity(
         3,
@@ -92,7 +93,13 @@ pub fn screen<T: Scalar>(
         (cell_type, 1),
     );
     screen_add_points_and_cells(&mut b, ncells, cell_type);
-    b.create_mesh()
+
+    if degree == 1 {
+        b.create_mesh()
+    } else {
+        let mesh = b.create_mesh();
+        mesh.resample_as_degree(degree)
+    }
 }
 
 /// Create a mesh of a square screen distributed in parallel
@@ -121,14 +128,14 @@ mod test {
 
     #[test]
     fn test_screen_triangles() {
-        let _g1 = screen::<f64>(1, ReferenceCellType::Triangle);
-        let _g2 = screen::<f64>(2, ReferenceCellType::Triangle);
-        let _g3 = screen::<f64>(3, ReferenceCellType::Triangle);
+        let _g1 = screen::<f64>(1, ReferenceCellType::Triangle, 1);
+        let _g2 = screen::<f64>(2, ReferenceCellType::Triangle, 1);
+        let _g3 = screen::<f64>(3, ReferenceCellType::Triangle, 1);
     }
     #[test]
     fn test_screen_triangles_normals() {
         for i in 1..5 {
-            let g = screen::<f64>(i, ReferenceCellType::Triangle);
+            let g = screen::<f64>(i, ReferenceCellType::Triangle, 1);
             let mut points = rlst_dynamic_array!(f64, [2, 1]);
             points[[0, 0]] = 1.0 / 3.0;
             points[[1, 0]] = 1.0 / 3.0;
@@ -149,15 +156,15 @@ mod test {
 
     #[test]
     fn test_screen_quadrilaterals() {
-        let _g1 = screen::<f64>(1, ReferenceCellType::Quadrilateral);
-        let _g2 = screen::<f64>(2, ReferenceCellType::Quadrilateral);
-        let _g3 = screen::<f64>(3, ReferenceCellType::Quadrilateral);
+        let _g1 = screen::<f64>(1, ReferenceCellType::Quadrilateral, 1);
+        let _g2 = screen::<f64>(2, ReferenceCellType::Quadrilateral, 1);
+        let _g3 = screen::<f64>(3, ReferenceCellType::Quadrilateral, 1);
     }
 
     #[test]
     fn test_screen_quadrilaterals_normals() {
         for i in 1..5 {
-            let g = screen::<f64>(i, ReferenceCellType::Quadrilateral);
+            let g = screen::<f64>(i, ReferenceCellType::Quadrilateral, 1);
             let mut points = rlst_dynamic_array!(f64, [2, 1]);
             points[[0, 0]] = 1.0 / 3.0;
             points[[1, 0]] = 1.0 / 3.0;

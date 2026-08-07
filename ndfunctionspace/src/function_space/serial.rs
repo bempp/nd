@@ -75,7 +75,7 @@ impl<
                 {
                     for (t, i) in izip!(types, indices) {
                         let reference_entity_dofs = element.entity_dofs(d, *i).unwrap();
-                        if !reference_entity_dofs.is_empty() && !reference_entity_dofs.is_empty() {
+                        if !reference_entity_dofs.is_empty() {
                             let ed = &mut entity_dofs.get_mut(t).unwrap()
                                 [cell.topology().sub_entity(*t, *i)];
                             while ed.len() < reference_entity_dofs.len() {
@@ -195,7 +195,7 @@ mod test {
 
     #[test]
     fn test_dp0() {
-        let mesh = unit_cube_boundary::<f64>(2, 2, 2, ReferenceCellType::Triangle);
+        let mesh = unit_cube_boundary::<f64>(2, 2, 2, ReferenceCellType::Triangle, 1);
         let family = LagrangeElementFamily::<f64>::new(
             0,
             Continuity::Discontinuous,
@@ -261,7 +261,7 @@ mod test {
 
     #[test]
     fn test_p1() {
-        let mesh = unit_cube_boundary::<f64>(2, 2, 2, ReferenceCellType::Triangle);
+        let mesh = unit_cube_boundary::<f64>(2, 2, 2, ReferenceCellType::Triangle, 1);
         let family =
             LagrangeElementFamily::<f64>::new(1, Continuity::Standard, LagrangeVariant::Equispaced);
 
@@ -324,7 +324,7 @@ mod test {
 
     #[test]
     fn test_dp1() {
-        let mesh = unit_cube_boundary::<f64>(2, 2, 2, ReferenceCellType::Triangle);
+        let mesh = unit_cube_boundary::<f64>(2, 2, 2, ReferenceCellType::Triangle, 1);
         let family = LagrangeElementFamily::<f64>::new(
             1,
             Continuity::Discontinuous,
@@ -390,7 +390,7 @@ mod test {
 
     #[test]
     fn test_p2() {
-        let mesh = unit_cube_boundary::<f64>(2, 2, 2, ReferenceCellType::Triangle);
+        let mesh = unit_cube_boundary::<f64>(2, 2, 2, ReferenceCellType::Triangle, 1);
         let family =
             LagrangeElementFamily::<f64>::new(2, Continuity::Standard, LagrangeVariant::Equispaced);
 
@@ -454,7 +454,7 @@ mod test {
 
     #[test]
     fn test_p3() {
-        let mesh = unit_cube_boundary::<f64>(2, 2, 2, ReferenceCellType::Triangle);
+        let mesh = unit_cube_boundary::<f64>(2, 2, 2, ReferenceCellType::Triangle, 1);
         let family =
             LagrangeElementFamily::<f64>::new(3, Continuity::Standard, LagrangeVariant::Equispaced);
 
@@ -519,7 +519,7 @@ mod test {
 
     #[test]
     fn test_p1_quad() {
-        let mesh = unit_cube_boundary::<f64>(2, 2, 2, ReferenceCellType::Quadrilateral);
+        let mesh = unit_cube_boundary::<f64>(2, 2, 2, ReferenceCellType::Quadrilateral, 1);
         let family =
             LagrangeElementFamily::<f64>::new(1, Continuity::Standard, LagrangeVariant::Equispaced);
 
@@ -582,7 +582,7 @@ mod test {
 
     #[test]
     fn test_p2_quad() {
-        let mesh = unit_cube_boundary::<f64>(2, 2, 2, ReferenceCellType::Quadrilateral);
+        let mesh = unit_cube_boundary::<f64>(2, 2, 2, ReferenceCellType::Quadrilateral, 1);
         let family =
             LagrangeElementFamily::<f64>::new(2, Continuity::Standard, LagrangeVariant::Equispaced);
 

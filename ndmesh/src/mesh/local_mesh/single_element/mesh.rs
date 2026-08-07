@@ -1,22 +1,22 @@
 //! Single element mesh
 #[cfg(feature = "mpi")]
 use crate::ParallelMeshImpl;
-#[cfg(feature = "mpi")]
 use crate::{
     SingleElementMeshBuilder,
-    traits::{Builder, DistributableMesh, ParallelBuilder},
-    types::GraphPartitioner,
+    geometry::{GeometryMap, SingleElementEntityGeometry, SingleElementGeometry},
+    topology::single_type::{SingleTypeEntityTopology, SingleTypeTopology},
+    traits::{Builder, Entity, Geometry, Mesh, Point, Topology},
+    types::{Ownership, Scalar},
 };
 #[cfg(feature = "serde")]
 use crate::{
     geometry::single_element::SerializableGeometry, topology::single_type::SerializableTopology,
     traits::ConvertToSerializable,
 };
+#[cfg(feature = "mpi")]
 use crate::{
-    geometry::{GeometryMap, SingleElementEntityGeometry, SingleElementGeometry},
-    topology::single_type::{SingleTypeEntityTopology, SingleTypeTopology},
-    traits::{Entity, Mesh},
-    types::{Ownership, Scalar},
+    traits::{DistributableMesh, ParallelBuilder},
+    types::GraphPartitioner,
 };
 #[cfg(feature = "mpi")]
 use mpi::traits::{Communicator, Equivalence};
@@ -189,6 +189,21 @@ impl<T: Scalar, E: MappedFiniteElement<CellType = ReferenceCellType, T = T>>
     pub fn new(topology: SingleTypeTopology, geometry: SingleElementGeometry<T, E>) -> Self {
         Self { topology, geometry }
     }
+
+    /// Return the geometry
+    pub fn geometry(&self) -> &SingleElementGeometry<T, E> {
+        &self.geometry
+    }
+
+    /// Return the topology
+    pub fn topology(&self) -> &SingleTypeTopology {
+        &self.topology
+    }
+
+    /// Destruct into topology and geometry
+    pub fn into_topology_and_geometry(self) -> (SingleTypeTopology, SingleElementGeometry<T, E>) {
+        (self.topology, self.geometry)
+    }
 }
 
 impl<T: Scalar> SingleElementMesh<T, CiarletElement<T, IdentityMap, T>> {
@@ -324,6 +339,120 @@ impl<T: Scalar, E: MappedFiniteElement<CellType = ReferenceCellType, T = T>> Mes
     }
 }
 
+impl<T: Scalar> SingleElementMesh<T, CiarletElement<T, IdentityMap, T>> {
+    /// Resample a mesh into one with the given `degree`.
+    pub fn resample_as_degree(&self, degree: usize) -> Self {
+        // If we have a higher degree mesh we need to iterate through the elements
+        // and create a new mesh where we add the correctly mapped points to the higher order elements.
+
+        let cell_type = self.geometry().element().cell_type();
+        let family = LagrangeElementFamily::<T>::new(
+            degree,
+            Continuity::Standard,
+            LagrangeVariant::Equispaced,
+        );
+        // We cannot just take the existing element from the mesh as we need the
+        // element with the new degree.
+        let element = family.element(cell_type);
+
+        // Get the interpolation points
+        let interp_points = element.interpolation_points();
+        // Create one big points array
+        let geom_points = {
+            let mut ncols = 0;
+            for entity_dim in interp_points.iter().skip(1) {
+                for points in entity_dim.iter() {
+                    ncols += points.shape()[1];
+                }
+            }
+
+            let tdim = self.topology_dim();
+
+            let mut all_points = rlst_dynamic_array!(T, [tdim, ncols]);
+
+            // Iterate through the points and save them into the all_points array.
+            // We don't need the vertices as these are the same as in the degree 1 mesh.
+            // So leave out the first entity dimension in the iterator.
+
+            let mut point_count = 0;
+            for entity_dim in interp_points.iter().skip(1) {
+                for points in entity_dim.iter() {
+                    for point in points.col_iter() {
+                        all_points
+                            .r_mut()
+                            .col(point_count)
+                            .fill_from(&point.cast::<T>());
+                        point_count += 1;
+                    }
+                }
+            }
+            all_points
+        };
+
+        // Now iterate through the mesh, map the points over to the physical space, and add to the new mesh.
+
+        let npoints = geom_points.shape()[1];
+
+        let mut new_builder = SingleElementMeshBuilder::<T>::new_with_capacity(
+            3,
+            npoints * self.cell_count(), // This just needs to be an upper bound not the precise value
+            self.cell_count(),
+            (cell_type, degree),
+        );
+
+        // We first add to the builder all the points from the original lower degree mesh.
+
+        let point_iter = self.entity_iter(ReferenceCellType::Point);
+        let mut coords: Vec<T> = vec![Default::default(); 3];
+
+        for point in point_iter {
+            point
+                .geometry()
+                .points()
+                .next()
+                .unwrap()
+                .coords(&mut coords);
+
+            new_builder.add_point(point.local_index(), &coords);
+        }
+
+        let mut point_count = new_builder.point_count();
+        let mapper = self.geometry_map(
+            cell_type,
+            self.geometry().element().lagrange_superdegree(),
+            &geom_points,
+        );
+        for cell in self.entity_iter(cell_type) {
+            let cell_index = cell.local_index();
+            let topology = cell.topology();
+
+            // We now map the points over
+            let mut physical_points = rlst_dynamic_array!(T, [3, npoints]);
+
+            crate::traits::GeometryMap::physical_points(&mapper, cell_index, &mut physical_points);
+
+            let mut cell_points = Vec::<usize>::new();
+
+            // We need to add the cell. For that we need the indices of the vertices of the cell,
+            // followed by the indices of the new interior points.
+            for vertex in topology.sub_entity_iter(ReferenceCellType::Point) {
+                cell_points.push(vertex);
+            }
+
+            // Now add the points to the builder and append the corresponding indices to the
+            // cell array.
+            for point in physical_points.col_iter() {
+                new_builder.add_point(point_count, point.data().unwrap());
+                cell_points.push(point_count);
+                point_count += 1;
+            }
+
+            new_builder.add_cell(cell_index, &cell_points);
+        }
+
+        new_builder.create_mesh()
+    }
+}
 #[cfg(feature = "mpi")]
 impl<T: Scalar + Equivalence, E: MappedFiniteElement<CellType = ReferenceCellType, T = T>>
     DistributableMesh for SingleElementMesh<T, E>

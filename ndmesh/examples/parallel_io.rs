@@ -21,7 +21,7 @@ fn main() {
 
     let g = if rank == 0 {
         // Create a mesh using the shapes module: unit_cube_boundary will mesh the surface of a cube
-        let serial_g = shapes::unit_cube_boundary::<f64>(4, 5, 4, ReferenceCellType::Triangle);
+        let serial_g = shapes::unit_cube_boundary::<f64>(4, 5, 4, ReferenceCellType::Triangle, 1);
 
         // Distribute this mesh across processes
         serial_g.distribute(&comm, GraphPartitioner::None)

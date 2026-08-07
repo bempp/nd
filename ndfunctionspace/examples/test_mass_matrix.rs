@@ -16,7 +16,7 @@ use rlst::{DynArray, rlst_dynamic_array};
 
 /// Test values in Lagrange mass matrix
 fn test_lagrange_mass_matrix() {
-    let mesh = regular_sphere(0, ReferenceCellType::Triangle);
+    let mesh = regular_sphere(0, ReferenceCellType::Triangle, 1);
 
     let family =
         LagrangeElementFamily::<f64>::new(1, Continuity::Standard, LagrangeVariant::Equispaced);
@@ -85,7 +85,7 @@ fn test_lagrange_mass_matrix() {
 
 /// Test values in Raviart-Thomas mass matrix
 fn test_rt_mass_matrix() {
-    let mesh = regular_sphere(0, ReferenceCellType::Triangle);
+    let mesh = regular_sphere(0, ReferenceCellType::Triangle, 1);
 
     let family = RaviartThomasElementFamily::<f64>::new(1, Continuity::Standard);
     let space = FunctionSpaceImpl::new(&mesh, &family);
