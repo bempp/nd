@@ -4,7 +4,7 @@ use ndmesh::traits::{Builder, Entity, Geometry, GmshExport, Mesh, Point, Topolog
 
 /// Creating a (serial) mixed mesh
 ///
-/// In a mixed mesh, multiple cell types can be present and mutiple finite elements can be used to
+/// In a mixed mesh, multiple cell types can be present and multiple finite elements can be used to
 /// represent the geometry of cells.
 fn main() {
     // When creating the mesh builder, we give the physical/geometric dimension (3)
@@ -42,7 +42,7 @@ fn main() {
                 .collect::<Vec<_>>(),
         );
     }
-    // Print the geometric points that definie each cells position in space. Note that
+    // Print the geometric points that define each cells position in space. Note that
     // The indexing of these points may differ from the indexing used for the topological vertices.
     let mut coords = vec![0.0; 2];
     for cell in mesh.entity_iter(ReferenceCellType::Triangle) {

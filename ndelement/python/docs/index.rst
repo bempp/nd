@@ -2,7 +2,7 @@
 ndelement
 =========
 
-Welcome to the documention of ndelement.
+Welcome to the documentation of ndelement.
 
 Documentation index
 ===================

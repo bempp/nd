@@ -5,7 +5,7 @@
 //! ## Creating a mesh with `ndmesh`
 //!
 //! To demonstrate the library, we use an example mesh consisting of two triangles that together form the unit square.
-//! We introduce the following points. As we will make a mesh of second oder elements, we include points at the midpoint
+//! We introduce the following points. As we will make a mesh of second order elements, we include points at the midpoint
 //! of each edge as well as at the vertices of the square
 //! - Point 0: (0, 0)
 //! - Point 1: (1, 0)
@@ -47,7 +47,7 @@
 //! - The cell type and element degree: for our example, this is ([ReferenceCellType::Triangle](ndelement::types::ReferenceCellType::Triangle), 2)
 //!   as our geometry cells are triangles and we use quadratic geometry for each triangle.
 //!
-//! If we did not know the number of points and cells that we will include in out mesh when creating ths builder,
+//! If we did not know the number of points and cells that we will include in out mesh when creating this builder,
 //! we could instead use the function [SingleElementMeshBuilder::new] when initialising the mesh.
 //!
 //! Now that we have created a mesh builder, we can add the points and cells:

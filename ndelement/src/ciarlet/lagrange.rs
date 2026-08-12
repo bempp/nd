@@ -18,7 +18,7 @@ use std::marker::PhantomData;
 pub enum LagrangeVariant {
     /// Element defined using equispaced points
     Equispaced,
-    /// Element defined using Guass-Lobatto-Legendre (GLL) points
+    /// Element defined using Gauss-Lobatto-Legendre (GLL) points
     GLL,
 }
 

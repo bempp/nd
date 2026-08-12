@@ -327,7 +327,7 @@ pub trait ParallelMesh {
 /// A mesh that can be be distributed across processes
 #[cfg(feature = "mpi")]
 pub trait DistributableMesh {
-    /// Parallel mesh type when distrubuted
+    /// Parallel mesh type when distributed
     type ParallelMesh<'a, C: Communicator + 'a>: ParallelMesh<C = C>;
 
     /// Distribute this mesh in parallel

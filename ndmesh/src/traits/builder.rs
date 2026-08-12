@@ -79,7 +79,7 @@ pub trait Builder {
     /// Geometric dimension
     fn gdim(&self) -> usize;
 
-    /// Topoligical dimension
+    /// Topological dimension
     fn tdim(&self) -> usize;
 
     /// Number of points in a cell with the given type and degree

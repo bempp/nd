@@ -210,7 +210,7 @@ impl<T: Scalar, E: MappedFiniteElement> MixedGeometry<T, E> {
         }
         panic!("Could not find element");
     }
-    /// Number of elments
+    /// Number of elements
     pub fn element_count(&self) -> usize {
         self.elements.len()
     }

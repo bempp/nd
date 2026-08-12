@@ -15,7 +15,7 @@ pub enum Continuity {
     /// For example, for Raviart-Thomas elements it only indicates that the normal components
     /// are continuous across edges
     Standard,
-    /// The element is discontinuous betweeen cells
+    /// The element is discontinuous between cells
     Discontinuous,
 }
 

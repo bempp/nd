@@ -43,7 +43,7 @@ fn main() {
         // In this example, we use Scotch to partition the mesh into pieces to be handles by each process
         b.create_parallel_mesh_root(&comm, GraphPartitioner::Scotch)
     } else {
-        // receice the mesh
+        // receive the mesh
         b.create_parallel_mesh(&comm, 0)
     };
 

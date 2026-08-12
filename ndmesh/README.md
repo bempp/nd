@@ -11,7 +11,7 @@ ndmesh = "0.4.0"
 ```
 
 ## Documentation
-The latest documentation of nmesh is available at [bempp.github.io/nd/rust/ndmesh](https://bempp.github.io/nd/rust/ndmesh/).
+The latest documentation of ndmesh is available at [bempp.github.io/nd/rust/ndmesh](https://bempp.github.io/nd/rust/ndmesh/).
 
 ## Testing
 The Rust functionality of the library can be tested by running:

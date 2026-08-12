@@ -93,7 +93,7 @@ pub fn lu_transpose<T: RlstScalar, Array2MutImpl: MutableArrayImpl<T, 2>>(
     perm
 }
 
-/// Comvert a permutation into the format expected by `apply_permutation`
+/// Convert a permutation into the format expected by `apply_permutation`
 pub fn prepare_permutation(perm: &mut [usize]) {
     for i in 0..perm.len() {
         while perm[i] < i {
@@ -113,7 +113,7 @@ pub fn apply_permutation<T>(perm: &[usize], data: &mut [T]) {
     }
 }
 
-/// Convert a linear transformation info the format expected by `apply_matrix` and return the premutation to pass into `apply_matrix`
+/// Convert a linear transformation info the format expected by `apply_matrix` and return the permutation to pass into `apply_matrix`
 pub fn prepare_matrix<T: RlstScalar, Array2Mut: MutableArrayImpl<T, 2>>(
     mat: &mut Array<Array2Mut, 2>,
 ) -> Vec<usize> {

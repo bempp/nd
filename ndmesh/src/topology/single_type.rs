@@ -164,7 +164,7 @@ impl SingleTypeTopology {
                 for c_ij in rc_i {
                     // c_ij[0] is the list of reference cell vertex indices that are associated with the jth entity of dimension i.
                     // cell[*i] below maps the local reference cell vertex index to the actual id of the vertex.
-                    // Hence, the following command gives us all the vertex indicies of the entity.
+                    // Hence, the following command gives us all the vertex indices of the entity.
                     let mut entity = c_ij[0].iter().map(|i| cell[*i]).collect::<Vec<_>>();
                     // We sort entities so that entities with same vertices but different order of vertices
                     // are treated as the same entity.
@@ -291,7 +291,7 @@ impl SingleTypeTopology {
             // Now we iterate through each individual cell.
             for cell_index in 0..ncells {
                 // Collect indices of each subentity of the cell.
-                // The subentities of dimension the cell itself are just the cell indicies. Remember that a dimension index of
+                // The subentities of dimension the cell itself are just the cell indices. Remember that a dimension index of
                 // dim - 1 denotes actually the dim dimensional subentity as we skipped vertices.
                 cell_entities[dim - 1][0] = cell_index;
                 // We now get all the vertices of the current cell.
@@ -361,7 +361,7 @@ impl SingleTypeTopology {
                                 // If i = 0 then we consider 2-dimensional entities (faces). k=0 corresponds to edges.
                                 // The upward connectivity between the two is upward_connectivity[1][0].
                                 // The general setup is upward_connectivity[dim0][dim1 - dim0 - 1][dim0_entity_index][..] = [dim1_entity_index].
-                                // We hae dim0 = k + 1 and dim1 = i + 2. Hence, dim1 - dim0 - 1 = i - k.
+                                // We have dim0 = k + 1 and dim1 = i + 2. Hence, dim1 - dim0 - 1 = i - k.
                                 if !upward_connectivity[k + 1][i - k][ce_k[*rc_ijkl]]
                                     .contains(ce_ij)
                                 {
