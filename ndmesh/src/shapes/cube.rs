@@ -107,11 +107,11 @@ fn unit_square_boundary_add_points_and_cells<T: Scalar>(
         let origin = i * dx;
         b.add_cell(2 * i, &[origin, origin + dx]);
         let origin = i * dx + ny * dy;
-        b.add_cell(2 * i + 1, &[origin, origin + dx]);
+        b.add_cell(2 * i + 1, &[origin + dx, origin]);
     }
     for j in 0..ny {
         let origin = j * dy;
-        b.add_cell(2 * nx + 2 * j, &[origin, origin + dy]);
+        b.add_cell(2 * nx + 2 * j, &[origin + dy, origin]);
         let origin = nx * dx + j * dy;
         b.add_cell(2 * nx + 2 * j + 1, &[origin, origin + dy]);
     }
@@ -241,8 +241,8 @@ fn unit_cube_boundary_add_points_and_cells<T: Scalar>(
             for i in 0..nx {
                 for j in 0..ny {
                     let origin = i * dx + j * dy;
-                    b.add_cell(cell_n, &[origin, origin + dx, origin + dx + dy]);
-                    b.add_cell(cell_n + 1, &[origin, origin + dx + dy, origin + dy]);
+                    b.add_cell(cell_n, &[origin, origin + dx + dy, origin + dx]);
+                    b.add_cell(cell_n + 1, &[origin, origin + dy, origin + dx + dy]);
                     let origin = i * dx + j * dy + nz * dz;
                     b.add_cell(cell_n + 2, &[origin, origin + dx, origin + dx + dy]);
                     b.add_cell(cell_n + 3, &[origin, origin + dx + dy, origin + dy]);
@@ -255,16 +255,16 @@ fn unit_cube_boundary_add_points_and_cells<T: Scalar>(
                     b.add_cell(cell_n, &[origin, origin + dx, origin + dx + dz]);
                     b.add_cell(cell_n + 1, &[origin, origin + dx + dz, origin + dz]);
                     let origin = i * dx + ny * dy + k * dz;
-                    b.add_cell(cell_n + 2, &[origin, origin + dx, origin + dx + dz]);
-                    b.add_cell(cell_n + 3, &[origin, origin + dx + dz, origin + dz]);
+                    b.add_cell(cell_n + 2, &[origin, origin + dx + dz, origin + dx]);
+                    b.add_cell(cell_n + 3, &[origin, origin + dz, origin + dx + dz]);
                     cell_n += 4;
                 }
             }
             for j in 0..ny {
                 for k in 0..nz {
                     let origin = j * dy + k * dz;
-                    b.add_cell(cell_n, &[origin, origin + dy, origin + dy + dz]);
-                    b.add_cell(cell_n + 1, &[origin, origin + dy + dz, origin + dz]);
+                    b.add_cell(cell_n, &[origin, origin + dy + dz, origin + dy]);
+                    b.add_cell(cell_n + 1, &[origin, origin + dz, origin + dy + dz]);
                     let origin = nx * dx + j * dy + k * dz;
                     b.add_cell(cell_n + 2, &[origin, origin + dy, origin + dy + dz]);
                     b.add_cell(cell_n + 3, &[origin, origin + dy + dz, origin + dz]);
@@ -279,7 +279,7 @@ fn unit_cube_boundary_add_points_and_cells<T: Scalar>(
                     let origin = i * dx + j * dy;
                     b.add_cell(
                         cell_n,
-                        &[origin, origin + dx, origin + dy, origin + dx + dy],
+                        &[origin, origin + dy, origin + dx, origin + dx + dy],
                     );
                     let origin = i * dx + j * dy + nz * dz;
                     b.add_cell(
@@ -299,7 +299,7 @@ fn unit_cube_boundary_add_points_and_cells<T: Scalar>(
                     let origin = i * dx + ny * dy + k * dz;
                     b.add_cell(
                         cell_n + 1,
-                        &[origin, origin + dx, origin + dz, origin + dx + dz],
+                        &[origin, origin + dz, origin + dx, origin + dx + dz],
                     );
                     cell_n += 2;
                 }
@@ -309,7 +309,7 @@ fn unit_cube_boundary_add_points_and_cells<T: Scalar>(
                     let origin = j * dy + k * dz;
                     b.add_cell(
                         cell_n,
-                        &[origin, origin + dy, origin + dz, origin + dy + dz],
+                        &[origin, origin + dz, origin + dy, origin + dy + dz],
                     );
                     let origin = nx * dx + j * dy + k * dz;
                     b.add_cell(
@@ -667,9 +667,10 @@ pub fn unit_cube_edges_distributed<T: Scalar + Equivalence, C: Communicator>(
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::traits::{Entity, Geometry, Mesh, Point};
+    use crate::traits::{Entity, Geometry, GeometryMap, Mesh, Point};
     use approx::*;
     use itertools::izip;
+    use rlst::{Array, ValueArrayImpl, rlst_dynamic_array};
 
     fn max(values: &[f64]) -> f64 {
         let mut out = values[0];
@@ -886,5 +887,210 @@ mod test {
         check_volume(&unit_cube_edges::<f64>(2, 2, 2, 1), 12.0);
         check_volume(&unit_cube_edges::<f64>(4, 5, 5, 1), 12.0);
         check_volume(&unit_cube_edges::<f64>(7, 6, 4, 1), 12.0);
+    }
+
+    fn test_normals_are_unit<Array2Impl: ValueArrayImpl<f64, 2>>(
+        mesh: &impl Mesh<T = f64, EntityDescriptor = ReferenceCellType>,
+        ct: ReferenceCellType,
+        point: &Array<Array2Impl, 2>,
+    ) {
+        let tdim = point.shape()[0];
+        let gdim = tdim + 1;
+        let map = mesh.geometry_map(ct, 1, point);
+        let mut mapped_pt = rlst_dynamic_array!(f64, [gdim, 1]);
+        let mut j = rlst_dynamic_array!(f64, [gdim, tdim, 1]);
+        let mut jinv = rlst_dynamic_array!(f64, [tdim, gdim, 1]);
+        let mut jdet = vec![0.0];
+        let mut normal = rlst_dynamic_array!(f64, [gdim, 1]);
+        for i in 0..mesh.entity_count(ct) {
+            map.physical_points(i, &mut mapped_pt);
+            map.jacobians_inverses_dets_normals(i, &mut j, &mut jinv, &mut jdet, &mut normal);
+            let dot = normal
+                .iter_value()
+                .zip(normal.iter_value())
+                .map(|(i, j)| i * j)
+                .sum::<f64>();
+            assert_relative_eq!(dot, 1.0, epsilon = 1e-10);
+        }
+    }
+
+    fn test_normals_are_outward<Array2Impl: ValueArrayImpl<f64, 2>>(
+        mesh: &impl Mesh<T = f64, EntityDescriptor = ReferenceCellType>,
+        ct: ReferenceCellType,
+        point: &Array<Array2Impl, 2>,
+        centre: &Array<Array2Impl, 2>,
+    ) {
+        use crate::traits::GmshExport;
+        mesh.export_as_gmsh("mesh.msh");
+        let tdim = point.shape()[0];
+        let gdim = tdim + 1;
+        assert_eq!(centre.shape()[0], gdim);
+        let map = mesh.geometry_map(ct, 1, point);
+        let mut mapped_pt = rlst_dynamic_array!(f64, [gdim, 1]);
+        let mut j = rlst_dynamic_array!(f64, [gdim, tdim, 1]);
+        let mut jinv = rlst_dynamic_array!(f64, [tdim, gdim, 1]);
+        let mut jdet = vec![0.0];
+        let mut normal = rlst_dynamic_array!(f64, [gdim, 1]);
+        for i in 0..mesh.entity_count(ct) {
+            map.physical_points(i, &mut mapped_pt);
+            map.jacobians_inverses_dets_normals(i, &mut j, &mut jinv, &mut jdet, &mut normal);
+            let dot = mapped_pt
+                .iter_value()
+                .zip(centre.iter_value())
+                .zip(normal.iter_value())
+                .map(|((i, j), k)| (i - j) * k)
+                .sum::<f64>();
+            assert!(dot > 0.0);
+        }
+    }
+
+    #[test]
+    fn test_normals_are_unit_unit_square_boundary() {
+        let mut point = rlst_dynamic_array!(f64, [1, 1]);
+        point[[0, 0]] = 0.5;
+        test_normals_are_unit(
+            &unit_square_boundary(1, 1, 1),
+            ReferenceCellType::Interval,
+            &point,
+        );
+        test_normals_are_unit(
+            &unit_square_boundary(2, 2, 1),
+            ReferenceCellType::Interval,
+            &point,
+        );
+        test_normals_are_unit(
+            &unit_square_boundary(3, 4, 1),
+            ReferenceCellType::Interval,
+            &point,
+        );
+    }
+
+    #[test]
+    fn test_normals_are_unit_unit_cube_boundary_triangles() {
+        let mut point = rlst_dynamic_array!(f64, [2, 1]);
+        point[[0, 0]] = 0.2;
+        point[[1, 0]] = 0.2;
+        test_normals_are_unit(
+            &unit_cube_boundary(1, 1, 1, ReferenceCellType::Triangle, 1),
+            ReferenceCellType::Triangle,
+            &point,
+        );
+        test_normals_are_unit(
+            &unit_cube_boundary(2, 2, 2, ReferenceCellType::Triangle, 1),
+            ReferenceCellType::Triangle,
+            &point,
+        );
+        test_normals_are_unit(
+            &unit_cube_boundary(3, 4, 5, ReferenceCellType::Triangle, 1),
+            ReferenceCellType::Triangle,
+            &point,
+        );
+    }
+
+    #[test]
+    fn test_normals_are_unit_unit_cube_boundary_quadrilaterals() {
+        let mut point = rlst_dynamic_array!(f64, [2, 1]);
+        point[[0, 0]] = 0.2;
+        point[[1, 0]] = 0.2;
+        test_normals_are_unit(
+            &unit_cube_boundary(1, 1, 1, ReferenceCellType::Quadrilateral, 1),
+            ReferenceCellType::Quadrilateral,
+            &point,
+        );
+        test_normals_are_unit(
+            &unit_cube_boundary(2, 2, 2, ReferenceCellType::Quadrilateral, 1),
+            ReferenceCellType::Quadrilateral,
+            &point,
+        );
+        test_normals_are_unit(
+            &unit_cube_boundary(3, 4, 5, ReferenceCellType::Quadrilateral, 1),
+            ReferenceCellType::Quadrilateral,
+            &point,
+        );
+    }
+
+    #[test]
+    fn test_normals_are_outward_unit_square_boundary() {
+        let mut point = rlst_dynamic_array!(f64, [1, 1]);
+        point[[0, 0]] = 0.5;
+        let mut centre = rlst_dynamic_array!(f64, [2, 1]);
+        centre[[0, 0]] = 0.5;
+        centre[[1, 0]] = 0.5;
+        test_normals_are_outward(
+            &unit_square_boundary(1, 1, 1),
+            ReferenceCellType::Interval,
+            &point,
+            &centre,
+        );
+        test_normals_are_outward(
+            &unit_square_boundary(2, 2, 1),
+            ReferenceCellType::Interval,
+            &point,
+            &centre,
+        );
+        test_normals_are_outward(
+            &unit_square_boundary(3, 4, 1),
+            ReferenceCellType::Interval,
+            &point,
+            &centre,
+        );
+    }
+
+    #[test]
+    fn test_normals_are_outward_unit_cube_boundary_triangles() {
+        let mut point = rlst_dynamic_array!(f64, [2, 1]);
+        point[[0, 0]] = 0.2;
+        point[[1, 0]] = 0.2;
+        let mut centre = rlst_dynamic_array!(f64, [3, 1]);
+        centre[[0, 0]] = 0.5;
+        centre[[1, 0]] = 0.5;
+        centre[[2, 0]] = 0.5;
+        test_normals_are_outward(
+            &unit_cube_boundary(1, 1, 1, ReferenceCellType::Triangle, 1),
+            ReferenceCellType::Triangle,
+            &point,
+            &centre,
+        );
+        test_normals_are_outward(
+            &unit_cube_boundary(2, 2, 2, ReferenceCellType::Triangle, 1),
+            ReferenceCellType::Triangle,
+            &point,
+            &centre,
+        );
+        test_normals_are_outward(
+            &unit_cube_boundary(3, 4, 5, ReferenceCellType::Triangle, 1),
+            ReferenceCellType::Triangle,
+            &point,
+            &centre,
+        );
+    }
+
+    #[test]
+    fn test_normals_are_outward_unit_cube_boundary_quadrilaterals() {
+        let mut point = rlst_dynamic_array!(f64, [2, 1]);
+        point[[0, 0]] = 0.2;
+        point[[1, 0]] = 0.2;
+        let mut centre = rlst_dynamic_array!(f64, [3, 1]);
+        centre[[0, 0]] = 0.5;
+        centre[[1, 0]] = 0.5;
+        centre[[2, 0]] = 0.5;
+        test_normals_are_outward(
+            &unit_cube_boundary(1, 1, 1, ReferenceCellType::Quadrilateral, 1),
+            ReferenceCellType::Quadrilateral,
+            &point,
+            &centre,
+        );
+        test_normals_are_outward(
+            &unit_cube_boundary(2, 2, 2, ReferenceCellType::Quadrilateral, 1),
+            ReferenceCellType::Quadrilateral,
+            &point,
+            &centre,
+        );
+        test_normals_are_outward(
+            &unit_cube_boundary(3, 4, 5, ReferenceCellType::Quadrilateral, 1),
+            ReferenceCellType::Quadrilateral,
+            &point,
+            &centre,
+        );
     }
 }

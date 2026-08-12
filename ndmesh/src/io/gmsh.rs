@@ -12,6 +12,13 @@ use std::str::FromStr;
 
 fn get_permutation_to_gmsh(cell_type: ReferenceCellType, degree: usize) -> Vec<usize> {
     match cell_type {
+        ReferenceCellType::Interval => match degree {
+            1 => vec![0, 1],
+            2 => vec![0, 1, 2],
+            _ => {
+                panic!("Unsupported degree");
+            }
+        },
         ReferenceCellType::Triangle => match degree {
             1 => vec![0, 1, 2],
             2 => vec![0, 1, 2, 5, 3, 4],
@@ -51,6 +58,13 @@ fn get_permutation_to_gmsh(cell_type: ReferenceCellType, degree: usize) -> Vec<u
 
 fn get_gmsh_cell(cell_type: ReferenceCellType, degree: usize) -> usize {
     match cell_type {
+        ReferenceCellType::Interval => match degree {
+            1 => 1,
+            2 => 8,
+            _ => {
+                panic!("Unsupported degree");
+            }
+        },
         ReferenceCellType::Triangle => match degree {
             1 => 2,
             2 => 9,
@@ -88,6 +102,8 @@ fn get_gmsh_cell(cell_type: ReferenceCellType, degree: usize) -> usize {
 
 fn interpret_gmsh_cell(gmsh_cell: usize) -> (ReferenceCellType, usize) {
     match gmsh_cell {
+        1 => (ReferenceCellType::Interval, 1),
+        8 => (ReferenceCellType::Interval, 2),
         2 => (ReferenceCellType::Triangle, 1),
         9 => (ReferenceCellType::Triangle, 2),
         21 => (ReferenceCellType::Triangle, 3),
