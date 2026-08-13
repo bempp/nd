@@ -90,7 +90,7 @@ impl<T: Scalar> Builder for MixedMeshBuilder<T> {
             .element_indices
             .entry((cell_data.0, cell_data.1))
             .or_insert_with(|| {
-                let n = self.cell_indices_to_ids.len();
+                let n = self.elements.len();
                 self.elements.push(lagrange::create::<T, T>(
                     cell_data.0,
                     cell_data.1,

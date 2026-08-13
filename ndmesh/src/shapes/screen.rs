@@ -1,5 +1,6 @@
 //! Regular sphere mesh
 
+use super::resample_cells;
 #[cfg(feature = "mpi")]
 use crate::{ParallelMeshImpl, traits::ParallelBuilder, types::GraphPartitioner};
 use crate::{
@@ -16,6 +17,7 @@ fn screen_add_points_and_cells<T: Scalar>(
     b: &mut SingleElementMeshBuilder<T>,
     ncells: usize,
     cell_type: ReferenceCellType,
+    degree: usize,
 ) {
     let zero = T::from(0.0).unwrap();
     let n = T::from(ncells).unwrap();
@@ -29,39 +31,56 @@ fn screen_add_points_and_cells<T: Scalar>(
     }
     match cell_type {
         ReferenceCellType::Triangle => {
+            let mut cells = vec![];
             for y in 0..ncells {
                 for x in 0..ncells {
-                    b.add_cell(
-                        2 * y * ncells + 2 * x,
-                        &[
-                            y * (ncells + 1) + x,
-                            y * (ncells + 1) + x + 1,
-                            y * (ncells + 1) + x + ncells + 2,
-                        ],
-                    );
-                    b.add_cell(
-                        2 * y * ncells + 2 * x + 1,
-                        &[
-                            y * (ncells + 1) + x,
-                            y * (ncells + 1) + x + ncells + 2,
-                            y * (ncells + 1) + x + ncells + 1,
-                        ],
-                    );
+                    cells.push([
+                        y * (ncells + 1) + x,
+                        y * (ncells + 1) + x + 1,
+                        y * (ncells + 1) + x + ncells + 2,
+                    ]);
+                    cells.push([
+                        y * (ncells + 1) + x,
+                        y * (ncells + 1) + x + ncells + 2,
+                        y * (ncells + 1) + x + ncells + 1,
+                    ]);
+                }
+            }
+            if degree == 1 {
+                for (i, v) in cells.iter().enumerate() {
+                    b.add_cell(i, v)
+                }
+            } else {
+                for (i, v) in resample_cells::<T, 3, 3>(degree, b, &cells, cell_type)
+                    .iter()
+                    .enumerate()
+                {
+                    b.add_cell(i, v)
                 }
             }
         }
         ReferenceCellType::Quadrilateral => {
+            let mut cells = vec![];
             for y in 0..ncells {
                 for x in 0..ncells {
-                    b.add_cell(
-                        y * ncells + x,
-                        &[
-                            y * (ncells + 1) + x,
-                            y * (ncells + 1) + x + 1,
-                            y * (ncells + 1) + x + ncells + 1,
-                            y * (ncells + 1) + x + ncells + 2,
-                        ],
-                    );
+                    cells.push([
+                        y * (ncells + 1) + x,
+                        y * (ncells + 1) + x + 1,
+                        y * (ncells + 1) + x + ncells + 1,
+                        y * (ncells + 1) + x + ncells + 2,
+                    ]);
+                }
+            }
+            if degree == 1 {
+                for (i, v) in cells.iter().enumerate() {
+                    b.add_cell(i, v)
+                }
+            } else {
+                for (i, v) in resample_cells::<T, 3, 4>(degree, b, &cells, cell_type)
+                    .iter()
+                    .enumerate()
+                {
+                    b.add_cell(i, v)
                 }
             }
         }
@@ -80,26 +99,9 @@ pub fn screen<T: Scalar>(
     cell_type: ReferenceCellType,
     degree: usize,
 ) -> SingleElementMesh<T, CiarletElement<T, IdentityMap, T>> {
-    let mut b = SingleElementMeshBuilder::new_with_capacity(
-        3,
-        (ncells + 1) * (ncells + 1),
-        match cell_type {
-            ReferenceCellType::Quadrilateral => ncells * ncells,
-            ReferenceCellType::Triangle => 2 * ncells * ncells,
-            _ => {
-                panic!("Unsupported cell type: {cell_type:?}");
-            }
-        },
-        (cell_type, 1),
-    );
-    screen_add_points_and_cells(&mut b, ncells, cell_type);
-
-    if degree == 1 {
-        b.create_mesh()
-    } else {
-        let mesh = b.create_mesh();
-        mesh.resample_as_degree(degree)
-    }
+    let mut b = SingleElementMeshBuilder::new(3, (cell_type, degree));
+    screen_add_points_and_cells(&mut b, ncells, cell_type, degree);
+    b.create_mesh()
 }
 
 /// Create a mesh of a square screen distributed in parallel
@@ -109,10 +111,11 @@ pub fn screen_distributed<T: Scalar + Equivalence, C: Communicator>(
     partitioner: GraphPartitioner,
     ncells: usize,
     cell_type: ReferenceCellType,
+    degree: usize,
 ) -> ParallelMeshImpl<'_, C, SingleElementMesh<T, CiarletElement<T, IdentityMap, T>>> {
     let mut b = SingleElementMeshBuilder::new(3, (cell_type, 1));
     if comm.rank() == 0 {
-        screen_add_points_and_cells(&mut b, ncells, cell_type);
+        screen_add_points_and_cells(&mut b, ncells, cell_type, degree);
         b.create_parallel_mesh_root(comm, partitioner)
     } else {
         b.create_parallel_mesh(comm, 0)
@@ -121,6 +124,7 @@ pub fn screen_distributed<T: Scalar + Equivalence, C: Communicator>(
 
 #[cfg(test)]
 mod test {
+    use super::super::test::check_volume;
     use super::*;
     use crate::traits::{GeometryMap, Mesh};
     use approx::assert_relative_eq;
@@ -155,6 +159,24 @@ mod test {
     }
 
     #[test]
+    fn test_area_triangles_deg1() {
+        let g = screen::<f64>(1, ReferenceCellType::Triangle, 1);
+        check_volume(&g, 1, 1.0, 1e-10);
+    }
+
+    #[test]
+    fn test_area_triangles_deg2() {
+        let g = screen::<f64>(1, ReferenceCellType::Triangle, 2);
+        check_volume(&g, 2, 1.0, 1e-10);
+    }
+
+    #[test]
+    fn test_area_triangles_deg3() {
+        let g = screen::<f64>(1, ReferenceCellType::Triangle, 3);
+        check_volume(&g, 3, 1.0, 1e-10);
+    }
+
+    #[test]
     fn test_screen_quadrilaterals() {
         let _g1 = screen::<f64>(1, ReferenceCellType::Quadrilateral, 1);
         let _g2 = screen::<f64>(2, ReferenceCellType::Quadrilateral, 1);
@@ -181,5 +203,23 @@ mod test {
                 assert_relative_eq!(normal[[2, 0]], 1.0);
             }
         }
+    }
+
+    #[test]
+    fn test_area_quadrilaterals_deg1() {
+        let g = screen::<f64>(1, ReferenceCellType::Quadrilateral, 1);
+        check_volume(&g, 1, 1.0, 1e-10);
+    }
+
+    #[test]
+    fn test_area_quadrilaterals_deg2() {
+        let g = screen::<f64>(1, ReferenceCellType::Quadrilateral, 2);
+        check_volume(&g, 2, 1.0, 1e-10);
+    }
+
+    #[test]
+    fn test_area_quadrilaterals_deg3() {
+        let g = screen::<f64>(1, ReferenceCellType::Quadrilateral, 3);
+        check_volume(&g, 3, 1.0, 1e-10);
     }
 }

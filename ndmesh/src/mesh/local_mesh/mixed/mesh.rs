@@ -407,7 +407,6 @@ mod test {
     use super::*;
     use crate::traits::{GeometryMap, Topology};
     use approx::*;
-    use itertools::izip;
     use rlst::rlst_dynamic_array;
 
     fn example_mesh_triangle() -> MixedMesh<f64, CiarletElement<f64, IdentityMap, f64>> {
@@ -498,11 +497,12 @@ mod test {
             let cell = mesh
                 .entity(ReferenceCellType::Triangle, edge.cell_index)
                 .unwrap();
-            for (i, v) in izip!(
-                &conn[1][edge.entity_index][0],
-                edge.topology().sub_entity_iter(ReferenceCellType::Point)
-            ) {
-                assert_eq!(v, cell.topology().sub_entity(ReferenceCellType::Point, *i));
+            let vs = edge
+                .topology()
+                .sub_entity_iter(ReferenceCellType::Point)
+                .collect::<Vec<_>>();
+            for i in &conn[1][edge.entity_index][0] {
+                assert!(vs.contains(&cell.topology().sub_entity(ReferenceCellType::Point, *i)));
             }
         }
     }

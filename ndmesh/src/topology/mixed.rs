@@ -123,7 +123,6 @@ impl MixedTopology {
 
         let mut entities = HashMap::new();
         let mut entity_counts = HashMap::new();
-        entity_counts.insert(ReferenceCellType::Point, cells.iter().max().unwrap() + 1);
 
         let mut ids = HashMap::new();
         let mut ids_to_indices = HashMap::new();
@@ -169,16 +168,17 @@ impl MixedTopology {
                 &reference_cell::connectivity(*cell_type)
             ) {
                 for (etype, c_ij) in izip!(etypes, rc_i) {
-                    let mut entity = c_ij[0].iter().map(|i| cell[*i]).collect::<Vec<_>>();
-                    entity.sort();
+                    let entity = c_ij[0].iter().map(|i| cell[*i]).collect::<Vec<_>>();
+                    let mut sorted_entity = c_ij[0].iter().map(|i| cell[*i]).collect::<Vec<_>>();
+                    sorted_entity.sort();
                     entities
                         .entry(*etype)
                         .or_insert(HashMap::new())
-                        .entry(entity)
+                        .entry(sorted_entity)
                         .or_insert_with(|| {
                             let old = *entity_counts.entry(*etype).or_insert(0);
                             *entity_counts.get_mut(etype).unwrap() += 1;
-                            old
+                            (old, entity)
                         });
                 }
             }
@@ -239,7 +239,7 @@ impl MixedTopology {
 
         // downward_connectivity[t][Point][i] = vertices of entity i of type t
         for (etype, entities_vertices) in &entities {
-            for (vs, entity_index) in entities_vertices {
+            for (entity_index, vs) in entities_vertices.values() {
                 for (i, vertex_index) in vs.iter().enumerate() {
                     downward_connectivity
                         .get_mut(etype)
@@ -272,7 +272,7 @@ impl MixedTopology {
                     .skip(1)
                     .map(|i| vec![0; i.len()])
                     .collect::<Vec<_>>();
-                for (cell, cell_index) in &entities[etype] {
+                for (cell_index, cell) in entities[etype].values() {
                     // dim - 1 denotes the dim dimensional subentity as we skipped vertices
                     cell_entities[dim - 1][0] = *cell_index;
 
@@ -285,7 +285,7 @@ impl MixedTopology {
                         for (ce_ij, rc_ij, et_ij) in izip!(ce_i.iter_mut(), rc_i, et_i) {
                             let mut entity = rc_ij[0].iter().map(|i| cell[*i]).collect::<Vec<_>>();
                             entity.sort();
-                            *ce_ij = *entities[et_ij].get(&entity).unwrap();
+                            *ce_ij = entities[et_ij].get(&entity).unwrap().0;
                         }
                     }
 

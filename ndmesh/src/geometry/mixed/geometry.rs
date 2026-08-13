@@ -203,8 +203,14 @@ impl<T: Scalar, E: MappedFiniteElement> MixedGeometry<T, E> {
     }
     /// Element for a cell
     pub fn element(&self, element_index: usize) -> &E {
-        for (ct, e) in &self.elements[element_index] {
-            if reference_cell::dim(*ct) == self.dim() {
+        let elements = &self.elements[element_index];
+        let tdim = elements
+            .keys()
+            .map(|ct| reference_cell::dim(*ct))
+            .max()
+            .unwrap();
+        for (ct, e) in elements {
+            if reference_cell::dim(*ct) == tdim {
                 return e;
             }
         }

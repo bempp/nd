@@ -1,5 +1,6 @@
 //! Cube meshes
 
+use super::resample_cells;
 #[cfg(feature = "mpi")]
 use crate::{ParallelMeshImpl, traits::ParallelBuilder, types::GraphPartitioner};
 use crate::{
@@ -12,13 +13,30 @@ use mpi::traits::{Communicator, Equivalence};
 use ndelement::{ciarlet::CiarletElement, map::IdentityMap, types::ReferenceCellType};
 
 /// Add points and cells for unit interval to builder
-fn unit_interval_add_points_and_cells<T: Scalar>(b: &mut SingleElementMeshBuilder<T>, nx: usize) {
+fn unit_interval_add_points_and_cells<T: Scalar>(
+    b: &mut SingleElementMeshBuilder<T>,
+    nx: usize,
+    degree: usize,
+) {
     for i in 0..nx + 1 {
         b.add_point(i, &[T::from(i).unwrap() / T::from(nx).unwrap()]);
     }
 
+    let mut cells = vec![];
     for i in 0..nx {
-        b.add_cell(i, &[i, i + 1]);
+        cells.push([i, i + 1]);
+    }
+    if degree == 1 {
+        for (i, v) in cells.iter().enumerate() {
+            b.add_cell(i, v);
+        }
+    } else {
+        for (i, v) in resample_cells::<T, 1, 2>(degree, b, &cells, ReferenceCellType::Interval)
+            .iter()
+            .enumerate()
+        {
+            b.add_cell(i, v);
+        }
     }
 }
 
@@ -28,6 +46,7 @@ fn unit_square_add_points_and_cells<T: Scalar>(
     nx: usize,
     ny: usize,
     cell_type: ReferenceCellType,
+    degree: usize,
 ) {
     for i in 0..nx + 1 {
         for j in 0..ny + 1 {
@@ -45,25 +64,47 @@ fn unit_square_add_points_and_cells<T: Scalar>(
     let dy = 1;
     match cell_type {
         ReferenceCellType::Triangle => {
+            let mut cells = vec![];
             for i in 0..nx {
                 for j in 0..ny {
                     let origin = i * dx + j * dy;
-                    b.add_cell(2 * (j * nx + i), &[origin, origin + dx, origin + dx + dy]);
-                    b.add_cell(
-                        2 * (j * nx + i) + 1,
-                        &[origin, origin + dx + dy, origin + dy],
-                    );
+                    cells.push([origin, origin + dx, origin + dx + dy]);
+                    cells.push([origin, origin + dx + dy, origin + dy]);
+                }
+            }
+            if degree == 1 {
+                for (i, v) in cells.iter().enumerate() {
+                    b.add_cell(i, v);
+                }
+            } else {
+                for (i, v) in
+                    resample_cells::<T, 2, 3>(degree, b, &cells, ReferenceCellType::Triangle)
+                        .iter()
+                        .enumerate()
+                {
+                    b.add_cell(i, v);
                 }
             }
         }
         ReferenceCellType::Quadrilateral => {
+            let mut cells = vec![];
             for i in 0..nx {
                 for j in 0..ny {
                     let origin = i * dx + j * dy;
-                    b.add_cell(
-                        j * nx + i,
-                        &[origin, origin + dx, origin + dy, origin + dx + dy],
-                    );
+                    cells.push([origin, origin + dx, origin + dy, origin + dx + dy]);
+                }
+            }
+            if degree == 1 {
+                for (i, v) in cells.iter().enumerate() {
+                    b.add_cell(i, v);
+                }
+            } else {
+                for (i, v) in
+                    resample_cells::<T, 2, 4>(degree, b, &cells, ReferenceCellType::Quadrilateral)
+                        .iter()
+                        .enumerate()
+                {
+                    b.add_cell(i, v);
                 }
             }
         }
@@ -78,6 +119,7 @@ fn unit_square_boundary_add_points_and_cells<T: Scalar>(
     b: &mut SingleElementMeshBuilder<T>,
     nx: usize,
     ny: usize,
+    degree: usize,
 ) {
     let dx = ny + 1;
     let dy = 1;
@@ -103,17 +145,30 @@ fn unit_square_boundary_add_points_and_cells<T: Scalar>(
         );
     }
 
+    let mut cells = vec![];
     for i in 0..nx {
         let origin = i * dx;
-        b.add_cell(2 * i, &[origin, origin + dx]);
+        cells.push([origin, origin + dx]);
         let origin = i * dx + ny * dy;
-        b.add_cell(2 * i + 1, &[origin + dx, origin]);
+        cells.push([origin + dx, origin]);
     }
     for j in 0..ny {
         let origin = j * dy;
-        b.add_cell(2 * nx + 2 * j, &[origin + dy, origin]);
+        cells.push([origin + dy, origin]);
         let origin = nx * dx + j * dy;
-        b.add_cell(2 * nx + 2 * j + 1, &[origin, origin + dy]);
+        cells.push([origin, origin + dy]);
+    }
+    if degree == 1 {
+        for (i, v) in cells.iter().enumerate() {
+            b.add_cell(i, v);
+        }
+    } else {
+        for (i, v) in resample_cells::<T, 2, 2>(degree, b, &cells, ReferenceCellType::Interval)
+            .iter()
+            .enumerate()
+        {
+            b.add_cell(i, v);
+        }
     }
 }
 
@@ -124,6 +179,7 @@ fn unit_cube_add_points_and_cells<T: Scalar>(
     ny: usize,
     nz: usize,
     cell_type: ReferenceCellType,
+    degree: usize,
 ) {
     for i in 0..=nx {
         for j in 0..=ny {
@@ -145,57 +201,64 @@ fn unit_cube_add_points_and_cells<T: Scalar>(
     let dz = 1;
     match cell_type {
         ReferenceCellType::Tetrahedron => {
+            let mut cells = vec![];
             for i in 0..nx {
                 for j in 0..ny {
                     for k in 0..nz {
                         let origin = i * dx + j * dy + k * dz;
-                        b.add_cell(
-                            6 * ((j * nx + i) * ny + k),
-                            &[origin, origin + dx, origin + dx + dy, origin + dx + dy + dz],
-                        );
-                        b.add_cell(
-                            6 * ((j * nx + i) * ny + k) + 1,
-                            &[origin, origin + dy, origin + dx + dy, origin + dx + dy + dz],
-                        );
-                        b.add_cell(
-                            6 * ((j * nx + i) * ny + k) + 2,
-                            &[origin, origin + dx, origin + dx + dz, origin + dx + dy + dz],
-                        );
-                        b.add_cell(
-                            6 * ((j * nx + i) * ny + k) + 3,
-                            &[origin, origin + dz, origin + dx + dz, origin + dx + dy + dz],
-                        );
-                        b.add_cell(
-                            6 * ((j * nx + i) * ny + k) + 4,
-                            &[origin, origin + dy, origin + dy + dz, origin + dx + dy + dz],
-                        );
-                        b.add_cell(
-                            6 * ((j * nx + i) * ny + k) + 5,
-                            &[origin, origin + dz, origin + dy + dz, origin + dx + dy + dz],
-                        );
+                        cells.push([origin, origin + dx, origin + dx + dy, origin + dx + dy + dz]);
+                        cells.push([origin, origin + dy, origin + dx + dy, origin + dx + dy + dz]);
+                        cells.push([origin, origin + dx, origin + dx + dz, origin + dx + dy + dz]);
+                        cells.push([origin, origin + dz, origin + dx + dz, origin + dx + dy + dz]);
+                        cells.push([origin, origin + dy, origin + dy + dz, origin + dx + dy + dz]);
+                        cells.push([origin, origin + dz, origin + dy + dz, origin + dx + dy + dz]);
                     }
+                }
+            }
+            if degree == 1 {
+                for (i, v) in cells.iter().enumerate() {
+                    b.add_cell(i, v);
+                }
+            } else {
+                for (i, v) in
+                    resample_cells::<T, 3, 4>(degree, b, &cells, ReferenceCellType::Tetrahedron)
+                        .iter()
+                        .enumerate()
+                {
+                    b.add_cell(i, v);
                 }
             }
         }
         ReferenceCellType::Hexahedron => {
+            let mut cells = vec![];
             for i in 0..nx {
                 for j in 0..ny {
                     for k in 0..nz {
                         let origin = i * dx + j * dy + k * dz;
-                        b.add_cell(
-                            (j * nx + i) * ny + k,
-                            &[
-                                origin,
-                                origin + dx,
-                                origin + dy,
-                                origin + dx + dy,
-                                origin + dz,
-                                origin + dx + dz,
-                                origin + dy + dz,
-                                origin + dx + dy + dz,
-                            ],
-                        );
+                        cells.push([
+                            origin,
+                            origin + dx,
+                            origin + dy,
+                            origin + dx + dy,
+                            origin + dz,
+                            origin + dx + dz,
+                            origin + dy + dz,
+                            origin + dx + dy + dz,
+                        ]);
                     }
+                }
+            }
+            if degree == 1 {
+                for (i, v) in cells.iter().enumerate() {
+                    b.add_cell(i, v);
+                }
+            } else {
+                for (i, v) in
+                    resample_cells::<T, 3, 8>(degree, b, &cells, ReferenceCellType::Hexahedron)
+                        .iter()
+                        .enumerate()
+                {
+                    b.add_cell(i, v);
                 }
             }
         }
@@ -212,6 +275,7 @@ fn unit_cube_boundary_add_points_and_cells<T: Scalar>(
     ny: usize,
     nz: usize,
     cell_type: ReferenceCellType,
+    degree: usize,
 ) {
     for i in 0..nx + 1 {
         for j in 0..ny + 1 {
@@ -237,86 +301,88 @@ fn unit_cube_boundary_add_points_and_cells<T: Scalar>(
     let dz = 1;
     match cell_type {
         ReferenceCellType::Triangle => {
-            let mut cell_n = 0;
+            let mut cells = vec![];
             for i in 0..nx {
                 for j in 0..ny {
                     let origin = i * dx + j * dy;
-                    b.add_cell(cell_n, &[origin, origin + dx + dy, origin + dx]);
-                    b.add_cell(cell_n + 1, &[origin, origin + dy, origin + dx + dy]);
+                    cells.push([origin, origin + dx + dy, origin + dx]);
+                    cells.push([origin, origin + dy, origin + dx + dy]);
                     let origin = i * dx + j * dy + nz * dz;
-                    b.add_cell(cell_n + 2, &[origin, origin + dx, origin + dx + dy]);
-                    b.add_cell(cell_n + 3, &[origin, origin + dx + dy, origin + dy]);
-                    cell_n += 4;
+                    cells.push([origin, origin + dx, origin + dx + dy]);
+                    cells.push([origin, origin + dx + dy, origin + dy]);
                 }
             }
             for i in 0..nx {
                 for k in 0..nz {
                     let origin = i * dx + k * dz;
-                    b.add_cell(cell_n, &[origin, origin + dx, origin + dx + dz]);
-                    b.add_cell(cell_n + 1, &[origin, origin + dx + dz, origin + dz]);
+                    cells.push([origin, origin + dx, origin + dx + dz]);
+                    cells.push([origin, origin + dx + dz, origin + dz]);
                     let origin = i * dx + ny * dy + k * dz;
-                    b.add_cell(cell_n + 2, &[origin, origin + dx + dz, origin + dx]);
-                    b.add_cell(cell_n + 3, &[origin, origin + dz, origin + dx + dz]);
-                    cell_n += 4;
+                    cells.push([origin, origin + dx + dz, origin + dx]);
+                    cells.push([origin, origin + dz, origin + dx + dz]);
                 }
             }
             for j in 0..ny {
                 for k in 0..nz {
                     let origin = j * dy + k * dz;
-                    b.add_cell(cell_n, &[origin, origin + dy + dz, origin + dy]);
-                    b.add_cell(cell_n + 1, &[origin, origin + dz, origin + dy + dz]);
+                    cells.push([origin, origin + dy + dz, origin + dy]);
+                    cells.push([origin, origin + dz, origin + dy + dz]);
                     let origin = nx * dx + j * dy + k * dz;
-                    b.add_cell(cell_n + 2, &[origin, origin + dy, origin + dy + dz]);
-                    b.add_cell(cell_n + 3, &[origin, origin + dy + dz, origin + dz]);
-                    cell_n += 4;
+                    cells.push([origin, origin + dy, origin + dy + dz]);
+                    cells.push([origin, origin + dy + dz, origin + dz]);
+                }
+            }
+            if degree == 1 {
+                for (i, v) in cells.iter().enumerate() {
+                    b.add_cell(i, v);
+                }
+            } else {
+                for (i, v) in
+                    resample_cells::<T, 3, 3>(degree, b, &cells, ReferenceCellType::Triangle)
+                        .iter()
+                        .enumerate()
+                {
+                    b.add_cell(i, v);
                 }
             }
         }
         ReferenceCellType::Quadrilateral => {
-            let mut cell_n = 0;
+            let mut cells = vec![];
             for i in 0..nx {
                 for j in 0..ny {
                     let origin = i * dx + j * dy;
-                    b.add_cell(
-                        cell_n,
-                        &[origin, origin + dy, origin + dx, origin + dx + dy],
-                    );
+                    cells.push([origin, origin + dy, origin + dx, origin + dx + dy]);
                     let origin = i * dx + j * dy + nz * dz;
-                    b.add_cell(
-                        cell_n + 1,
-                        &[origin, origin + dx, origin + dy, origin + dx + dy],
-                    );
-                    cell_n += 2;
+                    cells.push([origin, origin + dx, origin + dy, origin + dx + dy]);
                 }
             }
             for i in 0..nx {
                 for k in 0..nz {
                     let origin = i * dx + k * dz;
-                    b.add_cell(
-                        cell_n,
-                        &[origin, origin + dx, origin + dz, origin + dx + dz],
-                    );
+                    cells.push([origin, origin + dx, origin + dz, origin + dx + dz]);
                     let origin = i * dx + ny * dy + k * dz;
-                    b.add_cell(
-                        cell_n + 1,
-                        &[origin, origin + dz, origin + dx, origin + dx + dz],
-                    );
-                    cell_n += 2;
+                    cells.push([origin, origin + dz, origin + dx, origin + dx + dz]);
                 }
             }
             for j in 0..ny {
                 for k in 0..nz {
                     let origin = j * dy + k * dz;
-                    b.add_cell(
-                        cell_n,
-                        &[origin, origin + dz, origin + dy, origin + dy + dz],
-                    );
+                    cells.push([origin, origin + dz, origin + dy, origin + dy + dz]);
                     let origin = nx * dx + j * dy + k * dz;
-                    b.add_cell(
-                        cell_n + 1,
-                        &[origin, origin + dy, origin + dz, origin + dy + dz],
-                    );
-                    cell_n += 2;
+                    cells.push([origin, origin + dy, origin + dz, origin + dy + dz]);
+                }
+            }
+            if degree == 1 {
+                for (i, v) in cells.iter().enumerate() {
+                    b.add_cell(i, v);
+                }
+            } else {
+                for (i, v) in
+                    resample_cells::<T, 3, 4>(degree, b, &cells, ReferenceCellType::Quadrilateral)
+                        .iter()
+                        .enumerate()
+                {
+                    b.add_cell(i, v);
                 }
             }
         }
@@ -332,6 +398,7 @@ fn unit_cube_edges_add_points_and_cells<T: Scalar>(
     nx: usize,
     ny: usize,
     nz: usize,
+    degree: usize,
 ) {
     for i in 0..nx + 1 {
         for j in if i == 0 || i == nx {
@@ -359,7 +426,7 @@ fn unit_cube_edges_add_points_and_cells<T: Scalar>(
     let dx = (ny + 1) * (nz + 1);
     let dy = nz + 1;
     let dz = 1;
-    let mut cell_n = 0;
+    let mut cells = vec![];
     for i in 0..nx {
         for origin in [
             i * dx,
@@ -367,8 +434,7 @@ fn unit_cube_edges_add_points_and_cells<T: Scalar>(
             i * dx + nz * dz,
             i * dx + ny * dy + nz * dz,
         ] {
-            b.add_cell(cell_n, &[origin, origin + dx]);
-            cell_n += 1;
+            cells.push([origin, origin + dx]);
         }
     }
     for j in 0..ny {
@@ -378,8 +444,7 @@ fn unit_cube_edges_add_points_and_cells<T: Scalar>(
             j * dy + nz * dz,
             j * dy + nx * dx + nz * dz,
         ] {
-            b.add_cell(cell_n, &[origin, origin + dy]);
-            cell_n += 1;
+            cells.push([origin, origin + dy]);
         }
     }
     for k in 0..nz {
@@ -389,8 +454,19 @@ fn unit_cube_edges_add_points_and_cells<T: Scalar>(
             k * dz + ny * dy,
             k * dz + nx * dx + ny * dy,
         ] {
-            b.add_cell(cell_n, &[origin, origin + dz]);
-            cell_n += 1;
+            cells.push([origin, origin + dz]);
+        }
+    }
+    if degree == 1 {
+        for (i, v) in cells.iter().enumerate() {
+            b.add_cell(i, v);
+        }
+    } else {
+        for (i, v) in resample_cells::<T, 3, 2>(degree, b, &cells, ReferenceCellType::Interval)
+            .iter()
+            .enumerate()
+        {
+            b.add_cell(i, v);
         }
     }
 }
@@ -400,14 +476,10 @@ fn unit_cube_edges_add_points_and_cells<T: Scalar>(
 /// The unit interval is the interval between (0,) and (1,)
 pub fn unit_interval<T: Scalar>(
     nx: usize,
+    degree: usize,
 ) -> SingleElementMesh<T, CiarletElement<T, IdentityMap, T>> {
-    let mut b = SingleElementMeshBuilder::new_with_capacity(
-        1,
-        nx + 1,
-        nx,
-        (ReferenceCellType::Interval, 1),
-    );
-    unit_interval_add_points_and_cells(&mut b, nx);
+    let mut b = SingleElementMeshBuilder::new(1, (ReferenceCellType::Interval, degree));
+    unit_interval_add_points_and_cells(&mut b, nx, degree);
     b.create_mesh()
 }
 
@@ -417,10 +489,11 @@ pub fn unit_interval_distributed<T: Scalar + Equivalence, C: Communicator>(
     comm: &C,
     partitioner: GraphPartitioner,
     nx: usize,
+    degree: usize,
 ) -> ParallelMeshImpl<'_, C, SingleElementMesh<T, CiarletElement<T, IdentityMap, T>>> {
     let mut b = SingleElementMeshBuilder::new(1, (ReferenceCellType::Interval, 1));
     if comm.rank() == 0 {
-        unit_interval_add_points_and_cells(&mut b, nx);
+        unit_interval_add_points_and_cells(&mut b, nx, degree);
         b.create_parallel_mesh_root(comm, partitioner)
     } else {
         b.create_parallel_mesh(comm, 0)
@@ -436,25 +509,9 @@ pub fn unit_square<T: Scalar>(
     cell_type: ReferenceCellType,
     degree: usize,
 ) -> SingleElementMesh<T, CiarletElement<T, IdentityMap, T>> {
-    let mut b = SingleElementMeshBuilder::new_with_capacity(
-        2,
-        (nx + 1) * (ny + 1),
-        match cell_type {
-            ReferenceCellType::Triangle => 2 * nx * ny,
-            ReferenceCellType::Quadrilateral => 2 * nx * ny,
-            _ => {
-                panic!("Unsupported cell type: {cell_type:?}")
-            }
-        },
-        (cell_type, 1),
-    );
-    unit_square_add_points_and_cells(&mut b, nx, ny, cell_type);
-    if degree == 1 {
-        b.create_mesh()
-    } else {
-        let mesh = b.create_mesh();
-        mesh.resample_as_degree(degree)
-    }
+    let mut b = SingleElementMeshBuilder::new(2, (cell_type, degree));
+    unit_square_add_points_and_cells(&mut b, nx, ny, cell_type, degree);
+    b.create_mesh()
 }
 
 /// Create a unit square mesh distributed in parallel
@@ -465,10 +522,11 @@ pub fn unit_square_distributed<T: Scalar + Equivalence, C: Communicator>(
     nx: usize,
     ny: usize,
     cell_type: ReferenceCellType,
+    degree: usize,
 ) -> ParallelMeshImpl<'_, C, SingleElementMesh<T, CiarletElement<T, IdentityMap, T>>> {
     let mut b = SingleElementMeshBuilder::new(1, (cell_type, 1));
     if comm.rank() == 0 {
-        unit_square_add_points_and_cells(&mut b, nx, ny, cell_type);
+        unit_square_add_points_and_cells(&mut b, nx, ny, cell_type, degree);
         b.create_parallel_mesh_root(comm, partitioner)
     } else {
         b.create_parallel_mesh(comm, 0)
@@ -483,19 +541,9 @@ pub fn unit_square_boundary<T: Scalar>(
     ny: usize,
     degree: usize,
 ) -> SingleElementMesh<T, CiarletElement<T, IdentityMap, T>> {
-    let mut b = SingleElementMeshBuilder::new_with_capacity(
-        2,
-        2 * (nx + ny),
-        2 * (nx + ny),
-        (ReferenceCellType::Interval, 1),
-    );
-    unit_square_boundary_add_points_and_cells(&mut b, nx, ny);
-    if degree == 1 {
-        b.create_mesh()
-    } else {
-        let mesh = b.create_mesh();
-        mesh.resample_as_degree(degree)
-    }
+    let mut b = SingleElementMeshBuilder::new(2, (ReferenceCellType::Interval, degree));
+    unit_square_boundary_add_points_and_cells(&mut b, nx, ny, degree);
+    b.create_mesh()
 }
 
 /// Create a mesh of the boundary distributed in parallel
@@ -506,10 +554,11 @@ pub fn unit_square_boundary_distributed<T: Scalar + Equivalence, C: Communicator
     nx: usize,
     ny: usize,
     cell_type: ReferenceCellType,
+    degree: usize,
 ) -> ParallelMeshImpl<'_, C, SingleElementMesh<T, CiarletElement<T, IdentityMap, T>>> {
     let mut b = SingleElementMeshBuilder::new(1, (cell_type, 1));
     if comm.rank() == 0 {
-        unit_square_boundary_add_points_and_cells(&mut b, nx, ny);
+        unit_square_boundary_add_points_and_cells(&mut b, nx, ny, degree);
         b.create_parallel_mesh_root(comm, partitioner)
     } else {
         b.create_parallel_mesh(comm, 0)
@@ -527,27 +576,10 @@ pub fn unit_cube<T: Scalar>(
     cell_type: ReferenceCellType,
     degree: usize,
 ) -> SingleElementMesh<T, CiarletElement<T, IdentityMap, T>> {
-    let mut b = SingleElementMeshBuilder::new_with_capacity(
-        3,
-        (nx + 1) * (ny + 1) * (nz + 1),
-        match cell_type {
-            ReferenceCellType::Tetrahedron => 6 * nx * ny * nz,
-            ReferenceCellType::Hexahedron => 2 * nx * ny * nz,
-            _ => {
-                panic!("Unsupported cell type: {cell_type:?}")
-            }
-        },
-        (cell_type, 1),
-    );
+    let mut b = SingleElementMeshBuilder::new(3, (cell_type, degree));
 
-    unit_cube_add_points_and_cells(&mut b, nx, ny, nz, cell_type);
-
-    if degree == 1 {
-        b.create_mesh()
-    } else {
-        let mesh = b.create_mesh();
-        mesh.resample_as_degree(degree)
-    }
+    unit_cube_add_points_and_cells(&mut b, nx, ny, nz, cell_type, degree);
+    b.create_mesh()
 }
 
 /// Create a unit cube mesh distributed in parallel
@@ -559,10 +591,11 @@ pub fn unit_cube_distributed<T: Scalar + Equivalence, C: Communicator>(
     ny: usize,
     nz: usize,
     cell_type: ReferenceCellType,
+    degree: usize,
 ) -> ParallelMeshImpl<'_, C, SingleElementMesh<T, CiarletElement<T, IdentityMap, T>>> {
     let mut b = SingleElementMeshBuilder::new(3, (cell_type, 1));
     if comm.rank() == 0 {
-        unit_cube_add_points_and_cells(&mut b, nx, ny, nz, cell_type);
+        unit_cube_add_points_and_cells(&mut b, nx, ny, nz, cell_type, degree);
         b.create_parallel_mesh_root(comm, partitioner)
     } else {
         b.create_parallel_mesh(comm, 0)
@@ -580,25 +613,9 @@ pub fn unit_cube_boundary<T: Scalar>(
     cell_type: ReferenceCellType,
     degree: usize,
 ) -> SingleElementMesh<T, CiarletElement<T, IdentityMap, T>> {
-    let mut b = SingleElementMeshBuilder::new_with_capacity(
-        3,
-        (nx + 1) * (ny + 1) * (nz + 1) - (nx - 1) * (ny - 1) * (nz - 1),
-        match cell_type {
-            ReferenceCellType::Triangle => 4 * (nx * ny + nx * nz + ny * nz),
-            ReferenceCellType::Quadrilateral => 2 * (nx * ny + nx * nz + ny * nz),
-            _ => {
-                panic!("Unsupported cell type: {cell_type:?}")
-            }
-        },
-        (cell_type, 1),
-    );
-    unit_cube_boundary_add_points_and_cells(&mut b, nx, ny, nz, cell_type);
-    if degree == 1 {
-        b.create_mesh()
-    } else {
-        let mesh = b.create_mesh();
-        mesh.resample_as_degree(degree)
-    }
+    let mut b = SingleElementMeshBuilder::new(3, (cell_type, degree));
+    unit_cube_boundary_add_points_and_cells(&mut b, nx, ny, nz, cell_type, degree);
+    b.create_mesh()
 }
 
 /// Create a mesh of the boundary of a unit cube distributed in parallel
@@ -610,10 +627,11 @@ pub fn unit_cube_boundary_distributed<T: Scalar + Equivalence, C: Communicator>(
     ny: usize,
     nz: usize,
     cell_type: ReferenceCellType,
+    degree: usize,
 ) -> ParallelMeshImpl<'_, C, SingleElementMesh<T, CiarletElement<T, IdentityMap, T>>> {
     let mut b = SingleElementMeshBuilder::new(3, (cell_type, 1));
     if comm.rank() == 0 {
-        unit_cube_boundary_add_points_and_cells(&mut b, nx, ny, nz, cell_type);
+        unit_cube_boundary_add_points_and_cells(&mut b, nx, ny, nz, cell_type, degree);
         b.create_parallel_mesh_root(comm, partitioner)
     } else {
         b.create_parallel_mesh(comm, 0)
@@ -630,20 +648,9 @@ pub fn unit_cube_edges<T: Scalar>(
     nz: usize,
     degree: usize,
 ) -> SingleElementMesh<T, CiarletElement<T, IdentityMap, T>> {
-    let mut b = SingleElementMeshBuilder::new_with_capacity(
-        3,
-        4 * (nx + ny + nz + 1),
-        4 * (nx + ny + nz),
-        (ReferenceCellType::Interval, 1),
-    );
-    unit_cube_edges_add_points_and_cells(&mut b, nx, ny, nz);
-
-    if degree == 1 {
-        b.create_mesh()
-    } else {
-        let mesh = b.create_mesh();
-        mesh.resample_as_degree(degree)
-    }
+    let mut b = SingleElementMeshBuilder::new(3, (ReferenceCellType::Interval, degree));
+    unit_cube_edges_add_points_and_cells(&mut b, nx, ny, nz, degree);
+    b.create_mesh()
 }
 
 /// Create a mesh of the edges of a unit cube distributed in parallel
@@ -654,10 +661,11 @@ pub fn unit_cube_edges_distributed<T: Scalar + Equivalence, C: Communicator>(
     nx: usize,
     ny: usize,
     nz: usize,
+    degree: usize,
 ) -> ParallelMeshImpl<'_, C, SingleElementMesh<T, CiarletElement<T, IdentityMap, T>>> {
     let mut b = SingleElementMeshBuilder::new(3, (ReferenceCellType::Interval, 1));
     if comm.rank() == 0 {
-        unit_cube_edges_add_points_and_cells(&mut b, nx, ny, nz);
+        unit_cube_edges_add_points_and_cells(&mut b, nx, ny, nz, degree);
         b.create_parallel_mesh_root(comm, partitioner)
     } else {
         b.create_parallel_mesh(comm, 0)
@@ -666,11 +674,12 @@ pub fn unit_cube_edges_distributed<T: Scalar + Equivalence, C: Communicator>(
 
 #[cfg(test)]
 mod test {
+    use super::super::test::{test_normals_are_outward, test_normals_are_unit};
     use super::*;
-    use crate::traits::{Entity, Geometry, GeometryMap, Mesh, Point};
+    use crate::traits::{Entity, Geometry, Mesh, Point};
     use approx::*;
     use itertools::izip;
-    use rlst::{Array, ValueArrayImpl, rlst_dynamic_array};
+    use rlst::rlst_dynamic_array;
 
     fn max(values: &[f64]) -> f64 {
         let mut out = values[0];
@@ -748,10 +757,10 @@ mod test {
 
     #[test]
     fn test_unit_interval() {
-        check_volume(&unit_interval::<f64>(1), 1.0);
-        check_volume(&unit_interval::<f64>(2), 1.0);
-        check_volume(&unit_interval::<f64>(4), 1.0);
-        check_volume(&unit_interval::<f64>(7), 1.0);
+        check_volume(&unit_interval::<f64>(1, 1), 1.0);
+        check_volume(&unit_interval::<f64>(2, 1), 1.0);
+        check_volume(&unit_interval::<f64>(4, 1), 1.0);
+        check_volume(&unit_interval::<f64>(7, 1), 1.0);
     }
 
     #[test]
@@ -889,61 +898,6 @@ mod test {
         check_volume(&unit_cube_edges::<f64>(7, 6, 4, 1), 12.0);
     }
 
-    fn test_normals_are_unit<Array2Impl: ValueArrayImpl<f64, 2>>(
-        mesh: &impl Mesh<T = f64, EntityDescriptor = ReferenceCellType>,
-        ct: ReferenceCellType,
-        point: &Array<Array2Impl, 2>,
-    ) {
-        let tdim = point.shape()[0];
-        let gdim = tdim + 1;
-        let map = mesh.geometry_map(ct, 1, point);
-        let mut mapped_pt = rlst_dynamic_array!(f64, [gdim, 1]);
-        let mut j = rlst_dynamic_array!(f64, [gdim, tdim, 1]);
-        let mut jinv = rlst_dynamic_array!(f64, [tdim, gdim, 1]);
-        let mut jdet = vec![0.0];
-        let mut normal = rlst_dynamic_array!(f64, [gdim, 1]);
-        for i in 0..mesh.entity_count(ct) {
-            map.physical_points(i, &mut mapped_pt);
-            map.jacobians_inverses_dets_normals(i, &mut j, &mut jinv, &mut jdet, &mut normal);
-            let dot = normal
-                .iter_value()
-                .zip(normal.iter_value())
-                .map(|(i, j)| i * j)
-                .sum::<f64>();
-            assert_relative_eq!(dot, 1.0, epsilon = 1e-10);
-        }
-    }
-
-    fn test_normals_are_outward<Array2Impl: ValueArrayImpl<f64, 2>>(
-        mesh: &impl Mesh<T = f64, EntityDescriptor = ReferenceCellType>,
-        ct: ReferenceCellType,
-        point: &Array<Array2Impl, 2>,
-        centre: &Array<Array2Impl, 2>,
-    ) {
-        use crate::traits::GmshExport;
-        mesh.export_as_gmsh("mesh.msh");
-        let tdim = point.shape()[0];
-        let gdim = tdim + 1;
-        assert_eq!(centre.shape()[0], gdim);
-        let map = mesh.geometry_map(ct, 1, point);
-        let mut mapped_pt = rlst_dynamic_array!(f64, [gdim, 1]);
-        let mut j = rlst_dynamic_array!(f64, [gdim, tdim, 1]);
-        let mut jinv = rlst_dynamic_array!(f64, [tdim, gdim, 1]);
-        let mut jdet = vec![0.0];
-        let mut normal = rlst_dynamic_array!(f64, [gdim, 1]);
-        for i in 0..mesh.entity_count(ct) {
-            map.physical_points(i, &mut mapped_pt);
-            map.jacobians_inverses_dets_normals(i, &mut j, &mut jinv, &mut jdet, &mut normal);
-            let dot = mapped_pt
-                .iter_value()
-                .zip(centre.iter_value())
-                .zip(normal.iter_value())
-                .map(|((i, j), k)| (i - j) * k)
-                .sum::<f64>();
-            assert!(dot > 0.0);
-        }
-    }
-
     #[test]
     fn test_normals_are_unit_unit_square_boundary() {
         let mut point = rlst_dynamic_array!(f64, [1, 1]);
@@ -952,16 +906,19 @@ mod test {
             &unit_square_boundary(1, 1, 1),
             ReferenceCellType::Interval,
             &point,
+            1,
         );
         test_normals_are_unit(
             &unit_square_boundary(2, 2, 1),
             ReferenceCellType::Interval,
             &point,
+            1,
         );
         test_normals_are_unit(
             &unit_square_boundary(3, 4, 1),
             ReferenceCellType::Interval,
             &point,
+            1,
         );
     }
 
@@ -974,16 +931,19 @@ mod test {
             &unit_cube_boundary(1, 1, 1, ReferenceCellType::Triangle, 1),
             ReferenceCellType::Triangle,
             &point,
+            1,
         );
         test_normals_are_unit(
             &unit_cube_boundary(2, 2, 2, ReferenceCellType::Triangle, 1),
             ReferenceCellType::Triangle,
             &point,
+            1,
         );
         test_normals_are_unit(
             &unit_cube_boundary(3, 4, 5, ReferenceCellType::Triangle, 1),
             ReferenceCellType::Triangle,
             &point,
+            1,
         );
     }
 
@@ -996,16 +956,19 @@ mod test {
             &unit_cube_boundary(1, 1, 1, ReferenceCellType::Quadrilateral, 1),
             ReferenceCellType::Quadrilateral,
             &point,
+            1,
         );
         test_normals_are_unit(
             &unit_cube_boundary(2, 2, 2, ReferenceCellType::Quadrilateral, 1),
             ReferenceCellType::Quadrilateral,
             &point,
+            1,
         );
         test_normals_are_unit(
             &unit_cube_boundary(3, 4, 5, ReferenceCellType::Quadrilateral, 1),
             ReferenceCellType::Quadrilateral,
             &point,
+            1,
         );
     }
 
@@ -1021,18 +984,21 @@ mod test {
             ReferenceCellType::Interval,
             &point,
             &centre,
+            1,
         );
         test_normals_are_outward(
             &unit_square_boundary(2, 2, 1),
             ReferenceCellType::Interval,
             &point,
             &centre,
+            1,
         );
         test_normals_are_outward(
             &unit_square_boundary(3, 4, 1),
             ReferenceCellType::Interval,
             &point,
             &centre,
+            1,
         );
     }
 
@@ -1050,18 +1016,21 @@ mod test {
             ReferenceCellType::Triangle,
             &point,
             &centre,
+            1,
         );
         test_normals_are_outward(
             &unit_cube_boundary(2, 2, 2, ReferenceCellType::Triangle, 1),
             ReferenceCellType::Triangle,
             &point,
             &centre,
+            1,
         );
         test_normals_are_outward(
             &unit_cube_boundary(3, 4, 5, ReferenceCellType::Triangle, 1),
             ReferenceCellType::Triangle,
             &point,
             &centre,
+            1,
         );
     }
 
@@ -1079,18 +1048,21 @@ mod test {
             ReferenceCellType::Quadrilateral,
             &point,
             &centre,
+            1,
         );
         test_normals_are_outward(
             &unit_cube_boundary(2, 2, 2, ReferenceCellType::Quadrilateral, 1),
             ReferenceCellType::Quadrilateral,
             &point,
             &centre,
+            1,
         );
         test_normals_are_outward(
             &unit_cube_boundary(3, 4, 5, ReferenceCellType::Quadrilateral, 1),
             ReferenceCellType::Quadrilateral,
             &point,
             &centre,
+            1,
         );
     }
 }

@@ -13,9 +13,7 @@ fn remove_signed<T: Sized>(v: &mut Vec<T>, index: i64) -> T {
     let n = v.len() as i64;
     assert!(
         -n <= index && index < n,
-        "Value {} must be smaller in magnitue than {}",
-        index,
-        n
+        "Value {index} must be smaller in magnitue than {n}",
     );
     let index = if index < 0 { n + index } else { index };
 

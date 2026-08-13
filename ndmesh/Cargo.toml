@@ -45,6 +45,7 @@ approx = "0.5"
 paste = "1.*"
 rand = "0.9"
 rand_chacha = "0.9"
+quadraturerules = "0.9.1"
 
 [package.metadata.docs.rs]
 cargo-args = ["-Zunstable-options", "-Zrustdoc-scrape-examples"]

@@ -21,9 +21,9 @@ fn get_permutation_to_gmsh(cell_type: ReferenceCellType, degree: usize) -> Vec<u
         },
         ReferenceCellType::Triangle => match degree {
             1 => vec![0, 1, 2],
-            2 => vec![0, 1, 2, 5, 3, 4],
-            3 => vec![0, 1, 2, 7, 8, 3, 4, 6, 5, 9],
-            4 => vec![0, 1, 2, 9, 10, 11, 3, 4, 5, 8, 7, 6, 12, 13, 14],
+            2 => vec![0, 1, 2, 3, 5, 4],
+            3 => vec![0, 1, 2, 3, 4, 7, 8, 6, 5, 9],
+            4 => vec![0, 1, 2, 3, 4, 5, 9, 10, 11, 8, 7, 6, 12, 13, 14],
             5 => vec![
                 0, 1, 2, 11, 12, 13, 14, 3, 4, 5, 6, 10, 9, 8, 7, 15, 16, 17, 18, 19, 20,
             ],

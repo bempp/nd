@@ -21,6 +21,7 @@ fn test_parallel_function_space<C: Communicator>(comm: &C) {
         4,
         4,
         ReferenceCellType::Tetrahedron,
+        1,
     );
 
     let family =
