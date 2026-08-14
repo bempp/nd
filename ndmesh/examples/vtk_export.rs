@@ -7,11 +7,11 @@ fn main() {
     let tetra_mesh = shapes::unit_cube::<f64>(2, 1, 1, ReferenceCellType::Tetrahedron, 4);
     let hexa_mesh = shapes::unit_cube::<f64>(2, 1, 1, ReferenceCellType::Hexahedron, 3);
 
-    triangle_mesh.as_vtk().export("triangle.vtu").unwrap();
+    triangle_mesh.as_vtk().export("_triangle.vtu").unwrap();
     quadrilateral_mesh
         .as_vtk()
-        .export("quadrilateral.vtu")
+        .export("_quadrilateral.vtu")
         .unwrap();
-    tetra_mesh.as_vtk().export("tetra.vtu").unwrap();
-    hexa_mesh.as_vtk().export("hexa.vtu").unwrap();
+    tetra_mesh.as_vtk().export("_tetra.vtu").unwrap();
+    hexa_mesh.as_vtk().export("_hexa.vtu").unwrap();
 }

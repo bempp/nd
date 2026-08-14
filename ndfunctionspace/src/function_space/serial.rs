@@ -191,7 +191,7 @@ mod test {
         ciarlet::{LagrangeElementFamily, LagrangeVariant},
         types::{Continuity, ReferenceCellType},
     };
-    use ndmesh::shapes::unit_cube_boundary;
+    use ndmesh::shapes::{mixed_sphere, unit_cube_boundary};
 
     #[test]
     fn test_dp0() {
@@ -209,53 +209,27 @@ mod test {
             mesh.entity_count(ReferenceCellType::Triangle)
         );
 
-        for cell in mesh.entity_iter(ReferenceCellType::Point) {
-            assert_eq!(
-                space
-                    .entity_dofs(ReferenceCellType::Point, cell.local_index())
-                    .unwrap()
-                    .len(),
-                0
-            );
-            assert_eq!(
-                space
-                    .entity_closure_dofs(ReferenceCellType::Point, cell.local_index())
-                    .unwrap()
-                    .len(),
-                0
-            );
-        }
-        for cell in mesh.entity_iter(ReferenceCellType::Interval) {
-            assert_eq!(
-                space
-                    .entity_dofs(ReferenceCellType::Interval, cell.local_index())
-                    .unwrap()
-                    .len(),
-                0
-            );
-            assert_eq!(
-                space
-                    .entity_closure_dofs(ReferenceCellType::Interval, cell.local_index())
-                    .unwrap()
-                    .len(),
-                0
-            );
-        }
-        for cell in mesh.entity_iter(ReferenceCellType::Triangle) {
-            assert_eq!(
-                space
-                    .entity_dofs(ReferenceCellType::Triangle, cell.local_index())
-                    .unwrap()
-                    .len(),
-                1
-            );
-            assert_eq!(
-                space
-                    .entity_closure_dofs(ReferenceCellType::Triangle, cell.local_index())
-                    .unwrap()
-                    .len(),
-                1
-            );
+        for (etype, ndofs, ncdofs) in [
+            (ReferenceCellType::Point, 0, 0),
+            (ReferenceCellType::Interval, 0, 0),
+            (ReferenceCellType::Triangle, 1, 1),
+        ] {
+            for entity in mesh.entity_iter(etype) {
+                assert_eq!(
+                    space
+                        .entity_dofs(etype, entity.local_index())
+                        .unwrap()
+                        .len(),
+                    ndofs
+                );
+                assert_eq!(
+                    space
+                        .entity_closure_dofs(etype, entity.local_index())
+                        .unwrap()
+                        .len(),
+                    ncdofs
+                );
+            }
         }
     }
 
@@ -272,53 +246,27 @@ mod test {
             mesh.entity_count(ReferenceCellType::Point)
         );
 
-        for cell in mesh.entity_iter(ReferenceCellType::Point) {
-            assert_eq!(
-                space
-                    .entity_dofs(ReferenceCellType::Point, cell.local_index())
-                    .unwrap()
-                    .len(),
-                1
-            );
-            assert_eq!(
-                space
-                    .entity_closure_dofs(ReferenceCellType::Point, cell.local_index())
-                    .unwrap()
-                    .len(),
-                1
-            );
-        }
-        for cell in mesh.entity_iter(ReferenceCellType::Interval) {
-            assert_eq!(
-                space
-                    .entity_dofs(ReferenceCellType::Interval, cell.local_index())
-                    .unwrap()
-                    .len(),
-                0
-            );
-            assert_eq!(
-                space
-                    .entity_closure_dofs(ReferenceCellType::Interval, cell.local_index())
-                    .unwrap()
-                    .len(),
-                2
-            );
-        }
-        for cell in mesh.entity_iter(ReferenceCellType::Triangle) {
-            assert_eq!(
-                space
-                    .entity_dofs(ReferenceCellType::Triangle, cell.local_index())
-                    .unwrap()
-                    .len(),
-                0
-            );
-            assert_eq!(
-                space
-                    .entity_closure_dofs(ReferenceCellType::Triangle, cell.local_index())
-                    .unwrap()
-                    .len(),
-                3
-            );
+        for (etype, ndofs, ncdofs) in [
+            (ReferenceCellType::Point, 1, 1),
+            (ReferenceCellType::Interval, 0, 2),
+            (ReferenceCellType::Triangle, 0, 3),
+        ] {
+            for entity in mesh.entity_iter(etype) {
+                assert_eq!(
+                    space
+                        .entity_dofs(etype, entity.local_index())
+                        .unwrap()
+                        .len(),
+                    ndofs
+                );
+                assert_eq!(
+                    space
+                        .entity_closure_dofs(etype, entity.local_index())
+                        .unwrap()
+                        .len(),
+                    ncdofs
+                );
+            }
         }
     }
 
@@ -338,53 +286,27 @@ mod test {
             3 * mesh.entity_count(ReferenceCellType::Triangle)
         );
 
-        for cell in mesh.entity_iter(ReferenceCellType::Point) {
-            assert_eq!(
-                space
-                    .entity_dofs(ReferenceCellType::Point, cell.local_index())
-                    .unwrap()
-                    .len(),
-                0
-            );
-            assert_eq!(
-                space
-                    .entity_closure_dofs(ReferenceCellType::Point, cell.local_index())
-                    .unwrap()
-                    .len(),
-                0
-            );
-        }
-        for cell in mesh.entity_iter(ReferenceCellType::Interval) {
-            assert_eq!(
-                space
-                    .entity_dofs(ReferenceCellType::Interval, cell.local_index())
-                    .unwrap()
-                    .len(),
-                0
-            );
-            assert_eq!(
-                space
-                    .entity_closure_dofs(ReferenceCellType::Interval, cell.local_index())
-                    .unwrap()
-                    .len(),
-                0
-            );
-        }
-        for cell in mesh.entity_iter(ReferenceCellType::Triangle) {
-            assert_eq!(
-                space
-                    .entity_dofs(ReferenceCellType::Triangle, cell.local_index())
-                    .unwrap()
-                    .len(),
-                3
-            );
-            assert_eq!(
-                space
-                    .entity_closure_dofs(ReferenceCellType::Triangle, cell.local_index())
-                    .unwrap()
-                    .len(),
-                3
-            );
+        for (etype, ndofs, ncdofs) in [
+            (ReferenceCellType::Point, 0, 0),
+            (ReferenceCellType::Interval, 0, 0),
+            (ReferenceCellType::Triangle, 3, 3),
+        ] {
+            for entity in mesh.entity_iter(etype) {
+                assert_eq!(
+                    space
+                        .entity_dofs(etype, entity.local_index())
+                        .unwrap()
+                        .len(),
+                    ndofs
+                );
+                assert_eq!(
+                    space
+                        .entity_closure_dofs(etype, entity.local_index())
+                        .unwrap()
+                        .len(),
+                    ncdofs
+                );
+            }
         }
     }
 
@@ -402,53 +324,27 @@ mod test {
                 + mesh.entity_count(ReferenceCellType::Interval)
         );
 
-        for cell in mesh.entity_iter(ReferenceCellType::Point) {
-            assert_eq!(
-                space
-                    .entity_dofs(ReferenceCellType::Point, cell.local_index())
-                    .unwrap()
-                    .len(),
-                1
-            );
-            assert_eq!(
-                space
-                    .entity_closure_dofs(ReferenceCellType::Point, cell.local_index())
-                    .unwrap()
-                    .len(),
-                1
-            );
-        }
-        for cell in mesh.entity_iter(ReferenceCellType::Interval) {
-            assert_eq!(
-                space
-                    .entity_dofs(ReferenceCellType::Interval, cell.local_index())
-                    .unwrap()
-                    .len(),
-                1
-            );
-            assert_eq!(
-                space
-                    .entity_closure_dofs(ReferenceCellType::Interval, cell.local_index())
-                    .unwrap()
-                    .len(),
-                3
-            );
-        }
-        for cell in mesh.entity_iter(ReferenceCellType::Triangle) {
-            assert_eq!(
-                space
-                    .entity_dofs(ReferenceCellType::Triangle, cell.local_index())
-                    .unwrap()
-                    .len(),
-                0
-            );
-            assert_eq!(
-                space
-                    .entity_closure_dofs(ReferenceCellType::Triangle, cell.local_index())
-                    .unwrap()
-                    .len(),
-                6
-            );
+        for (etype, ndofs, ncdofs) in [
+            (ReferenceCellType::Point, 1, 1),
+            (ReferenceCellType::Interval, 1, 3),
+            (ReferenceCellType::Triangle, 0, 6),
+        ] {
+            for entity in mesh.entity_iter(etype) {
+                assert_eq!(
+                    space
+                        .entity_dofs(etype, entity.local_index())
+                        .unwrap()
+                        .len(),
+                    ndofs
+                );
+                assert_eq!(
+                    space
+                        .entity_closure_dofs(etype, entity.local_index())
+                        .unwrap()
+                        .len(),
+                    ncdofs
+                );
+            }
         }
     }
 
@@ -467,53 +363,27 @@ mod test {
                 + mesh.entity_count(ReferenceCellType::Triangle)
         );
 
-        for cell in mesh.entity_iter(ReferenceCellType::Point) {
-            assert_eq!(
-                space
-                    .entity_dofs(ReferenceCellType::Point, cell.local_index())
-                    .unwrap()
-                    .len(),
-                1
-            );
-            assert_eq!(
-                space
-                    .entity_closure_dofs(ReferenceCellType::Point, cell.local_index())
-                    .unwrap()
-                    .len(),
-                1
-            );
-        }
-        for cell in mesh.entity_iter(ReferenceCellType::Interval) {
-            assert_eq!(
-                space
-                    .entity_dofs(ReferenceCellType::Interval, cell.local_index())
-                    .unwrap()
-                    .len(),
-                2
-            );
-            assert_eq!(
-                space
-                    .entity_closure_dofs(ReferenceCellType::Interval, cell.local_index())
-                    .unwrap()
-                    .len(),
-                4
-            );
-        }
-        for cell in mesh.entity_iter(ReferenceCellType::Triangle) {
-            assert_eq!(
-                space
-                    .entity_dofs(ReferenceCellType::Triangle, cell.local_index())
-                    .unwrap()
-                    .len(),
-                1
-            );
-            assert_eq!(
-                space
-                    .entity_closure_dofs(ReferenceCellType::Triangle, cell.local_index())
-                    .unwrap()
-                    .len(),
-                10
-            );
+        for (etype, ndofs, ncdofs) in [
+            (ReferenceCellType::Point, 1, 1),
+            (ReferenceCellType::Interval, 2, 4),
+            (ReferenceCellType::Triangle, 1, 10),
+        ] {
+            for entity in mesh.entity_iter(etype) {
+                assert_eq!(
+                    space
+                        .entity_dofs(etype, entity.local_index())
+                        .unwrap()
+                        .len(),
+                    ndofs
+                );
+                assert_eq!(
+                    space
+                        .entity_closure_dofs(etype, entity.local_index())
+                        .unwrap()
+                        .len(),
+                    ncdofs
+                );
+            }
         }
     }
 
@@ -530,53 +400,27 @@ mod test {
             mesh.entity_count(ReferenceCellType::Point)
         );
 
-        for cell in mesh.entity_iter(ReferenceCellType::Point) {
-            assert_eq!(
-                space
-                    .entity_dofs(ReferenceCellType::Point, cell.local_index())
-                    .unwrap()
-                    .len(),
-                1
-            );
-            assert_eq!(
-                space
-                    .entity_closure_dofs(ReferenceCellType::Point, cell.local_index())
-                    .unwrap()
-                    .len(),
-                1
-            );
-        }
-        for cell in mesh.entity_iter(ReferenceCellType::Interval) {
-            assert_eq!(
-                space
-                    .entity_dofs(ReferenceCellType::Interval, cell.local_index())
-                    .unwrap()
-                    .len(),
-                0
-            );
-            assert_eq!(
-                space
-                    .entity_closure_dofs(ReferenceCellType::Interval, cell.local_index())
-                    .unwrap()
-                    .len(),
-                2
-            );
-        }
-        for cell in mesh.entity_iter(ReferenceCellType::Quadrilateral) {
-            assert_eq!(
-                space
-                    .entity_dofs(ReferenceCellType::Quadrilateral, cell.local_index())
-                    .unwrap()
-                    .len(),
-                0
-            );
-            assert_eq!(
-                space
-                    .entity_closure_dofs(ReferenceCellType::Quadrilateral, cell.local_index())
-                    .unwrap()
-                    .len(),
-                4
-            );
+        for (etype, ndofs, ncdofs) in [
+            (ReferenceCellType::Point, 1, 1),
+            (ReferenceCellType::Interval, 0, 2),
+            (ReferenceCellType::Quadrilateral, 0, 4),
+        ] {
+            for entity in mesh.entity_iter(etype) {
+                assert_eq!(
+                    space
+                        .entity_dofs(etype, entity.local_index())
+                        .unwrap()
+                        .len(),
+                    ndofs
+                );
+                assert_eq!(
+                    space
+                        .entity_closure_dofs(etype, entity.local_index())
+                        .unwrap()
+                        .len(),
+                    ncdofs
+                );
+            }
         }
     }
 
@@ -595,53 +439,188 @@ mod test {
                 + mesh.entity_count(ReferenceCellType::Quadrilateral)
         );
 
-        for cell in mesh.entity_iter(ReferenceCellType::Point) {
-            assert_eq!(
-                space
-                    .entity_dofs(ReferenceCellType::Point, cell.local_index())
-                    .unwrap()
-                    .len(),
-                1
-            );
-            assert_eq!(
-                space
-                    .entity_closure_dofs(ReferenceCellType::Point, cell.local_index())
-                    .unwrap()
-                    .len(),
-                1
-            );
+        for (etype, ndofs, ncdofs) in [
+            (ReferenceCellType::Point, 1, 1),
+            (ReferenceCellType::Interval, 1, 3),
+            (ReferenceCellType::Quadrilateral, 1, 9),
+        ] {
+            for entity in mesh.entity_iter(etype) {
+                assert_eq!(
+                    space
+                        .entity_dofs(etype, entity.local_index())
+                        .unwrap()
+                        .len(),
+                    ndofs
+                );
+                assert_eq!(
+                    space
+                        .entity_closure_dofs(etype, entity.local_index())
+                        .unwrap()
+                        .len(),
+                    ncdofs
+                );
+            }
         }
-        for cell in mesh.entity_iter(ReferenceCellType::Interval) {
-            assert_eq!(
-                space
-                    .entity_dofs(ReferenceCellType::Interval, cell.local_index())
-                    .unwrap()
-                    .len(),
-                1
-            );
-            assert_eq!(
-                space
-                    .entity_closure_dofs(ReferenceCellType::Interval, cell.local_index())
-                    .unwrap()
-                    .len(),
-                3
-            );
+    }
+
+    #[test]
+    fn test_dp0_mixed() {
+        let mesh = mixed_sphere::<f64>(0, 1);
+        let family = LagrangeElementFamily::<f64>::new(
+            0,
+            Continuity::Discontinuous,
+            LagrangeVariant::Equispaced,
+        );
+
+        let space = FunctionSpaceImpl::new(&mesh, &family);
+
+        assert_eq!(
+            space.process_size(),
+            mesh.entity_count(ReferenceCellType::Triangle)
+                + mesh.entity_count(ReferenceCellType::Quadrilateral)
+        );
+
+        for (etype, ndofs, ncdofs) in [
+            (ReferenceCellType::Point, 0, 0),
+            (ReferenceCellType::Interval, 0, 0),
+            (ReferenceCellType::Triangle, 1, 1),
+            (ReferenceCellType::Quadrilateral, 1, 1),
+        ] {
+            for entity in mesh.entity_iter(etype) {
+                assert_eq!(
+                    space
+                        .entity_dofs(etype, entity.local_index())
+                        .unwrap()
+                        .len(),
+                    ndofs
+                );
+                assert_eq!(
+                    space
+                        .entity_closure_dofs(etype, entity.local_index())
+                        .unwrap()
+                        .len(),
+                    ncdofs
+                );
+            }
         }
-        for cell in mesh.entity_iter(ReferenceCellType::Quadrilateral) {
-            assert_eq!(
-                space
-                    .entity_dofs(ReferenceCellType::Quadrilateral, cell.local_index())
-                    .unwrap()
-                    .len(),
-                1
-            );
-            assert_eq!(
-                space
-                    .entity_closure_dofs(ReferenceCellType::Quadrilateral, cell.local_index())
-                    .unwrap()
-                    .len(),
-                9
-            );
+    }
+
+    #[test]
+    fn test_p1_mixed() {
+        let mesh = mixed_sphere::<f64>(0, 1);
+        let family =
+            LagrangeElementFamily::<f64>::new(1, Continuity::Standard, LagrangeVariant::Equispaced);
+
+        let space = FunctionSpaceImpl::new(&mesh, &family);
+
+        assert_eq!(
+            space.process_size(),
+            mesh.entity_count(ReferenceCellType::Point)
+        );
+
+        for (etype, ndofs, ncdofs) in [
+            (ReferenceCellType::Point, 1, 1),
+            (ReferenceCellType::Interval, 0, 2),
+            (ReferenceCellType::Triangle, 0, 3),
+            (ReferenceCellType::Quadrilateral, 0, 4),
+        ] {
+            for entity in mesh.entity_iter(etype) {
+                assert_eq!(
+                    space
+                        .entity_dofs(etype, entity.local_index())
+                        .unwrap()
+                        .len(),
+                    ndofs
+                );
+                assert_eq!(
+                    space
+                        .entity_closure_dofs(etype, entity.local_index())
+                        .unwrap()
+                        .len(),
+                    ncdofs
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn test_p2_mixed() {
+        let mesh = mixed_sphere::<f64>(0, 1);
+        let family =
+            LagrangeElementFamily::<f64>::new(2, Continuity::Standard, LagrangeVariant::Equispaced);
+
+        let space = FunctionSpaceImpl::new(&mesh, &family);
+
+        assert_eq!(
+            space.process_size(),
+            mesh.entity_count(ReferenceCellType::Point)
+                + mesh.entity_count(ReferenceCellType::Interval)
+                + mesh.entity_count(ReferenceCellType::Quadrilateral)
+        );
+
+        for (etype, ndofs, ncdofs) in [
+            (ReferenceCellType::Point, 1, 1),
+            (ReferenceCellType::Interval, 1, 3),
+            (ReferenceCellType::Triangle, 0, 6),
+            (ReferenceCellType::Quadrilateral, 1, 9),
+        ] {
+            for entity in mesh.entity_iter(etype) {
+                assert_eq!(
+                    space
+                        .entity_dofs(etype, entity.local_index())
+                        .unwrap()
+                        .len(),
+                    ndofs
+                );
+                assert_eq!(
+                    space
+                        .entity_closure_dofs(etype, entity.local_index())
+                        .unwrap()
+                        .len(),
+                    ncdofs
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn test_p3_mixed() {
+        let mesh = mixed_sphere::<f64>(0, 1);
+        let family =
+            LagrangeElementFamily::<f64>::new(3, Continuity::Standard, LagrangeVariant::Equispaced);
+
+        let space = FunctionSpaceImpl::new(&mesh, &family);
+
+        assert_eq!(
+            space.process_size(),
+            mesh.entity_count(ReferenceCellType::Point)
+                + 2 * mesh.entity_count(ReferenceCellType::Interval)
+                + mesh.entity_count(ReferenceCellType::Triangle)
+                + 4 * mesh.entity_count(ReferenceCellType::Quadrilateral)
+        );
+
+        for (etype, ndofs, ncdofs) in [
+            (ReferenceCellType::Point, 1, 1),
+            (ReferenceCellType::Interval, 2, 4),
+            (ReferenceCellType::Triangle, 1, 10),
+            (ReferenceCellType::Quadrilateral, 4, 16),
+        ] {
+            for entity in mesh.entity_iter(etype) {
+                assert_eq!(
+                    space
+                        .entity_dofs(etype, entity.local_index())
+                        .unwrap()
+                        .len(),
+                    ndofs
+                );
+                assert_eq!(
+                    space
+                        .entity_closure_dofs(etype, entity.local_index())
+                        .unwrap()
+                        .len(),
+                    ncdofs
+                );
+            }
         }
     }
 }
