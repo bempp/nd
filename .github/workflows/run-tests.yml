@@ -30,15 +30,15 @@ jobs:
 
       - name: Make virtual environment for ndelement
         run: |
-          cd ndelement
+          cd ndelement-python
           uv venv .venv
       - name: Install ndelement Python package
         run: |
-          cd ndelement
+          cd ndelement-python
           source .venv/bin/activate
           maturin develop --features "openblas-system"
       - name: Run ndelement Python tests
         run: |
-          cd ndelement
+          cd ndelement-python
           source .venv/bin/activate
           python -m pytest python/test

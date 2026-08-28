@@ -26,9 +26,6 @@
 //! ## References
 //! - [https://defelement.org/ciarlet.html](https://defelement.org/ciarlet.html)
 
-extern crate blas_src;
-extern crate lapack_src;
-
 use crate::math;
 use crate::polynomials::{legendre_shape, polynomial_count, tabulate_legendre_polynomials};
 use crate::reference_cell;

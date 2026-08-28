@@ -1,3 +1,6 @@
+extern crate blas_src;
+extern crate lapack_src;
+
 use ndelement::ciarlet::{LagrangeElementFamily, LagrangeVariant};
 use ndelement::traits::{ElementFamily, FiniteElement};
 use ndelement::types::{Continuity, ReferenceCellType};

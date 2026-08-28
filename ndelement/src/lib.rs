@@ -6,6 +6,12 @@
 //! The following presents a simple example of how to use `ndelement`.
 //!
 //! ```
+//! # #[cfg(any(target_os = "macos", target_os = "linux"))]
+//! # extern crate blas_src;
+//! # #[cfg(any(target_os = "macos", target_os = "linux"))]
+//! # extern crate lapack_src;
+//! # #[cfg(target_os = "linux")]
+//! # extern crate openblas_src;
 //! use ndelement::ciarlet::{LagrangeElementFamily, LagrangeVariant};
 //! use ndelement::traits::{ElementFamily, FiniteElement};
 //! use ndelement::types::{Continuity, ReferenceCellType};
@@ -36,10 +42,16 @@
 //!     basis_values.data()
 //! );
 //! ```
+//! # #[cfg(any(target_os = "macos", target_os = "linux"))]
+//! # extern crate blas_src;
+//! # #[cfg(any(target_os = "macos", target_os = "linux"))]
+//! # extern crate lapack_src;
+//! # #[cfg(target_os = "linux")]
+//! # extern crate openblas_src;
 #![cfg_attr(feature = "strict", deny(warnings), deny(unused_crate_dependencies))]
 #![warn(missing_docs)]
 
-pub mod bindings;
+// pub mod bindings;
 pub mod ciarlet;
 pub mod map;
 pub mod math;
@@ -51,5 +63,11 @@ pub mod reorderings;
 pub mod traits;
 pub mod types;
 
-#[cfg(feature = "openblas-system")]
-use openblas_src as _;
+#[cfg(test)]
+mod test {
+    extern crate blas_src;
+    extern crate lapack_src;
+
+    #[cfg(target_os = "linux")]
+    extern crate openblas_src;
+}

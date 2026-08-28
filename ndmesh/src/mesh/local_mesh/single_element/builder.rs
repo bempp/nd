@@ -23,6 +23,12 @@ use std::collections::{HashMap, HashSet};
 /// of a single triangle.
 ///
 /// ```
+/// # #[cfg(any(target_os = "macos", target_os = "linux"))]
+/// # extern crate blas_src;
+/// # #[cfg(any(target_os = "macos", target_os = "linux"))]
+/// # extern crate lapack_src;
+/// # #[cfg(target_os = "linux")]
+/// # extern crate openblas_src;
 /// use ndmesh::traits::Builder;
 /// use ndmesh::SingleElementMeshBuilder;
 /// use ndelement::types::ReferenceCellType;
@@ -40,6 +46,12 @@ use std::collections::{HashMap, HashSet};
 ///
 /// let mesh = builder.create_mesh();
 /// ```
+/// # #[cfg(any(target_os = "macos", target_os = "linux"))]
+/// # extern crate blas_src;
+/// # #[cfg(any(target_os = "macos", target_os = "linux"))]
+/// # extern crate lapack_src;
+/// # #[cfg(target_os = "linux")]
+/// # extern crate openblas_src;
 #[derive(Debug)]
 pub struct SingleElementMeshBuilder<T: Scalar> {
     gdim: usize,

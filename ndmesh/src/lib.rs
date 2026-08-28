@@ -28,6 +28,12 @@
 //!
 //! In order to create our mesh using ndmesh, we first create a mesh builder.
 //! ```
+//! # #[cfg(any(target_os = "macos", target_os = "linux"))]
+//! # extern crate blas_src;
+//! # #[cfg(any(target_os = "macos", target_os = "linux"))]
+//! # extern crate lapack_src;
+//! # #[cfg(target_os = "linux")]
+//! # extern crate openblas_src;
 //! use ndmesh::traits::Builder;
 //! use ndelement::types::ReferenceCellType;
 //! let mut builder = ndmesh::SingleElementMeshBuilder::<f64>::new_with_capacity(
@@ -37,6 +43,12 @@
 //!     (ReferenceCellType::Triangle, 2),
 //! );
 //! ```
+//! # #[cfg(any(target_os = "macos", target_os = "linux"))]
+//! # extern crate blas_src;
+//! # #[cfg(any(target_os = "macos", target_os = "linux"))]
+//! # extern crate lapack_src;
+//! # #[cfg(target_os = "linux")]
+//! # extern crate openblas_src;
 //!
 //! The [SingleElementMeshBuilder] is for meshes that only use a single element type. The parameters passed when
 //! initialising the build are:
@@ -53,6 +65,12 @@
 //! Now that we have created a mesh builder, we can add the points and cells:
 //!
 //! ```
+//! # #[cfg(any(target_os = "macos", target_os = "linux"))]
+//! # extern crate blas_src;
+//! # #[cfg(any(target_os = "macos", target_os = "linux"))]
+//! # extern crate lapack_src;
+//! # #[cfg(target_os = "linux")]
+//! # extern crate openblas_src;
 //! # use ndmesh::traits::Builder;
 //! # use ndelement::types::ReferenceCellType;
 //! # let mut builder = ndmesh::SingleElementMeshBuilder::<f64>::new_with_capacity(
@@ -74,8 +92,20 @@
 //! builder.add_cell(1, &[0, 1, 2, 4, 5, 6]);
 //! builder.add_cell(2, &[1, 3, 2, 7, 4, 8]);
 //! ```
+//! # #[cfg(any(target_os = "macos", target_os = "linux"))]
+//! # extern crate blas_src;
+//! # #[cfg(any(target_os = "macos", target_os = "linux"))]
+//! # extern crate lapack_src;
+//! # #[cfg(target_os = "linux")]
+//! # extern crate openblas_src;
 //! Finally, we generate the mesh.
 //! ```
+//! # #[cfg(any(target_os = "macos", target_os = "linux"))]
+//! # extern crate blas_src;
+//! # #[cfg(any(target_os = "macos", target_os = "linux"))]
+//! # extern crate lapack_src;
+//! # #[cfg(target_os = "linux")]
+//! # extern crate openblas_src;
 //! # use ndmesh::traits::Builder;
 //! # use ndelement::types::ReferenceCellType;
 //! # let mut builder = ndmesh::SingleElementMeshBuilder::<f64>::new_with_capacity(
@@ -98,6 +128,12 @@
 //! # builder.add_cell(2, &[1, 3, 2, 7, 4, 8]);
 //! let mesh = builder.create_mesh();
 //! ```
+//! # #[cfg(any(target_os = "macos", target_os = "linux"))]
+//! # extern crate blas_src;
+//! # #[cfg(any(target_os = "macos", target_os = "linux"))]
+//! # extern crate lapack_src;
+//! # #[cfg(target_os = "linux")]
+//! # extern crate openblas_src;
 //!
 //! ## Querying the mesh
 //!
@@ -119,6 +155,12 @@
 //!
 //! The following code extracts the vertices of each cell and prints their corresponding physical coordinates.
 //! ```
+//! # #[cfg(any(target_os = "macos", target_os = "linux"))]
+//! # extern crate blas_src;
+//! # #[cfg(any(target_os = "macos", target_os = "linux"))]
+//! # extern crate lapack_src;
+//! # #[cfg(target_os = "linux")]
+//! # extern crate openblas_src;
 //! # use ndmesh::traits::Builder;
 //! use ndmesh::traits::{Mesh, Entity, Topology, Geometry, Point};
 //! # use ndelement::types::ReferenceCellType;
@@ -162,6 +204,12 @@
 //!     }
 //! }
 //! ```
+//! # #[cfg(any(target_os = "macos", target_os = "linux"))]
+//! # extern crate blas_src;
+//! # #[cfg(any(target_os = "macos", target_os = "linux"))]
+//! # extern crate lapack_src;
+//! # #[cfg(target_os = "linux")]
+//! # extern crate openblas_src;
 //!
 //! This snippets starts by using [Mesh::entity_iter](crate::traits::Mesh::entity_iter) to iterate through each
 //! cell (ie each entity that is a triangle).
@@ -199,3 +247,12 @@ use coupe as _;
 #[cfg(not(feature = "mpi"))]
 #[cfg(feature = "scotch")]
 use scotch as _;
+
+#[cfg(test)]
+mod test {
+    extern crate blas_src;
+    extern crate lapack_src;
+
+    #[cfg(target_os = "linux")]
+    extern crate openblas_src;
+}

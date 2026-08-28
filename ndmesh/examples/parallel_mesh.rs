@@ -1,3 +1,6 @@
+extern crate blas_src;
+extern crate lapack_src;
+
 use itertools::izip;
 use mpi::{
     collective::SystemOperation, environment::Universe, topology::Communicator,

@@ -32,7 +32,7 @@ documentation = "https://bempp.github.io/nd/python/ndelement"
 [tool.maturin]
 python-source = "python"
 module-name = "ndelement._ndelementrs"
-cargo-extra-args = '--features "serde,ci"'
+cargo-extra-args = '--features "serde"'
 no-default-features = true
 
 [tool.ruff]

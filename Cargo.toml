@@ -1,6 +1,12 @@
 [workspace]
 members = [
     "ndelement",
+    "ndelement-python",
+    "ndmesh",
+    "ndfunctionspace",
+]
+default-members = [
+    "ndelement",
     "ndmesh",
     "ndfunctionspace",
 ]

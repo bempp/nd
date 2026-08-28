@@ -44,14 +44,14 @@ jobs:
 
       - name: Build wheel
         run: |
-          cd ndelement
+          cd ndelement-python
           ${{ matrix.platform.python }} -m maturin build --release --out dist -i ${{ matrix.platform.python }} --target ${{ matrix.platform.target }}
 
       - name: Upload wheels
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.platform.wheel }}
-          path: ndelement/dist
+          path: ndelement-python/dist
 
   macos:
     name: Build MacOS wheel for ndelement
@@ -73,12 +73,12 @@ jobs:
           target: ${{ matrix.platform.target }}
           args: --release --out dist --find-interpreter
           sccache: 'true'
-          working-directory: ndelement
+          working-directory: ndelement-python
       - name: Upload wheels
         uses: actions/upload-artifact@v4
         with:
           name: wheels-macos-${{ matrix.platform.target }}
-          path: ndelement/dist
+          path: ndelement-python/dist
 
   sdist:
     name: Make sdist
@@ -91,12 +91,12 @@ jobs:
           rust-toolchain: nightly
           command: sdist
           args: --out dist
-          working-directory: ndelement
+          working-directory: ndelement-python
       - name: Upload sdist
         uses: actions/upload-artifact@v4
         with:
           name: wheels-sdist
-          path: ndelement/dist
+          path: ndelement-python/dist
 
   release:
     permissions:

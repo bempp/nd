@@ -1,3 +1,6 @@
+extern crate blas_src;
+extern crate lapack_src;
+
 use mpi::{environment::Universe, traits::Communicator};
 use ndelement::{
     ciarlet::{LagrangeElementFamily, LagrangeVariant},

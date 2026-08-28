@@ -1,5 +1,8 @@
 //! Finite element definitions
 
+extern crate blas_src;
+extern crate lapack_src;
+
 use ndelement::ciarlet::{lagrange, nedelec, raviart_thomas};
 use ndelement::types::{Continuity, ReferenceCellType};
 use paste::paste;

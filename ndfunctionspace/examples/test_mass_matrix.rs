@@ -1,5 +1,8 @@
 //! Test values in mass matrices against values computing using Bempp--cl and FEniCS
 
+extern crate blas_src;
+extern crate lapack_src;
+
 use approx::assert_relative_eq;
 use ndelement::{
     ciarlet::{LagrangeElementFamily, LagrangeVariant, RaviartThomasElementFamily},

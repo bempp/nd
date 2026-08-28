@@ -9,8 +9,8 @@ jobs:
     strategy:
       matrix:
         feature-flags:
-          - '--no-default-features --features "strict,openblas-system"'
-          - '--features "strict,openblas-system"'
+          - '--no-default-features --features "strict"'
+          - '--features "strict"'
           - '--all-features'
     steps:
       - name: Set up Rust
@@ -50,11 +50,11 @@ jobs:
           python3 -m pip install ruff mypy
         name: Install Ruff and mypy
       - run: |
-          cd ndelement
+          cd ndelement-python
           python3 -m ruff check python
           python3 -m ruff format --check python
         name: Run ruff checks
       - run: |
-          cd ndelement
+          cd ndelement-python
           python3 -m mypy python
         name: Run mypy checks

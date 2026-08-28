@@ -25,7 +25,7 @@ pip3 install ndelement
 
 The Python functionality of the library can be tested by running:
 ```bash
-python -m pytest ndelement/python/test
+python -m pytest ndelement-python/python/test
 ```
 
 ## Documentation

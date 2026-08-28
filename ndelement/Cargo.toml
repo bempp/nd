@@ -3,7 +3,7 @@ mpi = ["dep:mpi"]
 serde = ["dep:serde"]
 strict = []
 default = []
-openblas-system = ["dep:openblas-src"]
+
 
 [package]
 name = "ndelement"
@@ -20,7 +20,7 @@ categories = ["mathematics", "science"]
 
 [lib]
 name = "ndelement"
-crate-type = ["lib", "cdylib"]
+crate-type = ["lib"]
 
 [dependencies]
 bempp-quadrature = { version = "0.1.0" }
@@ -31,24 +31,20 @@ rlst = "0.6"
 serde = { version = "1.0.228", features = ["derive"], optional = true }
 strum = "0.27"
 strum_macros = "0.27"
-c-api-tools = { git = "https://codeberg.org/nd-project/c-api-tools" }
 quadraturerules = "0.9.1"
-
-[target.'cfg(target_os = "macos")'.dependencies]
-blas-src = { version = "0.14", features = ["accelerate"]}
-lapack-src = { version = "0.13", features = ["accelerate"]}
-
-[target.'cfg(target_os = "linux")'.dependencies]
-lapack-src = { version = "0.13", features = ["openblas"]}
-blas-src = { version = "0.14", features = ["openblas"]}
-openblas-src = { version = "0.10", features = ["system"], optional = true }
 
 [dev-dependencies]
 paste = "1.*"
 approx = "0.5"
 
-[build-dependencies]
-cbindgen = "0.29.*"
+[target.'cfg(target_os = "macos")'.dev-dependencies]
+blas-src = { version = "0.14", features = ["accelerate"]}
+lapack-src = { version = "0.13", features = ["accelerate"]}
+
+[target.'cfg(target_os = "linux")'.dev-dependencies]
+openblas-src = { version = "0.10", features = ["system"]}
+lapack-src = { version = "0.13", features = ["openblas"]}
+blas-src = { version = "0.14", features = ["openblas"] }
 
 [package.metadata.docs.rs]
 cargo-args = ["-Zunstable-options", "-Zrustdoc-scrape-examples"]

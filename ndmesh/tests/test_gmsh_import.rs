@@ -1,3 +1,10 @@
+#[cfg(any(target_os = "macos", target_os = "linux"))]
+extern crate blas_src;
+#[cfg(any(target_os = "macos", target_os = "linux"))]
+extern crate lapack_src;
+#[cfg(target_os = "linux")]
+extern crate openblas_src;
+
 use ndelement::types::ReferenceCellType;
 use ndmesh::{
     SingleElementMeshBuilder,

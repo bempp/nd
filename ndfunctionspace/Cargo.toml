@@ -1,7 +1,7 @@
 [features]
 strict = []
 mpi = ["dep:mpi", "ndelement/mpi", "ndmesh/mpi"]
-openblas-system = ["ndelement/openblas-system", "ndmesh/openblas-system"]
+
 
 [package]
 name = "ndfunctionspace"
@@ -34,6 +34,15 @@ num = "0.4"
 quadraturerules = "0.9.1"
 approx = "0.5"
 rlst = "0.6"
+
+[target.'cfg(target_os = "macos")'.dev-dependencies]
+blas-src = { version = "0.14", features = ["accelerate"]}
+lapack-src = { version = "0.13", features = ["accelerate"]}
+
+[target.'cfg(target_os = "linux")'.dev-dependencies]
+openblas-src = { version = "0.10", features = ["system"]}
+lapack-src = { version = "0.13", features = ["openblas"]}
+blas-src = { version = "0.14", features = ["openblas"] }
 
 [package.metadata.docs.rs]
 cargo-args = ["-Zunstable-options", "-Zrustdoc-scrape-examples"]

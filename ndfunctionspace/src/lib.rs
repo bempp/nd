@@ -12,6 +12,12 @@ pub use function_space::ParallelFunctionSpaceImpl;
 
 #[cfg(test)]
 mod test {
+    extern crate blas_src;
+    extern crate lapack_src;
+
+    #[cfg(target_os = "linux")]
+    extern crate openblas_src;
+
     use approx as _;
     use quadraturerules as _;
     use rlst as _;

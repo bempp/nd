@@ -1,3 +1,6 @@
+extern crate blas_src;
+extern crate lapack_src;
+
 use ndelement::types::ReferenceCellType;
 use ndmesh::mesh::local_mesh::MixedMeshBuilder;
 use ndmesh::traits::{Builder, Entity, Geometry, GmshExport, Mesh, Point, Topology};

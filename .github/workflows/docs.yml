@@ -42,7 +42,7 @@ jobs:
       - name: Build Python docs
         run: |
           source .venv/bin/activate
-          cd ndelement/python/docs
+          cd ndelement-python/python/docs
           uv pip install -r requirements.txt
           make html
 
@@ -51,7 +51,7 @@ jobs:
           mkdir doc
           mkdir doc/python
           mv target/doc doc/rust
-          mv ndelement/python/docs/_build/html doc/python/ndelement
+          mv ndelement-python/python/docs/_build/html doc/python/ndelement
       - name: Make index page
         run: |
           echo "<html><head><title>nd docs</title></head><body>" > doc/index.html

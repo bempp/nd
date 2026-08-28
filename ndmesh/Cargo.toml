@@ -5,7 +5,7 @@ default = ["serde"]
 coupe = ["dep:coupe"]
 scotch = ["dep:scotch"]
 mpi = ["dep:mpi", "rlst/mpi", "ndelement/mpi"]
-openblas-system = ["ndelement/openblas-system"]
+
 
 [package]
 name = "ndmesh"
@@ -46,6 +46,15 @@ paste = "1.*"
 rand = "0.9"
 rand_chacha = "0.9"
 quadraturerules = "0.9.1"
+
+[target.'cfg(target_os = "macos")'.dev-dependencies]
+blas-src = { version = "0.14", features = ["accelerate"]}
+lapack-src = { version = "0.13", features = ["accelerate"]}
+
+[target.'cfg(target_os = "linux")'.dev-dependencies]
+openblas-src = { version = "0.10", features = ["system"]}
+lapack-src = { version = "0.13", features = ["openblas"]}
+blas-src = { version = "0.14", features = ["openblas"] }
 
 [package.metadata.docs.rs]
 cargo-args = ["-Zunstable-options", "-Zrustdoc-scrape-examples"]

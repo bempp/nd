@@ -11,8 +11,8 @@ jobs:
         rust-version: ["stable"]
         mpi: ["openmpi"]
         feature-flags:
-          - '--no-default-features --features "strict,openblas-system"'
-          - '--features "strict,openblas-system"'
+          - '--no-default-features --features "strict"'
+          - '--features "strict"'
           - '--all-features'
     steps:
       - name: Set up Rust
@@ -61,7 +61,7 @@ jobs:
         run: sudo apt-get install -y libopenblas-dev liblapack-dev libscotch-dev
 
       - name: Run tests
-        run: RUST_MIN_STACK=8388608 cargo test --examples --release --features "strict,openblas-system"
+        run: RUST_MIN_STACK=8388608 cargo test --examples --release --features "strict"
 
   run-examples-rust:
     name: 🦀 examples (${{ matrix.crate }})
@@ -95,4 +95,4 @@ jobs:
           export OMPI_ALLOW_RUN_AS_ROOT=1
           export OMPI_ALLOW_RUN_AS_ROOT_CONFIRM=1
           cd ${{ matrix.crate }}
-          cargo templated-examples NPROCESSES 4 --features "openblas-system,mpi,serde,coupe,scotch"
+          cargo templated-examples NPROCESSES 4 --features "mpi,serde,coupe,scotch"

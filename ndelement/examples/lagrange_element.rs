@@ -1,3 +1,6 @@
+extern crate blas_src;
+extern crate lapack_src;
+
 use itertools::{self, izip};
 use ndelement::ciarlet::lagrange;
 use ndelement::reference_cell::faces;

@@ -3,7 +3,7 @@
 #![allow(clippy::missing_safety_doc)]
 
 pub mod reference_cell {
-    use crate::{orientation, reference_cell, types::ReferenceCellType};
+    use ndelement::{orientation, reference_cell, types::ReferenceCellType};
     use rlst::RlstScalar;
     use std::slice::from_raw_parts;
 
@@ -150,7 +150,7 @@ pub mod reference_cell {
 }
 
 pub mod quadrature {
-    use crate::{quadrature, types::ReferenceCellType};
+    use ndelement::{quadrature, types::ReferenceCellType};
 
     #[unsafe(no_mangle)]
     pub unsafe extern "C" fn gauss_jacobi_quadrature_npoints(
@@ -181,7 +181,7 @@ pub mod quadrature {
 }
 
 pub mod polynomials {
-    use crate::{polynomials, reference_cell, types::ReferenceCellType};
+    use ndelement::{polynomials, reference_cell, types::ReferenceCellType};
     use rlst::{RlstScalar, SliceArray, SliceArrayMut};
     use std::slice::{from_raw_parts, from_raw_parts_mut};
 
@@ -249,7 +249,8 @@ pub mod polynomials {
 }
 
 pub mod ciarlet {
-    use crate::{
+    use c_api_tools::{DType, DTypeIdentifier, cfuncs, concretise_types};
+    use ndelement::{
         ciarlet,
         ciarlet::{CiarletElement, LagrangeVariant},
         map::{ContravariantPiolaMap, CovariantPiolaMap, IdentityMap},
@@ -257,7 +258,6 @@ pub mod ciarlet {
         traits::{ElementFamily, FiniteElement, Map, MappedFiniteElement},
         types::{Continuity, ReferenceCellType},
     };
-    use c_api_tools::{DType, DTypeIdentifier, cfuncs, concretise_types};
     use rlst::dense::linalg::lapack::interface::{getrf::Getrf, getri::Getri};
     use rlst::{RlstScalar, SliceArray, SliceArrayMut, c32, c64};
     use std::ffi::c_void;
