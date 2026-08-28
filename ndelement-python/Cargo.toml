@@ -2,7 +2,6 @@
 mpi = ["ndelement/mpi"]
 serde = ["ndelement/serde"]
 strict = ["ndelement/strict"]
-openblas-system = []
 default = []
 
 [package]

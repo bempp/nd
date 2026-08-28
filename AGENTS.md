@@ -76,7 +76,7 @@ python3 -m mypy python
 python -m pytest python/test
 ```
 
-CI creates a virtual environment with `uv venv .venv`, runs `maturin develop --features "openblas-system"`, then runs `python -m pytest python/test`.
+CI creates a virtual environment with `uv venv .venv`, runs `maturin develop`, then runs `python -m pytest python/test`.
 
 ## Change discipline
 
