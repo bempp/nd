@@ -2,7 +2,7 @@
 
 use crate::traits::{Builder, Entity, Geometry, GmshExport, GmshImport, Mesh, Point};
 use itertools::izip;
-use ndelement::types::ReferenceCellType;
+use ndelement::{traits::MappedFiniteElement, types::ReferenceCellType};
 use num::Zero;
 use num::traits::FromBytes;
 use std::collections::HashMap;
@@ -225,7 +225,10 @@ impl<G: Mesh<EntityDescriptor = ReferenceCellType>> GmshExport for G {
         let mut cells_by_element = vec![];
         for t in self.cell_types() {
             for (index, cell) in self.entity_iter(*t).enumerate() {
-                let element = (cell.entity_type(), cell.geometry().degree());
+                let element = (
+                    cell.entity_type(),
+                    cell.geometry().element().lagrange_superdegree(),
+                );
                 if !elements.contains(&element) {
                     elements.push(element);
                     cells_by_element.push(vec![]);

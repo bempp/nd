@@ -36,8 +36,11 @@ impl<'a, T: Scalar, E: MappedFiniteElement> MixedEntityGeometry<'a, T, E> {
     }
 }
 
-impl<T: Scalar, E: MappedFiniteElement> Geometry for MixedEntityGeometry<'_, T, E> {
+impl<T: Scalar, E: MappedFiniteElement<T = T, TGeo = T>> Geometry
+    for MixedEntityGeometry<'_, T, E>
+{
     type T = T;
+    type E = E;
     type Point<'a>
         = Point<'a, T>
     where
@@ -69,9 +72,7 @@ impl<T: Scalar, E: MappedFiniteElement> Geometry for MixedEntityGeometry<'_, T, 
     fn point_count(&self) -> usize {
         self.geometry.cells(self.element_index).shape()[0]
     }
-    fn degree(&self) -> usize {
-        self.geometry
-            .element(self.element_index)
-            .lagrange_superdegree()
+    fn element(&self) -> &E {
+        self.geometry.element(self.element_index)
     }
 }

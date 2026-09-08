@@ -2,6 +2,7 @@
 use itertools::Itertools;
 
 use crate::types::Scalar;
+use ndelement::traits::MappedFiniteElement;
 
 /// A point
 pub trait Point {
@@ -25,6 +26,9 @@ pub trait Geometry {
     /// Scalar type
     type T: Scalar;
 
+    /// Finite element type
+    type E: MappedFiniteElement<T = Self::T, TGeo = Self::T>;
+
     /// Point Type
     type Point<'a>: Point<T = Self::T>
     where
@@ -36,6 +40,9 @@ pub trait Geometry {
         Self: 'a;
 
     /// Points
+    ///
+    /// These are the points that define the geometry of the cell, and are equal to the
+    /// result of mapping the interpolation points of the element to the physical cell
     fn points(&self) -> Self::PointIter<'_>;
 
     /// Indices of the points
@@ -46,6 +53,6 @@ pub trait Geometry {
     /// Point count
     fn point_count(&self) -> usize;
 
-    /// Embedded superdegree
-    fn degree(&self) -> usize;
+    /// Finite element that defines the geometry
+    fn element(&self) -> &Self::E;
 }

@@ -30,7 +30,9 @@ use crate::math;
 use crate::polynomials::{legendre_shape, polynomial_count, tabulate_legendre_polynomials};
 use crate::reference_cell;
 use crate::traits::{FiniteElement, Map, MappedFiniteElement};
-use crate::types::{Continuity, DofTransformation, ReferenceCellType, Transformation};
+use crate::types::{
+    Continuity, DofTransformation, EntityPoints, EntityWeights, ReferenceCellType, Transformation,
+};
 use itertools::izip;
 use rlst::RlstScalar;
 use rlst::{Array, DynArray, Inverse, MutableArrayImpl, ValueArrayImpl, rlst_dynamic_array};
@@ -43,9 +45,6 @@ pub mod raviart_thomas;
 pub use lagrange::{LagrangeElementFamily, LagrangeVariant};
 pub use nedelec::NedelecFirstKindElementFamily;
 pub use raviart_thomas::RaviartThomasElementFamily;
-
-type EntityPoints<T> = [Vec<DynArray<T, 2>>; 4];
-type EntityWeights<T> = [Vec<DynArray<T, 3>>; 4];
 
 /// Compute the number of derivatives for a cell
 fn compute_derivative_count(nderivs: usize, cell_type: ReferenceCellType) -> usize {
@@ -603,21 +602,12 @@ where
     pub fn continuity(&self) -> Continuity {
         self.continuity
     }
-    /// The interpolation points
-    pub fn interpolation_points(&self) -> &EntityPoints<TGeo> {
-        &self.interpolation_points
-    }
-    /// The interpolation weights
-    pub fn interpolation_weights(&self) -> &EntityWeights<T> {
-        &self.interpolation_weights
-    }
 }
 
-impl<T: RlstScalar, M: Map, TGeoInternal: RlstScalar> FiniteElement
-    for CiarletElement<T, M, TGeoInternal>
-{
+impl<T: RlstScalar, M: Map, TGeo: RlstScalar> FiniteElement for CiarletElement<T, M, TGeo> {
     type CellType = ReferenceCellType;
     type T = T;
+    type TGeo = TGeo;
 
     fn value_shape(&self) -> &[usize] {
         &self.value_shape
@@ -635,11 +625,7 @@ impl<T: RlstScalar, M: Map, TGeoInternal: RlstScalar> FiniteElement
         self.dim
     }
 
-    fn tabulate<
-        TGeo: RlstScalar,
-        Array2Impl: ValueArrayImpl<TGeo, 2>,
-        Array4MutImpl: MutableArrayImpl<T, 4>,
-    >(
+    fn tabulate<Array2Impl: ValueArrayImpl<TGeo, 2>, Array4MutImpl: MutableArrayImpl<T, 4>>(
         &self,
         points: &Array<Array2Impl, 2>,
         nderivs: usize,
@@ -702,9 +688,7 @@ impl<T: RlstScalar, M: Map, TGeoInternal: RlstScalar> FiniteElement
     }
 }
 
-impl<T: RlstScalar, M: Map, TGeoInternal: RlstScalar> MappedFiniteElement
-    for CiarletElement<T, M, TGeoInternal>
-{
+impl<T: RlstScalar, M: Map, TGeo: RlstScalar> MappedFiniteElement for CiarletElement<T, M, TGeo> {
     type TransformationType = Transformation;
 
     fn lagrange_superdegree(&self) -> usize {
@@ -712,7 +696,6 @@ impl<T: RlstScalar, M: Map, TGeoInternal: RlstScalar> MappedFiniteElement
     }
 
     fn push_forward<
-        TGeo: RlstScalar,
         Array3GeoImpl: ValueArrayImpl<TGeo, 3>,
         Array4Impl: ValueArrayImpl<T, 4>,
         Array4MutImpl: MutableArrayImpl<T, 4>,
@@ -736,7 +719,6 @@ impl<T: RlstScalar, M: Map, TGeoInternal: RlstScalar> MappedFiniteElement
     }
 
     fn pull_back<
-        TGeo: RlstScalar,
         Array3GeoImpl: ValueArrayImpl<TGeo, 3>,
         Array4Impl: ValueArrayImpl<T, 4>,
         Array4MutImpl: MutableArrayImpl<T, 4>,
@@ -914,6 +896,13 @@ impl<T: RlstScalar, M: Map, TGeoInternal: RlstScalar> MappedFiniteElement
                 n += 1;
             }
         }
+    }
+
+    fn interpolation_points(&self) -> &EntityPoints<TGeo> {
+        &self.interpolation_points
+    }
+    fn interpolation_weights(&self) -> &EntityWeights<T> {
+        &self.interpolation_weights
     }
 }
 

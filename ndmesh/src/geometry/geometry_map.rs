@@ -161,7 +161,7 @@ impl<'a, T: Scalar, B2D: ValueArrayImpl<T, 2>, C2D: ValueArrayImpl<usize, 2>>
 {
     /// Create new
     pub fn new<A2D: ValueArrayImpl<T, 2>>(
-        element: &impl MappedFiniteElement<CellType = ReferenceCellType, T = T>,
+        element: &impl MappedFiniteElement<CellType = ReferenceCellType, T = T, TGeo = T>,
         points: &Array<A2D, 2>,
         geometry_points: &'a Array<B2D, 2>,
         entities: &'a Array<C2D, 2>,

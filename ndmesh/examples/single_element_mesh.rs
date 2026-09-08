@@ -49,7 +49,7 @@ fn main() {
     for cell in mesh.entity_iter(ReferenceCellType::Quadrilateral) {
         println!(
             "Degree: {}. Point count: {}",
-            cell.geometry().degree(),
+            cell.geometry().element().degree(),
             cell.geometry().point_count()
         );
         println!(

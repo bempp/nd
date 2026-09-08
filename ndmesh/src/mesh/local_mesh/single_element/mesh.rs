@@ -38,7 +38,7 @@ use rlst::{
 pub struct SingleElementMeshEntity<
     'a,
     T: Scalar,
-    E: MappedFiniteElement<CellType = ReferenceCellType, T = T>,
+    E: MappedFiniteElement<CellType = ReferenceCellType, T = T, TGeo = T>,
 > {
     mesh: &'a SingleElementMesh<T, E>,
     cell_index: usize,
@@ -46,7 +46,7 @@ pub struct SingleElementMeshEntity<
     entity_index: usize,
 }
 
-impl<'e, T: Scalar, E: MappedFiniteElement<CellType = ReferenceCellType, T = T>>
+impl<'e, T: Scalar, E: MappedFiniteElement<CellType = ReferenceCellType, T = T, TGeo = T>>
     SingleElementMeshEntity<'e, T, E>
 {
     /// Create new
@@ -64,7 +64,7 @@ impl<'e, T: Scalar, E: MappedFiniteElement<CellType = ReferenceCellType, T = T>>
         }
     }
 }
-impl<T: Scalar, E: MappedFiniteElement<CellType = ReferenceCellType, T = T>> Entity
+impl<T: Scalar, E: MappedFiniteElement<CellType = ReferenceCellType, T = T, TGeo = T>> Entity
     for SingleElementMeshEntity<'_, T, E>
 {
     type T = T;
@@ -114,14 +114,14 @@ impl<T: Scalar, E: MappedFiniteElement<CellType = ReferenceCellType, T = T>> Ent
 pub struct SingleElementMeshEntityIter<
     'a,
     T: Scalar,
-    E: MappedFiniteElement<CellType = ReferenceCellType, T = T>,
+    E: MappedFiniteElement<CellType = ReferenceCellType, T = T, TGeo = T>,
 > {
     mesh: &'a SingleElementMesh<T, E>,
     entity_type: ReferenceCellType,
     index: usize,
 }
 
-impl<'a, T: Scalar, E: MappedFiniteElement<CellType = ReferenceCellType, T = T>>
+impl<'a, T: Scalar, E: MappedFiniteElement<CellType = ReferenceCellType, T = T, TGeo = T>>
     SingleElementMeshEntityIter<'a, T, E>
 {
     /// Create new
@@ -133,7 +133,7 @@ impl<'a, T: Scalar, E: MappedFiniteElement<CellType = ReferenceCellType, T = T>>
         }
     }
 }
-impl<'a, T: Scalar, E: MappedFiniteElement<CellType = ReferenceCellType, T = T>> Iterator
+impl<'a, T: Scalar, E: MappedFiniteElement<CellType = ReferenceCellType, T = T, TGeo = T>> Iterator
     for SingleElementMeshEntityIter<'a, T, E>
 {
     type Item = SingleElementMeshEntity<'a, T, E>;
@@ -146,8 +146,10 @@ impl<'a, T: Scalar, E: MappedFiniteElement<CellType = ReferenceCellType, T = T>>
 
 /// Serial single element mesh
 #[derive(Debug)]
-pub struct SingleElementMesh<T: Scalar, E: MappedFiniteElement<CellType = ReferenceCellType, T = T>>
-{
+pub struct SingleElementMesh<
+    T: Scalar,
+    E: MappedFiniteElement<CellType = ReferenceCellType, T = T, TGeo = T>,
+> {
     topology: SingleTypeTopology,
     geometry: SingleElementGeometry<T, E>,
 }
@@ -182,7 +184,7 @@ impl<T: Scalar + serde::Serialize> ConvertToSerializable
     }
 }
 
-impl<T: Scalar, E: MappedFiniteElement<CellType = ReferenceCellType, T = T>>
+impl<T: Scalar, E: MappedFiniteElement<CellType = ReferenceCellType, T = T, TGeo = T>>
     SingleElementMesh<T, E>
 {
     /// Create new
@@ -241,7 +243,7 @@ impl<T: Scalar> SingleElementMesh<T, CiarletElement<T, IdentityMap, T>> {
     }
 }
 
-impl<T: Scalar, E: MappedFiniteElement<CellType = ReferenceCellType, T = T>> Mesh
+impl<T: Scalar, E: MappedFiniteElement<CellType = ReferenceCellType, T = T, TGeo = T>> Mesh
     for SingleElementMesh<T, E>
 {
     type T = T;
@@ -335,7 +337,7 @@ impl<T: Scalar, E: MappedFiniteElement<CellType = ReferenceCellType, T = T>> Mes
 }
 
 #[cfg(feature = "mpi")]
-impl<T: Scalar + Equivalence, E: MappedFiniteElement<CellType = ReferenceCellType, T = T>>
+impl<T: Scalar + Equivalence, E: MappedFiniteElement<CellType = ReferenceCellType, T = T, TGeo = T>>
     DistributableMesh for SingleElementMesh<T, E>
 {
     type ParallelMesh<'a, C: Communicator + 'a> =

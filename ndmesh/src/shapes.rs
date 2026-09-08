@@ -17,7 +17,7 @@ pub use cube::{
 use itertools::izip;
 use ndelement::{
     ciarlet::{LagrangeElementFamily, LagrangeVariant},
-    traits::{ElementFamily, FiniteElement},
+    traits::{ElementFamily, FiniteElement, MappedFiniteElement},
     types::Continuity,
 };
 use ndelement::{reference_cell, types::ReferenceCellType};

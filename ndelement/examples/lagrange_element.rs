@@ -5,7 +5,7 @@ use itertools::{self, izip};
 use ndelement::ciarlet::lagrange;
 use ndelement::reference_cell::faces;
 use ndelement::{
-    traits::FiniteElement,
+    traits::{FiniteElement, MappedFiniteElement},
     types::{Continuity, ReferenceCellType},
 };
 

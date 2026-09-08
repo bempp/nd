@@ -1,5 +1,6 @@
 //! Traits.
 use crate::types::DofTransformation;
+use crate::types::{EntityPoints, EntityWeights};
 use rlst::{Array, MutableArrayImpl, RlstScalar, ValueArrayImpl};
 use std::fmt::Debug;
 use std::hash::Hash;
@@ -8,6 +9,8 @@ use std::hash::Hash;
 pub trait FiniteElement {
     /// The scalar type
     type T: RlstScalar;
+    /// The scalar type use for geometry
+    type TGeo: RlstScalar;
 
     /// Cell type
     ///
@@ -54,8 +57,7 @@ pub trait FiniteElement {
     ///
     /// For the quadrilaterals and hexahedra, the parameter $n$ denotes the Lagrange superdegree.
     fn tabulate<
-        TGeo: RlstScalar,
-        Array2Impl: ValueArrayImpl<TGeo, 2>,
+        Array2Impl: ValueArrayImpl<Self::TGeo, 2>,
         Array4MutImpl: MutableArrayImpl<Self::T, 4>,
     >(
         &self,
@@ -115,8 +117,7 @@ pub trait MappedFiniteElement: FiniteElement {
     /// - `physical_values`: The output array of the push operation. This shape of this array is the same as the `reference_values`
     ///   but with reference value size replaced by the physical value size
     fn push_forward<
-        TGeo: RlstScalar,
-        Array3GeoImpl: ValueArrayImpl<TGeo, 3>,
+        Array3GeoImpl: ValueArrayImpl<Self::TGeo, 3>,
         Array4Impl: ValueArrayImpl<Self::T, 4>,
         Array4MutImpl: MutableArrayImpl<Self::T, 4>,
     >(
@@ -124,7 +125,7 @@ pub trait MappedFiniteElement: FiniteElement {
         reference_values: &Array<Array4Impl, 4>,
         nderivs: usize,
         jacobians: &Array<Array3GeoImpl, 3>,
-        jacobian_determinants: &[TGeo],
+        jacobian_determinants: &[Self::TGeo],
         inverse_jacobians: &Array<Array3GeoImpl, 3>,
         physical_values: &mut Array<Array4MutImpl, 4>,
     );
@@ -133,8 +134,7 @@ pub trait MappedFiniteElement: FiniteElement {
     ///
     /// This is the inverse operation to [MappedFiniteElement::push_forward].
     fn pull_back<
-        TGeo: RlstScalar,
-        Array3GeoImpl: ValueArrayImpl<TGeo, 3>,
+        Array3GeoImpl: ValueArrayImpl<Self::TGeo, 3>,
         Array4Impl: ValueArrayImpl<Self::T, 4>,
         Array4MutImpl: MutableArrayImpl<Self::T, 4>,
     >(
@@ -142,7 +142,7 @@ pub trait MappedFiniteElement: FiniteElement {
         physical_values: &Array<Array4Impl, 4>,
         nderivs: usize,
         jacobians: &Array<Array3GeoImpl, 3>,
-        jacobian_determinants: &[TGeo],
+        jacobian_determinants: &[Self::TGeo],
         inverse_jacobians: &Array<Array3GeoImpl, 3>,
         reference_values: &mut Array<Array4MutImpl, 4>,
     );
@@ -181,6 +181,12 @@ pub trait MappedFiniteElement: FiniteElement {
         self.apply_dof_permutations(data, cell_orientation);
         self.apply_dof_transformations(data, cell_orientation);
     }
+
+    /// The interpolation points
+    fn interpolation_points(&self) -> &EntityPoints<Self::TGeo>;
+
+    /// The interpolation weights
+    fn interpolation_weights(&self) -> &EntityWeights<Self::T>;
 }
 
 /// A family of finite elements defined on various cell types, with appropriate continuity

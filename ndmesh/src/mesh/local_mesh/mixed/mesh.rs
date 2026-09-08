@@ -40,7 +40,7 @@ use std::collections::HashMap;
 pub struct MixedMeshEntity<
     'a,
     T: Scalar,
-    E: MappedFiniteElement<CellType = ReferenceCellType, T = T>,
+    E: MappedFiniteElement<CellType = ReferenceCellType, T = T, TGeo = T>,
 > {
     mesh: &'a MixedMesh<T, E>,
     cell_type: ReferenceCellType,
@@ -51,7 +51,7 @@ pub struct MixedMeshEntity<
     geometry_cell_index: usize,
 }
 
-impl<'e, T: Scalar, E: MappedFiniteElement<CellType = ReferenceCellType, T = T>>
+impl<'e, T: Scalar, E: MappedFiniteElement<CellType = ReferenceCellType, T = T, TGeo = T>>
     MixedMeshEntity<'e, T, E>
 {
     /// Create new
@@ -75,7 +75,7 @@ impl<'e, T: Scalar, E: MappedFiniteElement<CellType = ReferenceCellType, T = T>>
         }
     }
 }
-impl<T: Scalar, E: MappedFiniteElement<CellType = ReferenceCellType, T = T>> Entity
+impl<T: Scalar, E: MappedFiniteElement<CellType = ReferenceCellType, T = T, TGeo = T>> Entity
     for MixedMeshEntity<'_, T, E>
 {
     type T = T;
@@ -129,14 +129,14 @@ impl<T: Scalar, E: MappedFiniteElement<CellType = ReferenceCellType, T = T>> Ent
 pub struct MixedMeshEntityIter<
     'a,
     T: Scalar,
-    E: MappedFiniteElement<CellType = ReferenceCellType, T = T>,
+    E: MappedFiniteElement<CellType = ReferenceCellType, T = T, TGeo = T>,
 > {
     mesh: &'a MixedMesh<T, E>,
     entity_type: ReferenceCellType,
     index: usize,
 }
 
-impl<'a, T: Scalar, E: MappedFiniteElement<CellType = ReferenceCellType, T = T>>
+impl<'a, T: Scalar, E: MappedFiniteElement<CellType = ReferenceCellType, T = T, TGeo = T>>
     MixedMeshEntityIter<'a, T, E>
 {
     /// Create new
@@ -148,7 +148,7 @@ impl<'a, T: Scalar, E: MappedFiniteElement<CellType = ReferenceCellType, T = T>>
         }
     }
 }
-impl<'a, T: Scalar, E: MappedFiniteElement<CellType = ReferenceCellType, T = T>> Iterator
+impl<'a, T: Scalar, E: MappedFiniteElement<CellType = ReferenceCellType, T = T, TGeo = T>> Iterator
     for MixedMeshEntityIter<'a, T, E>
 {
     type Item = MixedMeshEntity<'a, T, E>;
@@ -161,7 +161,10 @@ impl<'a, T: Scalar, E: MappedFiniteElement<CellType = ReferenceCellType, T = T>>
 
 /// Serial mixed element mesh
 #[derive(Debug)]
-pub struct MixedMesh<T: Scalar, E: MappedFiniteElement<CellType = ReferenceCellType, T = T>> {
+pub struct MixedMesh<
+    T: Scalar,
+    E: MappedFiniteElement<CellType = ReferenceCellType, T = T, TGeo = T>,
+> {
     topology: MixedTopology,
     geometry: MixedGeometry<T, E>,
 }
@@ -196,7 +199,9 @@ impl<T: Scalar + serde::Serialize> ConvertToSerializable
     }
 }
 
-impl<T: Scalar, E: MappedFiniteElement<CellType = ReferenceCellType, T = T>> MixedMesh<T, E> {
+impl<T: Scalar, E: MappedFiniteElement<CellType = ReferenceCellType, T = T, TGeo = T>>
+    MixedMesh<T, E>
+{
     /// Create new
     pub fn new(topology: MixedTopology, geometry: MixedGeometry<T, E>) -> Self {
         Self { topology, geometry }
@@ -258,7 +263,7 @@ impl<T: Scalar> MixedMesh<T, CiarletElement<T, IdentityMap, T>> {
     }
 }
 
-impl<T: Scalar, E: MappedFiniteElement<CellType = ReferenceCellType, T = T>> Mesh
+impl<T: Scalar, E: MappedFiniteElement<CellType = ReferenceCellType, T = T, TGeo = T>> Mesh
     for MixedMesh<T, E>
 {
     type T = T;
@@ -360,7 +365,7 @@ impl<T: Scalar, E: MappedFiniteElement<CellType = ReferenceCellType, T = T>> Mes
 }
 
 #[cfg(feature = "mpi")]
-impl<T: Scalar + Equivalence, E: MappedFiniteElement<CellType = ReferenceCellType, T = T>>
+impl<T: Scalar + Equivalence, E: MappedFiniteElement<CellType = ReferenceCellType, T = T, TGeo = T>>
     DistributableMesh for MixedMesh<T, E>
 {
     type ParallelMesh<'a, C: Communicator + 'a> =

@@ -4,6 +4,11 @@ use mpi::traits::Equivalence;
 use rlst::{DynArray, RlstScalar};
 use strum_macros::EnumIter;
 
+/// Interpolation points on an entity
+pub type EntityPoints<T> = [Vec<DynArray<T, 2>>; 4];
+/// Interpolation weights
+pub type EntityWeights<T> = [Vec<DynArray<T, 3>>; 4];
+
 /// Continuity type
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Debug, PartialEq, Eq, Clone, Copy, Hash)]

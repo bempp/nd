@@ -33,8 +33,11 @@ impl<'a, T: Scalar, E: MappedFiniteElement> SingleElementEntityGeometry<'a, T, E
     }
 }
 
-impl<T: Scalar, E: MappedFiniteElement> Geometry for SingleElementEntityGeometry<'_, T, E> {
+impl<T: Scalar, E: MappedFiniteElement<T = T, TGeo = T>> Geometry
+    for SingleElementEntityGeometry<'_, T, E>
+{
     type T = T;
+    type E = E;
     type Point<'a>
         = Point<'a, T>
     where
@@ -67,7 +70,7 @@ impl<T: Scalar, E: MappedFiniteElement> Geometry for SingleElementEntityGeometry
         self.geometry.cells().shape()[0]
     }
 
-    fn degree(&self) -> usize {
-        self.geometry.element().lagrange_superdegree()
+    fn element(&self) -> &E {
+        self.geometry.element()
     }
 }
