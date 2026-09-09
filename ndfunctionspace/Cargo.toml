@@ -20,7 +20,7 @@ categories = ["mathematics", "science"]
 
 [lib]
 name = "ndfunctionspace"
-crate-type = ["lib", "cdylib"]
+crate-type = ["lib"]
 
 [dependencies]
 ndelement = { path = "../ndelement" }

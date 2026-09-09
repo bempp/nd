@@ -1,10 +1,10 @@
-name: ✨
+name: Style checks
 
 on: [pull_request]
 
 jobs:
-  style-checks-rust:
-    name: 🦀 style (${{ matrix.feature-flags }})
+  rust:
+    name: Rust style checks (${{ matrix.feature-flags }})
     runs-on: docker
     strategy:
       matrix:
@@ -33,12 +33,12 @@ jobs:
       - name: Rust style checks
         run: |
           cargo fmt -- --check
-          cargo clippy ${{ matrix.feature-flags }} -- -D warnings
-          cargo clippy --tests ${{ matrix.feature-flags }} -- -D warnings
-          cargo clippy --examples ${{ matrix.feature-flags }} -- -D warnings
+          cargo clippy --workspace ${{ matrix.feature-flags }} -- -D warnings
+          cargo clippy --workspace --tests ${{ matrix.feature-flags }} -- -D warnings
+          cargo clippy --workspace --examples ${{ matrix.feature-flags }} -- -D warnings
 
-  style-checks-python:
-    name: 🐍 style
+  python:
+    name: Python style checks
     runs-on: docker
     steps:
       - name: Set up Python

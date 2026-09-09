@@ -1,10 +1,10 @@
-name: 🧪
+name: Testing
 
 on: [pull_request]
 
 jobs:
-  run-unit-tests-rust:
-    name: 🦀 unit tests (${{ matrix.feature-flags }})
+  rust-unit-tests:
+    name: Rust unit tests (${{ matrix.feature-flags }})
     runs-on: docker
     strategy:
       matrix:
@@ -34,8 +34,8 @@ jobs:
       - name: Run unit tests
         run: RUST_MIN_STACK=8388608 cargo test ${{ matrix.feature-flags }}
 
-  run-tests-rust:
-    name: 🦀 tests
+  rust:
+    name: Rust tests and examples
     runs-on: docker
     strategy:
       matrix:
@@ -63,25 +63,27 @@ jobs:
       - name: Run tests
         run: RUST_MIN_STACK=8388608 cargo test --examples --release --features "strict"
 
-  run-examples-rust:
-    name: 🦀 examples (${{ matrix.crate }})
+      - name: Run examples
+        run: |
+          export OMPI_ALLOW_RUN_AS_ROOT=1
+          export OMPI_ALLOW_RUN_AS_ROOT_CONFIRM=1
+          cargo templated-examples NPROCESSES 4
+
+  python:
+    name: Python tests (${{ matrix.python-version}})
     runs-on: docker
     strategy:
       matrix:
-        rust-version: ["stable"]
-        mpi: ["openmpi"]
-        crate: ["ndelement", "ndmesh", "ndfunctionspace"]
+        python-version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
     steps:
       - name: Set up Rust
         uses: https://github.com/dtolnay/rust-toolchain@v1
         with:
-          toolchain: ${{ matrix.rust-version }}
-      - name: Set up MPI
-        uses: https://github.com/mpi4py/setup-mpi@v1
+          toolchain: nightly
+      - name: Set up Python
+        uses: https://github.com/actions/setup-python@v5
         with:
-          mpi: ${{ matrix.mpi }}
-      - name: Install cargo-mpirun and cargo-templated-examples
-        run: cargo install cargo-mpirun cargo-templated-examples
+          python-version: ${{ matrix.python-version }}
       - uses: actions/checkout@v6
       - name: apt-get update
         run: sudo apt-get update
@@ -89,10 +91,27 @@ jobs:
         run: sudo apt-get install -y libclang-dev cmake
       - name: Install LAPACK, OpenBLAS, SCOTCH
         run: sudo apt-get install -y libopenblas-dev liblapack-dev libscotch-dev
+      - name: Install uv
+        run: pip install uv "maturin>=1.7"
 
-      - name: Run examples
+      - name: Make virtual environment for ndelement
         run: |
-          export OMPI_ALLOW_RUN_AS_ROOT=1
-          export OMPI_ALLOW_RUN_AS_ROOT_CONFIRM=1
-          cd ${{ matrix.crate }}
-          cargo templated-examples NPROCESSES 4 --features "mpi,serde,coupe,scotch"
+          cd ndelement-python
+          uv venv .venv --python ${{ matrix.python-version }}
+
+      - name: Run Rust tests for ndelement-python
+        run: |
+          cd ndelement-python
+          source .venv/bin/activate
+          cargo test --features "strict"
+
+      - name: Install ndelement Python package
+        run: |
+          cd ndelement-python
+          source .venv/bin/activate
+          maturin develop
+      - name: Run ndelement Python tests
+        run: |
+          cd ndelement-python
+          source .venv/bin/activate
+          python -m pytest python/test

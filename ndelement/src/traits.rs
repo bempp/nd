@@ -105,7 +105,7 @@ pub trait MappedFiniteElement: FiniteElement {
     /// Push function values forward to a physical cell.
     ///
     /// For Lagrange elements, this is an identity map. For many other element types, the function values
-    /// on the reference cell differ from those on the physical cell: for example Nedlec elements use a covariant
+    /// on the reference cell differ from those on the physical cell: for example Nedelec elements use a covariant
     /// Piola transform. This method implements the appropriate transformation for the element.
     ///
     /// - `reference_values`: The values on the reference cell. The shape of this input is the same as the `data` input to the function

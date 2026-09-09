@@ -10,12 +10,6 @@ cells = [
     ReferenceCellType.Tetrahedron,
     ReferenceCellType.Hexahedron,
 ]
-dtypes = [
-    np.float32,
-    np.float64,
-    np.complex64,
-    np.complex128,
-]
 
 
 @pytest.mark.parametrize("cell", cells)
@@ -27,12 +21,11 @@ def test_value_size(cell, degree):
     assert element.value_size == 1
 
 
-@pytest.mark.parametrize("dtype", dtypes)
-def test_lagrange_2_triangle_tabulate(dtype):
-    family = create_family(Family.Lagrange, 2, dtype=dtype)
+def test_lagrange_2_triangle_tabulate():
+    family = create_family(Family.Lagrange, 2)
     element = family.element(ReferenceCellType.Triangle)
 
-    points = np.array([[0.0, 0.0], [0.2, 0.1], [0.8, 0.05]], dtype=dtype(0).real.dtype)
+    points = np.array([[0.0, 0.0], [0.2, 0.1], [0.8, 0.05]])
 
     data = element.tabulate(points, 1)
 
@@ -78,7 +71,7 @@ def test_lagrange_2_triangle_tabulate(dtype):
         for j, p in enumerate(points):
             data2[0, i, j, 2] = function(*p)
 
-    assert np.allclose(data, data2, atol=np.finfo(dtype).eps * 10)
+    assert np.allclose(data, data2)
 
 
 @pytest.mark.parametrize("continuity", [Continuity.Standard, Continuity.Discontinuous])
@@ -89,7 +82,7 @@ def test_lagrange_1_triangle(continuity):
     assert element.value_size == 1
     assert element.value_shape == ()
     assert element.degree == 1
-    assert element.embedded_superdegree == 1
+    assert element.lagrange_superdegree == 1
     assert element.dim == 3
     assert element.continuity == continuity
     assert element.cell_type == ReferenceCellType.Triangle
@@ -166,7 +159,7 @@ def test_raviart_thomas_1_triangle(continuity):
     assert element.value_size == 2
     assert element.value_shape == (2,)
     assert element.degree == 1
-    assert element.embedded_superdegree == 1
+    assert element.lagrange_superdegree == 1
     assert element.dim == 3
     assert element.continuity == continuity
     assert element.cell_type == ReferenceCellType.Triangle
@@ -211,7 +204,7 @@ def test_nedelec_1_triangle(continuity):
     assert element.value_size == 2
     assert element.value_shape == (2,)
     assert element.degree == 1
-    assert element.embedded_superdegree == 1
+    assert element.lagrange_superdegree == 1
     assert element.dim == 3
     assert element.continuity == continuity
     assert element.cell_type == ReferenceCellType.Triangle

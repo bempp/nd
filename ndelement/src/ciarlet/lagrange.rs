@@ -19,7 +19,7 @@ pub enum LagrangeVariant {
     /// Element defined using equispaced points
     Equispaced,
     /// Element defined using Gauss-Lobatto-Legendre (GLL) points
-    GLL,
+    Gll,
 }
 
 /// Create a Lagrange element.
@@ -81,7 +81,7 @@ pub fn create<T: RlstScalar + Getrf + Getri, TGeo: RlstScalar>(
             LagrangeVariant::Equispaced => (1..degree)
                 .map(|i| num::cast::<_, TGeo>(i).unwrap() / num::cast::<_, TGeo>(degree).unwrap())
                 .collect::<Vec<_>>(),
-            LagrangeVariant::GLL => {
+            LagrangeVariant::Gll => {
                 let (points, _weights) = single_integral_quadrature(
                     QuadratureRule::GaussLobattoLegendre,
                     Domain::Interval,
@@ -1004,7 +1004,7 @@ mod test {
             ReferenceCellType::Interval,
             4,
             Continuity::Discontinuous,
-            LagrangeVariant::GLL,
+            LagrangeVariant::Gll,
         );
 
         let mut data = DynArray::<f64, 4>::from_shape(e.tabulate_array_shape(0, 2));
@@ -1059,7 +1059,7 @@ mod test {
             ReferenceCellType::Quadrilateral,
             4,
             Continuity::Discontinuous,
-            LagrangeVariant::GLL,
+            LagrangeVariant::Gll,
         );
 
         let mut data = DynArray::<f64, 4>::from_shape(e.tabulate_array_shape(0, 4));

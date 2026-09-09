@@ -24,7 +24,7 @@ _*.msh
 
 .vscode/
 
-ndelement/python/ndelement/_ndelementrs
+ndelement-python/python/ndelement/_ndelementrs*.so
 *.pyc
 python/docs/_build
 

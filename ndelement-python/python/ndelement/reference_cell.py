@@ -5,8 +5,7 @@ from enum import Enum
 import numpy as np
 import numpy.typing as npt
 
-from ndelement._ndelementrs import ffi as _ffi
-from ndelement._ndelementrs import lib as _lib
+from ndelement import _ndelementrs
 
 
 class ReferenceCellType(Enum):
@@ -21,124 +20,64 @@ class ReferenceCellType(Enum):
     Prism = 6
     Pyramid = 7
 
+    @property
+    def _rs(self) -> _ndelementrs.types.ReferenceCellType:
+        return getattr(_ndelementrs.types.ReferenceCellType, self.name)
+
 
 def dim(cell: ReferenceCellType) -> int:
     """Get the topological dimension of a reference cell."""
-    return _lib.dim(cell.value)
+    return _ndelementrs.reference_cell.dim(cell._rs)
 
 
 def is_simplex(cell: ReferenceCellType) -> bool:
     """Check if a reference cell is a simplex."""
-    return _lib.is_simplex(cell.value)
+    return _ndelementrs.reference_cell.is_simplex(cell._rs)
 
 
-def vertices(cell: ReferenceCellType, dtype: type[np.floating] = np.float64) -> npt.NDArray:
+def vertices(cell: ReferenceCellType) -> npt.NDArray[np.float64]:
     """Get the vertices of a reference cell."""
-    vertices = np.empty((entity_counts(cell)[0], dim(cell)), dtype=dtype)
-    if dtype == np.float64:
-        _lib.vertices_f64(cell.value, _ffi.cast("double*", vertices.ctypes.data))
-    elif dtype == np.float32:
-        _lib.vertices_f32(cell.value, _ffi.cast("float*", vertices.ctypes.data))
-    else:
-        raise TypeError(f"Unsupported dtype: {dtype}")
-    return vertices
+    return np.array(_ndelementrs.reference_cell.vertices(cell._rs))
 
 
-def midpoint(cell: ReferenceCellType, dtype: type[np.floating] = np.float64) -> npt.NDArray:
+def midpoint(cell: ReferenceCellType) -> npt.NDArray[np.float64]:
     """Get the midpoint of a reference cell."""
-    point = np.empty(dim(cell), dtype=dtype)
-    if dtype == np.float64:
-        _lib.midpoint_f64(cell.value, _ffi.cast("double*", point.ctypes.data))
-    elif dtype == np.float32:
-        _lib.midpoint_f32(cell.value, _ffi.cast("float*", point.ctypes.data))
-    else:
-        raise TypeError(f"Unsupported dtype: {dtype}")
-    return point
+    return np.array(_ndelementrs.reference_cell.midpoint(cell._rs))
 
 
 def edges(cell: ReferenceCellType) -> list[list[int]]:
     """Get the edges of a reference cell."""
-    edges = []
-    e = np.empty(2 * entity_counts(cell)[1], dtype=np.uintp)
-    _lib.edges(cell.value, _ffi.cast("uintptr_t* ", e.ctypes.data))
-    for i in range(entity_counts(cell)[1]):
-        edges.append([int(j) for j in e[2 * i : 2 * i + 2]])
-    return edges
+    return _ndelementrs.reference_cell.edges(cell._rs)
 
 
 def faces(cell: ReferenceCellType) -> list[list[int]]:
     """Get the faces of a reference cell."""
-    faces = []
-    flen = 0
-    for t in entity_types(cell)[2]:
-        flen += entity_counts(t)[0]
-    f = np.empty(flen, dtype=np.uintp)
-    _lib.faces(cell.value, _ffi.cast("uintptr_t* ", f.ctypes.data))
-    start = 0
-    for t in entity_types(cell)[2]:
-        n = entity_counts(t)[0]
-        faces.append([int(i) for i in f[start : start + n]])
-        start += n
-    return faces
+    return _ndelementrs.reference_cell.faces(cell._rs)
 
 
 def volumes(cell: ReferenceCellType) -> list[list[int]]:
     """Get the volumes of a reference cell."""
-    volumes = []
-    vlen = 0
-    for t in entity_types(cell)[3]:
-        vlen += entity_counts(t)[0]
-    v = np.empty(vlen, dtype=np.uintp)
-    _lib.volumes(cell.value, _ffi.cast("uintptr_t* ", v.ctypes.data))
-    start = 0
-    for t in entity_types(cell)[3]:
-        n = entity_counts(t)[0]
-        volumes.append([int(i) for i in v[start : start + n]])
-        start += n
-    return volumes
+    return _ndelementrs.reference_cell.volumes(cell._rs)
 
 
 def entity_types(cell: ReferenceCellType) -> list[list[ReferenceCellType]]:
     """Get the types of the sub-entities of a reference cell."""
-    t = np.empty(sum(entity_counts(cell)), dtype=np.uint8)
-    _lib.entity_types(cell.value, _ffi.cast("uint8_t* ", t.ctypes.data))
-    types = []
-    start = 0
-    for n in entity_counts(cell):
-        types.append([ReferenceCellType(i) for i in t[start : start + n]])
-        start += n
-    return types
+    return [
+        [getattr(ReferenceCellType, f"{t!r}".split(".")[-1]) for t in types]
+        for types in _ndelementrs.reference_cell.entity_types(cell._rs)
+    ]
 
 
 def entity_counts(cell: ReferenceCellType) -> list[int]:
     """Get the number of the sub-entities of each dimension for a reference cell."""
-    counts = np.empty(4, dtype=np.uintp)
-    _lib.entity_counts(cell.value, _ffi.cast("uintptr_t* ", counts.ctypes.data))
-    return [int(i) for i in counts]
+    return _ndelementrs.reference_cell.entity_counts(cell._rs)
 
 
 def connectivity(
     cell: ReferenceCellType,
 ) -> list[list[list[list[int]]]]:
     """Get the connectivity of a reference cell."""
-    tdim = dim(cell)
-    ec = entity_counts(cell)[: tdim + 1]
-    c = []
-    for dim0, n in enumerate(ec):
-        c_i = []
-        for index0 in range(n):
-            c_ij = []
-            for dim1 in range(tdim + 1):
-                entry = np.empty(
-                    _lib.connectivity_size(cell.value, dim0, index0, dim1), dtype=np.uintp
-                )
-                _lib.connectivity(
-                    cell.value, dim0, index0, dim1, _ffi.cast("uintptr_t* ", entry.ctypes.data)
-                )
-                c_ij.append([int(i) for i in entry])
-            c_i.append(c_ij)
-        c.append(c_i)
-    return c
+    return _ndelementrs.reference_cell.connectivity(cell._rs)
 
 
 def compute_orientation(
@@ -146,6 +85,4 @@ def compute_orientation(
     vertices: list[int],
 ) -> np.int32:
     """Compute a 32-bit integer encoding the orientation differences between the reference cell and a cell."""
-    return _lib.compute_orientation(
-        cell.value, _ffi.cast("uintptr_t*", np.array(vertices).ctypes.data)
-    )
+    return _ndelementrs.reference_cell.compute_orientation(cell._rs, vertices)

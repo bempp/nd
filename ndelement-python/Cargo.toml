@@ -1,8 +1,8 @@
 [features]
 mpi = ["ndelement/mpi"]
 serde = ["ndelement/serde"]
-strict = ["ndelement/strict"]
-default = []
+strict = []
+default = ["serde"]
 
 [package]
 name = "ndelement-python"
@@ -18,13 +18,14 @@ keywords = ["numerics", "finite-elements", "python"]
 categories = ["mathematics", "science"]
 
 [lib]
-name = "ndelement_python"
+name = "ndelement"
 crate-type = ["cdylib"]
 
 [dependencies]
-c-api-tools = { git = "https://codeberg.org/nd-project/c-api-tools" }
 ndelement = { path = "../ndelement" }
 rlst = "0.6"
+pyo3 = "0.29.2"
+numpy = "0.29"
 
 [target.'cfg(target_os = "macos")'.dependencies]
 blas-src = { version = "0.14", features = ["accelerate"] }
