@@ -151,7 +151,7 @@ fn cross<T: RlstScalar, Array2Impl: ValueArrayImpl<T, 2>, Array1ImplMut: Mutable
                 - mat.get_value([1, 0]).unwrap() * mat.get_value([0, 1]).unwrap();
         }
         _ => {
-            unimplemented!();
+            panic!("Cross product should only be used for matrices of shape 0x1, 1x2 or 2x3.");
         }
     }
 }
@@ -215,7 +215,7 @@ impl<T: Scalar, B2D: ValueArrayImpl<T, 2>, C2D: ValueArrayImpl<usize, 2>> Geomet
                 for gd in 0..self.gdim {
                     unsafe {
                         *points.get_unchecked_mut([gd, point_index]) +=
-                            self.geometry_points.get_value_unchecked([gd, v]) * t
+                            self.geometry_points.get_value_unchecked([gd, v]) * t;
                     };
                 }
             }
@@ -240,7 +240,7 @@ impl<T: Scalar, B2D: ValueArrayImpl<T, 2>, C2D: ValueArrayImpl<usize, 2>> Geomet
                     for gd in 0..self.gdim {
                         unsafe {
                             *jacobians.get_unchecked_mut([gd, td, point_index]) +=
-                                self.geometry_points.get_value_unchecked([gd, v]) * t
+                                self.geometry_points.get_value_unchecked([gd, v]) * t;
                         };
                     }
                 }
@@ -285,9 +285,10 @@ impl<T: Scalar, B2D: ValueArrayImpl<T, 2>, C2D: ValueArrayImpl<usize, 2>> Geomet
         jdets: &mut [T],
         normals: &mut Array<Array2Impl, 2>,
     ) {
-        if self.tdim + 1 != self.gdim {
-            panic!("Can only compute normal for entities where tdim + 1 == gdim");
-        }
+        assert!(
+            (self.tdim + 1 == self.gdim),
+            "Can only compute normal for entities where tdim + 1 == gdim"
+        );
         let npts = self.table.shape()[1];
         debug_assert!(jacobians.shape()[0] == self.gdim);
         debug_assert!(jacobians.shape()[1] == self.tdim);

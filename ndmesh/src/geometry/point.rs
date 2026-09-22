@@ -38,6 +38,7 @@ pub struct PointIter<'a, T: Scalar> {
 }
 impl<'a, T: Scalar> PointIter<'a, T> {
     /// Create new
+    #[must_use]
     pub fn new(points: Vec<(usize, &'a [T])>) -> Self {
         Self { points, index: 0 }
     }

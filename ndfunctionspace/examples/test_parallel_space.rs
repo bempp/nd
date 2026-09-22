@@ -37,6 +37,7 @@ fn test_parallel_function_space<C: Communicator>(comm: &C) {
 }
 
 /// Run tests
+#[allow(clippy::print_stdout)]
 fn main() {
     let universe: Universe = mpi::initialize().unwrap();
     let world = universe.world();

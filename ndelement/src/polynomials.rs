@@ -23,6 +23,7 @@ use crate::reference_cell;
 use crate::types::ReferenceCellType;
 
 /// Return the number of polynomials in the natural polynomial set for a given cell type and degree.
+#[must_use]
 pub fn polynomial_count(cell_type: ReferenceCellType, degree: usize) -> usize {
     match cell_type {
         ReferenceCellType::Interval => degree + 1,
@@ -37,6 +38,7 @@ pub fn polynomial_count(cell_type: ReferenceCellType, degree: usize) -> usize {
 }
 
 /// Return the total number of partial derivatives up to a given degree.
+#[must_use]
 pub fn derivative_count(cell_type: ReferenceCellType, degree: usize) -> usize {
     let mut num = 1;
     let mut denom = 1;

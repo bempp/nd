@@ -87,6 +87,7 @@ impl ConvertToSerializable for SingleTypeTopology {
 
 impl SingleTypeTopology {
     /// Create a topology
+    #[must_use]
     pub fn new(
         cells: &[usize],
         cell_type: ReferenceCellType,
@@ -115,9 +116,10 @@ impl SingleTypeTopology {
         // Cells where faces are mixture of triangles and quads not supported
         for t in &etypes {
             for i in t {
-                if *i != t[0] {
-                    panic!("Unsupported cell type for SingleTypeTopology: {cell_type:?}");
-                }
+                assert!(
+                    !(*i != t[0]),
+                    "Unsupported cell type for SingleTypeTopology: {cell_type:?}"
+                );
             }
         }
 
@@ -168,7 +170,7 @@ impl SingleTypeTopology {
                     let mut entity = c_ij[0].iter().map(|i| cell[*i]).collect::<Vec<_>>();
                     // We sort entities so that entities with same vertices but different order of vertices
                     // are treated as the same entity.
-                    entity.sort();
+                    entity.sort_unstable();
                     // An entity only gets added if it has not been added before.
                     e_i.entry(entity).or_insert_with(|| {
                         let old = entity_counter[entity_dim];
@@ -264,7 +266,7 @@ impl SingleTypeTopology {
         )
         .enumerate()
         {
-            for es_ij in es_i.iter() {
+            for es_ij in es_i {
                 let entity_vertices = es_ij.0;
                 let entity_index = es_ij.1;
                 let mut dc_i0j = dc_i[0].r_mut().slice::<1>(1, *entity_index);
@@ -310,7 +312,7 @@ impl SingleTypeTopology {
                     for (ce_ij, rc_ij) in izip!(ce_i.iter_mut(), rc_i) {
                         // We get the actual entity by mapping reference cell vertices to actual vertices
                         let mut entity = rc_ij[0].iter().map(|i| cell[*i]).collect::<Vec<_>>();
-                        entity.sort();
+                        entity.sort_unstable();
                         *ce_ij = *e_i.get(&entity).unwrap();
                     }
                 }
@@ -395,7 +397,7 @@ impl SingleTypeTopology {
 
         let mut orientation = vec![];
 
-        for d in 1..dim + 1 {
+        for d in 1..=dim {
             let dc = &downward_connectivity[d][0];
             orientation.push(
                 (0..dc.shape()[1])
@@ -421,34 +423,41 @@ impl SingleTypeTopology {
         }
     }
     /// Topological dimension
+    #[must_use]
     pub fn dim(&self) -> usize {
         self.dim
     }
     /// Entity types
+    #[must_use]
     pub fn entity_types(&self) -> &[ReferenceCellType] {
         &self.entity_types
     }
     /// Entity count
+    #[must_use]
     pub fn entity_counts(&self) -> &[usize] {
         &self.entity_counts
     }
     /// Entity count
+    #[must_use]
     pub fn entity_count(&self, entity_type: ReferenceCellType) -> usize {
-        if !self.entity_types.contains(&entity_type) {
-            0
-        } else {
+        if self.entity_types.contains(&entity_type) {
             self.entity_counts[reference_cell::dim(entity_type)]
+        } else {
+            0
         }
     }
     /// Downward connectivity
+    #[must_use]
     pub fn downward_connectivity(&self) -> &[Vec<DynArray<usize, 2>>] {
         &self.downward_connectivity
     }
     /// Upward connectivity
+    #[must_use]
     pub fn upward_connectivity(&self) -> &[Vec<Vec<Vec<usize>>>] {
         &self.upward_connectivity
     }
     /// Cell sub-entity index
+    #[must_use]
     pub fn cell_entity_index(
         &self,
         cell_index: usize,
@@ -458,6 +467,7 @@ impl SingleTypeTopology {
         self.downward_connectivity[self.dim][entity_dim][[entity_index, cell_index]]
     }
     /// Entity id
+    #[must_use]
     pub fn entity_id(&self, entity_dim: usize, entity_index: usize) -> Option<usize> {
         self.ids[entity_dim].as_ref().map(|a| a[entity_index])
     }
@@ -473,6 +483,7 @@ pub struct SingleTypeEntityTopology<'a> {
 
 impl<'t> SingleTypeEntityTopology<'t> {
     /// Create new
+    #[must_use]
     pub fn new(
         topology: &'t SingleTypeTopology,
         entity_type: ReferenceCellType,
@@ -530,9 +541,10 @@ impl Topology for SingleTypeEntityTopology<'_> {
 
     fn sub_entity(&self, entity_type: ReferenceCellType, index: usize) -> usize {
         let dim = reference_cell::dim(entity_type);
-        if entity_type != self.topology.entity_types()[dim] {
-            panic!("Invalid entity type");
-        }
+        assert!(
+            !(entity_type != self.topology.entity_types()[dim]),
+            "Invalid entity type"
+        );
         self.topology.downward_connectivity[self.dim][dim][[index, self.entity_index]]
     }
 

@@ -19,6 +19,7 @@ pub struct MixedEntityGeometry<'a, T: Scalar, E: MappedFiniteElement> {
 
 impl<'a, T: Scalar, E: MappedFiniteElement> MixedEntityGeometry<'a, T, E> {
     /// Create new
+    #[must_use]
     pub fn new(
         geometry: &'a MixedGeometry<T, E>,
         element_index: usize,
@@ -63,7 +64,7 @@ impl<T: Scalar, E: MappedFiniteElement<T = T, TGeo = T>> Geometry
             pts.push((
                 i,
                 &self.geometry.points().data().unwrap()[i * gdim..(i + 1) * gdim],
-            ))
+            ));
         }
 
         PointIter::new(pts)

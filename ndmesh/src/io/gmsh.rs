@@ -154,9 +154,8 @@ where
 {
     let mut buf: T::Bytes = unsafe { std::mem::zeroed() };
     let target_data_size = std::mem::size_of::<T::Bytes>();
-    let buf_bytes: &mut [u8] = unsafe {
-        std::slice::from_raw_parts_mut((&mut buf as *mut _) as *mut u8, target_data_size)
-    };
+    let buf_bytes: &mut [u8] =
+        unsafe { std::slice::from_raw_parts_mut((&raw mut buf).cast::<u8>(), target_data_size) };
 
     if is_le {
         buf_bytes[..gmsh_data_size].copy_from_slice(data);
@@ -186,7 +185,7 @@ impl<G: Mesh<EntityDescriptor = ReferenceCellType>> GmshExport for G {
         points.sort_by(|i, j| i.0.cmp(j.0));
         let node_count = points.len();
 
-        let mut gmsh_s = String::from("");
+        let mut gmsh_s = String::new();
         gmsh_s.push_str("$MeshFormat\n");
         gmsh_s.push_str("4.1 0 8\n");
         gmsh_s.push_str("$EndMeshFormat\n");
@@ -249,7 +248,7 @@ impl<G: Mesh<EntityDescriptor = ReferenceCellType>> GmshExport for G {
                 cells.len()
             ));
 
-            for index in cells.iter() {
+            for index in &cells {
                 gmsh_s.push_str(&format!("{}", {
                     let idx = next_index;
                     next_index += 1;
@@ -277,9 +276,7 @@ impl<G: Mesh<EntityDescriptor = ReferenceCellType>> GmshExport for G {
 /// Get a section from a gmsh string
 fn gmsh_section(s: &str, section: &str) -> String {
     let a = s.split(&format!("${section}\n")).collect::<Vec<_>>();
-    if a.len() <= 1 {
-        panic!("Section not found: {section}");
-    }
+    assert!((a.len() > 1), "Section not found: {section}");
     String::from(a[1].split(&format!("\n$End{section}")).collect::<Vec<_>>()[0])
 }
 
@@ -303,7 +300,7 @@ where
         let Some(line) = nodes.next() else {
             panic!("Unable to read node line");
         };
-        let line = line.split(" ").collect::<Vec<&str>>();
+        let line = line.split(' ').collect::<Vec<&str>>();
 
         let (tag, coord_strs) = line.split_at(1);
         let tag = tag[0].parse::<usize>().expect("Could not parse node tag");
@@ -337,7 +334,7 @@ where
             let Some(line) = elements.next() else {
                 panic!("Unable to read element line");
             };
-            let line = line.split(" ").collect::<Vec<&str>>();
+            let line = line.split(' ').collect::<Vec<&str>>();
 
             let (a, node_tags) = line.split_at(5);
             let [tag, element_type, ..] = a
@@ -381,7 +378,7 @@ where
             let Some(line) = elements.next() else {
                 panic!("Unable to read element line");
             };
-            let line = line.split(" ").collect::<Vec<&str>>();
+            let line = line.split(' ').collect::<Vec<&str>>();
 
             let (a, rem_line) = line.split_at(3);
             let [tag, element_type, num_tags] = a
@@ -522,7 +519,7 @@ where
 
         let [num_entity_blocks, _num_nodes, _min_node_tag, _max_node_tag] = nodes[0]
             .trim()
-            .split(" ")
+            .split(' ')
             .map(|i| i.parse::<usize>().unwrap())
             .collect::<Vec<_>>()[..]
         else {
@@ -533,7 +530,7 @@ where
         for _ in 0..num_entity_blocks {
             let [entity_dim, _entity_tag, parametric, num_nodes_in_block] = nodes[line_n]
                 .trim()
-                .split(" ")
+                .split(' ')
                 .map(|i| i.parse::<usize>().unwrap())
                 .collect::<Vec<_>>()[..]
             else {
@@ -543,7 +540,7 @@ where
             let tags = &nodes[line_n..line_n + num_nodes_in_block];
             let coords = &nodes[line_n + num_nodes_in_block..line_n + 2 * num_nodes_in_block];
             for (t, c) in izip!(tags, coords) {
-                let coord_strs: Vec<&str> = c.trim().split(" ").collect();
+                let coord_strs: Vec<&str> = c.trim().split(' ').collect();
                 let pt: Vec<T> = parse_coordinates(&coord_strs);
                 let tag = t.parse::<usize>().unwrap();
                 self.add_point(tag, &pt[..self.gdim()]);
@@ -569,7 +566,7 @@ where
             _max_element_tag,
         ] = elements[0]
             .trim()
-            .split(" ")
+            .split(' ')
             .map(|i| i.parse::<usize>().unwrap())
             .collect::<Vec<_>>()[..]
         else {
@@ -585,7 +582,7 @@ where
                 num_elements_in_block,
             ] = elements[line_n]
                 .trim()
-                .split(" ")
+                .split(' ')
                 .map(|i| i.parse::<usize>().unwrap())
                 .collect::<Vec<_>>()[..]
             else {
@@ -596,7 +593,7 @@ where
             for line in &elements[line_n..line_n + num_elements_in_block] {
                 let line = line
                     .trim()
-                    .split(" ")
+                    .split(' ')
                     .map(|i| i.parse::<usize>().unwrap())
                     .collect::<Vec<_>>();
                 let node_tags = &line[1..];

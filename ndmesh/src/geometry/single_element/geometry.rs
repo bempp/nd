@@ -114,9 +114,10 @@ impl<T: Scalar, E: MappedFiniteElement> SingleElementGeometry<T, E> {
             .filter(|i| !i.is_empty())
         {
             for c in et.iter().skip(1) {
-                if *c != et[0] {
-                    panic!("Unsupported cell type for SingleElementGeometry: {cell_type:?}");
-                }
+                assert!(
+                    *c == et[0],
+                    "Unsupported cell type for SingleElementGeometry: {cell_type:?}"
+                );
             }
             elements.push(element_family.element(et[0]));
         }
@@ -133,22 +134,27 @@ impl<T: Scalar, E: MappedFiniteElement> SingleElementGeometry<T, E> {
         }
     }
     /// Geometric dimension
+    #[must_use]
     pub fn dim(&self) -> usize {
         self.points().shape()[0]
     }
     /// Points
+    #[must_use]
     pub fn points(&self) -> &DynArray<T, 2> {
         &self.points
     }
     /// Cells
+    #[must_use]
     pub fn cells(&self) -> &DynArray<usize, 2> {
         &self.cells
     }
     /// Element for a sub-entity
+    #[must_use]
     pub fn entity_element(&self, tdim: usize) -> &E {
         &self.elements[tdim - 1]
     }
     /// Element for a cell
+    #[must_use]
     pub fn element(&self) -> &E {
         &self.elements[self.elements.len() - 1]
     }

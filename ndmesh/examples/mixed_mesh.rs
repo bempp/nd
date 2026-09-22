@@ -9,6 +9,7 @@ use ndmesh::traits::{Builder, Entity, Geometry, GmshExport, Mesh, Point, Topolog
 ///
 /// In a mixed mesh, multiple cell types can be present and multiple finite elements can be used to
 /// represent the geometry of cells.
+#[allow(clippy::print_stdout)]
 fn main() {
     // When creating the mesh builder, we give the physical/geometric dimension (3)
     let mut b = MixedMeshBuilder::<f64>::new(2);

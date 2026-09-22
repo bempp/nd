@@ -207,7 +207,7 @@ pub trait Mesh {
 
     /// Geometry map from reference entity to physical entities at the given points
     ///
-    /// `points` should have shape [entity_topology_dim, npts] and use column-major ordering
+    /// `points` should have shape [`entity_topology_dim`, npts] and use column-major ordering
     fn geometry_map<Array2Impl: ValueArrayImpl<Self::T, 2>>(
         &self,
         entity_type: Self::EntityDescriptor,
@@ -293,7 +293,7 @@ fn reference_cell_type_to_vtk(cell_type: ReferenceCellType) -> CellType {
         ReferenceCellType::Quadrilateral => CellType::LagrangeQuadrilateral,
         ReferenceCellType::Tetrahedron => CellType::LagrangeTetrahedron,
         ReferenceCellType::Hexahedron => CellType::LagrangeHexahedron,
-        _ => unimplemented!(),
+        _ => panic!("Cell type not supported."),
     }
 }
 

@@ -23,6 +23,7 @@ pub enum LagrangeVariant {
 }
 
 /// Create a Lagrange element.
+#[must_use]
 pub fn create<T: RlstScalar + Getrf + Getri, TGeo: RlstScalar>(
     cell_type: ReferenceCellType,
     degree: usize,
@@ -41,9 +42,10 @@ pub fn create<T: RlstScalar + Getrf + Getri, TGeo: RlstScalar>(
     let entity_counts = reference_cell::entity_counts(cell_type);
     let vertices = reference_cell::vertices::<TGeo>(cell_type);
     if degree == 0 {
-        if continuity == Continuity::Standard {
-            panic!("Cannot create continuous degree 0 Lagrange element");
-        }
+        assert!(
+            continuity == Continuity::Discontinuous,
+            "Cannot create continuous degree 0 Lagrange element"
+        );
         for (d, counts) in entity_counts.iter().enumerate() {
             for _e in 0..*counts {
                 x[d].push(rlst_dynamic_array!(TGeo, [tdim, 0]));
@@ -97,7 +99,7 @@ pub fn create<T: RlstScalar + Getrf + Getri, TGeo: RlstScalar>(
         for e in &edges {
             let mut pts = rlst_dynamic_array!(TGeo, [tdim, degree - 1]);
             let [vn0, vn1] = e[..] else {
-                panic!();
+                panic!("Invalid edge");
             };
             let v0 = &vertices[vn0];
             let v1 = &vertices[vn1];
@@ -133,7 +135,7 @@ pub fn create<T: RlstScalar + Getrf + Getri, TGeo: RlstScalar>(
             let mut pts = rlst_dynamic_array!(TGeo, [tdim, npts]);
 
             let [vn0, vn1, vn2] = faces[e][..3] else {
-                panic!();
+                panic!("Invalid face");
             };
             let v0 = &vertices[vn0];
             let v1 = &vertices[vn1];
@@ -141,9 +143,10 @@ pub fn create<T: RlstScalar + Getrf + Getri, TGeo: RlstScalar>(
 
             match face_type {
                 ReferenceCellType::Triangle => {
-                    if variant != LagrangeVariant::Equispaced {
-                        unimplemented!();
-                    }
+                    assert!(
+                        variant == LagrangeVariant::Equispaced,
+                        "Only equispaced Lagrange elements are supported on triangular cells."
+                    );
                     let mut n = 0;
                     for i1 in 1..degree {
                         for i0 in 1..degree - i1 {
@@ -178,7 +181,7 @@ pub fn create<T: RlstScalar + Getrf + Getri, TGeo: RlstScalar>(
                 _ => {
                     panic!("Unsupported face type.");
                 }
-            };
+            }
 
             let mut ident = rlst_dynamic_array!(T, [npts, 1, npts]);
             for i in 0..npts {
@@ -208,11 +211,12 @@ pub fn create<T: RlstScalar + Getrf + Getri, TGeo: RlstScalar>(
 
             match volume_type {
                 ReferenceCellType::Tetrahedron => {
-                    if variant != LagrangeVariant::Equispaced {
-                        unimplemented!();
-                    }
+                    assert!(
+                        variant == LagrangeVariant::Equispaced,
+                        "Only equispaced Lagrange elements are supported on tetrahedral cells."
+                    );
                     let [vn0, vn1, vn2, vn3] = volumes[e][..4] else {
-                        panic!();
+                        panic!("invalid tetrahedron");
                     };
                     let v0 = &vertices[vn0];
                     let v1 = &vertices[vn1];
@@ -243,7 +247,7 @@ pub fn create<T: RlstScalar + Getrf + Getri, TGeo: RlstScalar>(
                 }
                 ReferenceCellType::Hexahedron => {
                     let [vn0, vn1, vn2, _, vn3] = volumes[e][..5] else {
-                        panic!();
+                        panic!("Invalid hexahedron");
                     };
                     let v0 = &vertices[vn0];
                     let v1 = &vertices[vn1];
@@ -269,7 +273,7 @@ pub fn create<T: RlstScalar + Getrf + Getri, TGeo: RlstScalar>(
                 _ => {
                     panic!("Unsupported face type.");
                 }
-            };
+            }
 
             let mut ident = rlst_dynamic_array!(T, [npts, 1, npts]);
             for i in 0..npts {
@@ -307,6 +311,7 @@ pub struct LagrangeElementFamily<T: RlstScalar + Getrf + Getri = f64, TGeo: Rlst
 
 impl<T: RlstScalar + Getrf + Getri, TGeo: RlstScalar> LagrangeElementFamily<T, TGeo> {
     /// Create new family with given `degree` and `continuity`.
+    #[must_use]
     pub fn new(degree: usize, continuity: Continuity, variant: LagrangeVariant) -> Self {
         Self {
             degree,
@@ -815,50 +820,50 @@ mod test {
 
     #[test]
     fn test_lagrange_higher_degree_triangle() {
-        create::<f64, f64>(
+        let _ = create::<f64, f64>(
             ReferenceCellType::Triangle,
             2,
             Continuity::Standard,
             LagrangeVariant::Equispaced,
         );
-        create::<f64, f64>(
+        let _ = create::<f64, f64>(
             ReferenceCellType::Triangle,
             3,
             Continuity::Standard,
             LagrangeVariant::Equispaced,
         );
-        create::<f64, f64>(
+        let _ = create::<f64, f64>(
             ReferenceCellType::Triangle,
             4,
             Continuity::Standard,
             LagrangeVariant::Equispaced,
         );
-        create::<f64, f64>(
+        let _ = create::<f64, f64>(
             ReferenceCellType::Triangle,
             5,
             Continuity::Standard,
             LagrangeVariant::Equispaced,
         );
 
-        create::<f64, f64>(
+        let _ = create::<f64, f64>(
             ReferenceCellType::Triangle,
             2,
             Continuity::Discontinuous,
             LagrangeVariant::Equispaced,
         );
-        create::<f64, f64>(
+        let _ = create::<f64, f64>(
             ReferenceCellType::Triangle,
             3,
             Continuity::Discontinuous,
             LagrangeVariant::Equispaced,
         );
-        create::<f64, f64>(
+        let _ = create::<f64, f64>(
             ReferenceCellType::Triangle,
             4,
             Continuity::Discontinuous,
             LagrangeVariant::Equispaced,
         );
-        create::<f64, f64>(
+        let _ = create::<f64, f64>(
             ReferenceCellType::Triangle,
             5,
             Continuity::Discontinuous,
@@ -868,50 +873,50 @@ mod test {
 
     #[test]
     fn test_lagrange_higher_degree_interval() {
-        create::<f64, f64>(
+        let _ = create::<f64, f64>(
             ReferenceCellType::Interval,
             2,
             Continuity::Standard,
             LagrangeVariant::Equispaced,
         );
-        create::<f64, f64>(
+        let _ = create::<f64, f64>(
             ReferenceCellType::Interval,
             3,
             Continuity::Standard,
             LagrangeVariant::Equispaced,
         );
-        create::<f64, f64>(
+        let _ = create::<f64, f64>(
             ReferenceCellType::Interval,
             4,
             Continuity::Standard,
             LagrangeVariant::Equispaced,
         );
-        create::<f64, f64>(
+        let _ = create::<f64, f64>(
             ReferenceCellType::Interval,
             5,
             Continuity::Standard,
             LagrangeVariant::Equispaced,
         );
 
-        create::<f64, f64>(
+        let _ = create::<f64, f64>(
             ReferenceCellType::Interval,
             2,
             Continuity::Discontinuous,
             LagrangeVariant::Equispaced,
         );
-        create::<f64, f64>(
+        let _ = create::<f64, f64>(
             ReferenceCellType::Interval,
             3,
             Continuity::Discontinuous,
             LagrangeVariant::Equispaced,
         );
-        create::<f64, f64>(
+        let _ = create::<f64, f64>(
             ReferenceCellType::Interval,
             4,
             Continuity::Discontinuous,
             LagrangeVariant::Equispaced,
         );
-        create::<f64, f64>(
+        let _ = create::<f64, f64>(
             ReferenceCellType::Interval,
             5,
             Continuity::Discontinuous,
@@ -921,50 +926,50 @@ mod test {
 
     #[test]
     fn test_lagrange_higher_degree_quadrilateral() {
-        create::<f64, f64>(
+        let _ = create::<f64, f64>(
             ReferenceCellType::Quadrilateral,
             2,
             Continuity::Standard,
             LagrangeVariant::Equispaced,
         );
-        create::<f64, f64>(
+        let _ = create::<f64, f64>(
             ReferenceCellType::Quadrilateral,
             3,
             Continuity::Standard,
             LagrangeVariant::Equispaced,
         );
-        create::<f64, f64>(
+        let _ = create::<f64, f64>(
             ReferenceCellType::Quadrilateral,
             4,
             Continuity::Standard,
             LagrangeVariant::Equispaced,
         );
-        create::<f64, f64>(
+        let _ = create::<f64, f64>(
             ReferenceCellType::Quadrilateral,
             5,
             Continuity::Standard,
             LagrangeVariant::Equispaced,
         );
 
-        create::<f64, f64>(
+        let _ = create::<f64, f64>(
             ReferenceCellType::Quadrilateral,
             2,
             Continuity::Discontinuous,
             LagrangeVariant::Equispaced,
         );
-        create::<f64, f64>(
+        let _ = create::<f64, f64>(
             ReferenceCellType::Quadrilateral,
             3,
             Continuity::Discontinuous,
             LagrangeVariant::Equispaced,
         );
-        create::<f64, f64>(
+        let _ = create::<f64, f64>(
             ReferenceCellType::Quadrilateral,
             4,
             Continuity::Discontinuous,
             LagrangeVariant::Equispaced,
         );
-        create::<f64, f64>(
+        let _ = create::<f64, f64>(
             ReferenceCellType::Quadrilateral,
             5,
             Continuity::Discontinuous,

@@ -18,13 +18,11 @@ fn create_simplex<T: RlstScalar + Getrf + Getri, TGeo: RlstScalar>(
     degree: usize,
     continuity: Continuity,
 ) -> CiarletElement<T, CovariantPiolaMap, TGeo> {
-    if cell_type != ReferenceCellType::Triangle && cell_type != ReferenceCellType::Tetrahedron {
-        panic!("Invalid cell: {cell_type:?}");
-    }
-
-    if degree < 1 {
-        panic!("Degree must be at least 1");
-    }
+    assert!(
+        cell_type == ReferenceCellType::Triangle || cell_type == ReferenceCellType::Tetrahedron,
+        "Invalid cell: {cell_type:?}"
+    );
+    assert!(degree >= 1, "Degree must be at least 1");
 
     let tdim = reference_cell::dim(cell_type);
     let cell_q = gauss_jacobi_rule(cell_type, 2 * degree).unwrap();
@@ -170,7 +168,7 @@ fn create_simplex<T: RlstScalar + Getrf + Getri, TGeo: RlstScalar>(
                 ]] = w0;
             }
         }
-    };
+    }
 
     orthogonalise_3(&mut wcoeffs, pdim_minus1 * tdim);
 
@@ -233,7 +231,7 @@ fn create_simplex<T: RlstScalar + Getrf + Getri, TGeo: RlstScalar>(
     if degree == 1 {
         for _ in 0..entity_counts[2] {
             x[2].push(rlst_dynamic_array!(TGeo, [tdim, 0]));
-            m[2].push(rlst_dynamic_array!(T, [0, tdim, 0]))
+            m[2].push(rlst_dynamic_array!(T, [0, tdim, 0]));
         }
     } else {
         let face_q = gauss_jacobi_rule(ReferenceCellType::Triangle, 2 * degree - 2).unwrap();
@@ -285,13 +283,13 @@ fn create_simplex<T: RlstScalar + Getrf + Getri, TGeo: RlstScalar>(
     if tdim == 3 {
         if degree <= 2 {
             x[3].push(rlst_dynamic_array!(TGeo, [tdim, 0]));
-            m[3].push(rlst_dynamic_array!(T, [0, tdim, 0]))
+            m[3].push(rlst_dynamic_array!(T, [0, tdim, 0]));
         } else {
             let internal_q = gauss_jacobi_rule(cell_type, 2 * degree - 3).unwrap();
             let mut pts = rlst_dynamic_array!(TGeo, [tdim, internal_q.npoints]);
             for p in 0..internal_q.npoints {
                 for d in 0..3 {
-                    pts[[d, p]] = TGeo::from(internal_q.points[3 * p + d]).unwrap()
+                    pts[[d, p]] = TGeo::from(internal_q.points[3 * p + d]).unwrap();
                 }
             }
 
@@ -333,13 +331,11 @@ fn create_tp<T: RlstScalar + Getrf + Getri, TGeo: RlstScalar>(
     degree: usize,
     continuity: Continuity,
 ) -> CiarletElement<T, CovariantPiolaMap, TGeo> {
-    if cell_type != ReferenceCellType::Quadrilateral && cell_type != ReferenceCellType::Hexahedron {
-        panic!("Invalid cell: {cell_type:?}");
-    }
-
-    if degree < 1 {
-        panic!("Degree must be at least 1");
-    }
+    assert!(
+        cell_type == ReferenceCellType::Quadrilateral || cell_type == ReferenceCellType::Hexahedron,
+        "Invalid cell: {cell_type:?}"
+    );
+    assert!(degree >= 1, "Degree must be at least 1");
 
     let tdim = reference_cell::dim(cell_type);
     let cell_q = gauss_jacobi_rule(cell_type, 2 * degree).unwrap();
@@ -480,7 +476,7 @@ fn create_tp<T: RlstScalar + Getrf + Getri, TGeo: RlstScalar>(
     if degree == 1 {
         for _ in 0..entity_counts[2] {
             x[2].push(rlst_dynamic_array!(TGeo, [tdim, 0]));
-            m[2].push(rlst_dynamic_array!(T, [0, tdim, 0]))
+            m[2].push(rlst_dynamic_array!(T, [0, tdim, 0]));
         }
     } else {
         let face_q = gauss_jacobi_rule(ReferenceCellType::Quadrilateral, 2 * degree - 1).unwrap();
@@ -540,7 +536,7 @@ fn create_tp<T: RlstScalar + Getrf + Getri, TGeo: RlstScalar>(
     if tdim == 3 {
         if degree == 1 {
             x[3].push(rlst_dynamic_array!(TGeo, [tdim, 0]));
-            m[3].push(rlst_dynamic_array!(T, [0, tdim, 0]))
+            m[3].push(rlst_dynamic_array!(T, [0, tdim, 0]));
         } else {
             let interior_q =
                 gauss_jacobi_rule(ReferenceCellType::Hexahedron, 2 * degree - 1).unwrap();
@@ -623,6 +619,7 @@ fn create_tp<T: RlstScalar + Getrf + Getri, TGeo: RlstScalar>(
 }
 
 /// Create a Nedelec (first kind) element
+#[must_use]
 pub fn create<T: RlstScalar + Getrf + Getri, TGeo: RlstScalar>(
     cell_type: ReferenceCellType,
     degree: usize,
@@ -655,6 +652,7 @@ pub struct NedelecFirstKindElementFamily<
 
 impl<T: RlstScalar + Getrf + Getri, TGeo: RlstScalar> NedelecFirstKindElementFamily<T, TGeo> {
     /// Create new family with given `degree` and `continuity`.
+    #[must_use]
     pub fn new(degree: usize, continuity: Continuity) -> Self {
         Self {
             degree,

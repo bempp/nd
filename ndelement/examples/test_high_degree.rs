@@ -7,6 +7,7 @@ use ndelement::ciarlet::{lagrange, nedelec, raviart_thomas};
 use ndelement::types::{Continuity, ReferenceCellType};
 use paste::paste;
 
+#[allow(clippy::print_stdout)]
 fn main() {
     macro_rules! construct_lagrange {
         ($cell:ident, $degree:expr) => {

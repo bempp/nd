@@ -12,9 +12,7 @@ authors = [
 ]
 description = "Finite element function spaces."
 license = "BSD-3-Clause"
-homepage = "https://codeberg.org/nd-project/nd"
 repository = "https://codeberg.org/nd-project/nd"
-readme = "README.md"
 keywords = ["numerics"]
 categories = ["mathematics", "science"]
 
@@ -50,6 +48,12 @@ rustdoc-args = [ "--html-in-header", "katex-header.html" ]
 
 [lints.clippy]
 wildcard_imports = "forbid"
+todo = "warn"
+unimplemented = "warn"
+unreachable = "warn"
+dbg_macro = "warn"
+print_stdout = "warn"
+print_stderr = "warn"
 
 [[example]]
 name = "test_parallel_space"

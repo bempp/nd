@@ -1009,8 +1009,8 @@ fn tabulate_hexahedron<
         for ky in 0..=derivatives - kx {
             for kz in 0..=derivatives - kx - ky {
                 for px in 0..=degree {
-                    for py in if px == 0 { 1 } else { 0 }..=degree {
-                        for pz in if px * py == 0 { 1 } else { 0 }..=degree {
+                    for py in usize::from(px == 0)..=degree {
+                        for pz in usize::from(px * py == 0)..=degree {
                             for i in 0..data.shape()[2] {
                                 let dx = *data
                                     .get([tet_index(kx, 0, 0), hex_index(px, 0, 0, degree), i])
@@ -1068,12 +1068,12 @@ pub fn tabulate<
         ReferenceCellType::Interval => tabulate_interval(points, degree, derivatives, data),
         ReferenceCellType::Triangle => tabulate_triangle(points, degree, derivatives, data),
         ReferenceCellType::Quadrilateral => {
-            tabulate_quadrilateral(points, degree, derivatives, data)
+            tabulate_quadrilateral(points, degree, derivatives, data);
         }
         ReferenceCellType::Tetrahedron => tabulate_tetrahedron(points, degree, derivatives, data),
         ReferenceCellType::Hexahedron => tabulate_hexahedron(points, degree, derivatives, data),
         _ => {
             panic!("Unsupported cell type: {cell_type:?}");
         }
-    };
+    }
 }

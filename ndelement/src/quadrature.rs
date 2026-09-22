@@ -37,6 +37,7 @@ pub fn simplex_rule(
 }
 
 /// For a given cell type return a vector with the numbers of points for which simplex rules are available.
+#[must_use]
 pub fn available_simplex_rules(cell: ReferenceCellType) -> Vec<usize> {
     match cell {
         ReferenceCellType::Point => vec![1],
@@ -55,7 +56,7 @@ pub fn gauss_jacobi_rule(
     celltype: ReferenceCellType,
     m: usize,
 ) -> Result<NumericalQuadratureDefinition, QuadratureError> {
-    let np = (m + 2) / 2;
+    let np = usize::midpoint(m, 2);
     match celltype {
         ReferenceCellType::Interval => Ok(gauss_jacobi::gauss_jacobi_interval(np)),
         ReferenceCellType::Triangle => Ok(gauss_jacobi::gauss_jacobi_triangle(np)),
@@ -67,8 +68,9 @@ pub fn gauss_jacobi_rule(
 }
 
 /// Get the number of quadrature points for a Gauss-Jacobi rule of degree `m` on a given cell type.
+#[must_use]
 pub fn gauss_jacobi_npoints(celltype: ReferenceCellType, m: usize) -> usize {
-    let np = (m + 2) / 2;
+    let np = usize::midpoint(m, 2);
     match celltype {
         ReferenceCellType::Interval => np,
         ReferenceCellType::Quadrilateral => np.pow(2),

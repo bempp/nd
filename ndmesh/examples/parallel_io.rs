@@ -17,6 +17,7 @@ use ndmesh::{
 /// Demonstration of importing and exporting a mesh in parallel
 ///
 /// Serial I/O is demonstrated in the example `io.rs`
+#[allow(clippy::print_stdout)]
 fn main() {
     let universe: Universe = mpi::initialize().unwrap();
     let comm = universe.world();

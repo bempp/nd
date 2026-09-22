@@ -18,13 +18,11 @@ fn create_simplex<T: RlstScalar + Getrf + Getri, TGeo: RlstScalar>(
     degree: usize,
     continuity: Continuity,
 ) -> CiarletElement<T, ContravariantPiolaMap, TGeo> {
-    if cell_type != ReferenceCellType::Triangle && cell_type != ReferenceCellType::Tetrahedron {
-        panic!("Invalid cell: {cell_type:?}");
-    }
-
-    if degree < 1 {
-        panic!("Degree must be at least 1");
-    }
+    assert!(
+        cell_type == ReferenceCellType::Triangle || cell_type == ReferenceCellType::Tetrahedron,
+        "Invalid cell: {cell_type:?}"
+    );
+    assert!(degree >= 1, "Degree must be at least 1");
 
     let tdim = reference_cell::dim(cell_type);
     let facet_type = if tdim == 2 {
@@ -147,14 +145,14 @@ fn create_simplex<T: RlstScalar + Getrf + Getri, TGeo: RlstScalar>(
     if degree == 1 {
         for _ in 0..entity_counts[tdim] {
             x[tdim].push(rlst_dynamic_array!(TGeo, [tdim, 0]));
-            m[tdim].push(rlst_dynamic_array!(T, [0, tdim, 0]))
+            m[tdim].push(rlst_dynamic_array!(T, [0, tdim, 0]));
         }
     } else {
         let internal_q = gauss_jacobi_rule(cell_type, 2 * degree - 2).unwrap();
         let mut pts = rlst_dynamic_array!(TGeo, [tdim, internal_q.npoints]);
         for p in 0..internal_q.npoints {
             for d in 0..tdim {
-                pts[[d, p]] = TGeo::from(internal_q.points[tdim * p + d]).unwrap()
+                pts[[d, p]] = TGeo::from(internal_q.points[tdim * p + d]).unwrap();
             }
         }
 
@@ -195,13 +193,11 @@ fn create_tp<T: RlstScalar + Getrf + Getri, TGeo: RlstScalar>(
     degree: usize,
     continuity: Continuity,
 ) -> CiarletElement<T, ContravariantPiolaMap, TGeo> {
-    if cell_type != ReferenceCellType::Quadrilateral && cell_type != ReferenceCellType::Hexahedron {
-        panic!("Invalid cell: {cell_type:?}");
-    }
-
-    if degree < 1 {
-        panic!("Degree must be at least 1");
-    }
+    assert!(
+        cell_type == ReferenceCellType::Quadrilateral || cell_type == ReferenceCellType::Hexahedron,
+        "Invalid cell: {cell_type:?}"
+    );
+    assert!(degree >= 1, "Degree must be at least 1");
 
     let tdim = reference_cell::dim(cell_type);
     let cell_q = gauss_jacobi_rule(cell_type, 2 * degree).unwrap();
@@ -345,7 +341,7 @@ fn create_tp<T: RlstScalar + Getrf + Getri, TGeo: RlstScalar>(
     // DOFs on interior
     if degree == 1 {
         x[tdim].push(rlst_dynamic_array!(TGeo, [tdim, 0]));
-        m[tdim].push(rlst_dynamic_array!(T, [0, tdim, 0]))
+        m[tdim].push(rlst_dynamic_array!(T, [0, tdim, 0]));
     } else if tdim == 2 {
         let face_q = gauss_jacobi_rule(ReferenceCellType::Quadrilateral, 2 * degree - 1).unwrap();
         let face_pts_t = face_q
@@ -466,6 +462,7 @@ fn create_tp<T: RlstScalar + Getrf + Getri, TGeo: RlstScalar>(
 }
 
 /// Create a Raviart-Thomas element
+#[must_use]
 pub fn create<T: RlstScalar + Getrf + Getri, TGeo: RlstScalar>(
     cell_type: ReferenceCellType,
     degree: usize,
@@ -495,6 +492,7 @@ pub struct RaviartThomasElementFamily<T: RlstScalar + Getrf + Getri = f64, TGeo:
 
 impl<T: RlstScalar + Getrf + Getri, TGeo: RlstScalar> RaviartThomasElementFamily<T, TGeo> {
     /// Create new family with given `degree` and `continuity`.
+    #[must_use]
     pub fn new(degree: usize, continuity: Continuity) -> Self {
         Self {
             degree,

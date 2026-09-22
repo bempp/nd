@@ -103,6 +103,7 @@ impl ConvertToSerializable for MixedTopology {
 
 impl MixedTopology {
     /// Create a topology
+    #[must_use]
     pub fn new(
         cells: &[usize],
         cell_types: &[ReferenceCellType],
@@ -114,11 +115,10 @@ impl MixedTopology {
         let dim = reference_cell::dim(cell_types[0]);
         // Check that all cells have the same topological dim
         for ct in cell_types {
-            if reference_cell::dim(*ct) != dim {
-                panic!(
-                    "MixedTopology does not support cells of a mixture of topological dimensions"
-                );
-            }
+            assert!(
+                (reference_cell::dim(*ct) == dim),
+                "MixedTopology does not support cells of a mixture of topological dimensions"
+            );
         }
 
         let mut entities = HashMap::new();
@@ -231,7 +231,7 @@ impl MixedTopology {
         }
 
         // downward_connectivity[t][t][i] = [i] (ie each entity is a sub-entity of itself)
-        for (d, dc) in downward_connectivity.iter_mut() {
+        for (d, dc) in &mut downward_connectivity {
             for (i, mut j) in dc.get_mut(d).unwrap().col_iter_mut().enumerate() {
                 j[[0]] = i;
             }
@@ -360,18 +360,22 @@ impl MixedTopology {
         }
     }
     /// Topological dimension
+    #[must_use]
     pub fn dim(&self) -> usize {
         self.dim
     }
     /// Entity types
+    #[must_use]
     pub fn entity_types(&self) -> &[Vec<ReferenceCellType>] {
         &self.entity_types
     }
     /// Entity counts
+    #[must_use]
     pub fn entity_counts(&self) -> &HashMap<ReferenceCellType, usize> {
         &self.entity_counts
     }
     /// Entity counts
+    #[must_use]
     pub fn entity_count(&self, entity_type: ReferenceCellType) -> usize {
         if let Some(n) = self.entity_counts.get(&entity_type) {
             *n
@@ -380,6 +384,7 @@ impl MixedTopology {
         }
     }
     /// Cell sub-entity index
+    #[must_use]
     pub fn cell_entity_index(
         &self,
         cell_type: ReferenceCellType,
@@ -390,6 +395,7 @@ impl MixedTopology {
         self.downward_connectivity[&cell_type][&entity_type][[entity_index, cell_index]]
     }
     /// Entity id
+    #[must_use]
     pub fn entity_id(&self, entity_type: ReferenceCellType, entity_index: usize) -> Option<usize> {
         self.ids.get(&entity_type).map(|a| a[entity_index])
     }
@@ -405,6 +411,7 @@ pub struct MixedEntityTopology<'a> {
 
 impl<'t> MixedEntityTopology<'t> {
     /// Create new
+    #[must_use]
     pub fn new(
         topology: &'t MixedTopology,
         entity_type: ReferenceCellType,

@@ -50,17 +50,17 @@
 //! # #[cfg(target_os = "linux")]
 //! # extern crate openblas_src;
 //!
-//! The [SingleElementMeshBuilder] is for meshes that only use a single element type. The parameters passed when
+//! The [`SingleElementMeshBuilder`] is for meshes that only use a single element type. The parameters passed when
 //! initialising the build are:
 //!
 //! - The geometric dimension: our example mesh lives in two-dimensional space, so we use 2.
 //! - The number of points: 9 for our example mesh.
 //! - The number of cells: 2 for our example mesh.
-//! - The cell type and element degree: for our example, this is ([ReferenceCellType::Triangle](ndelement::types::ReferenceCellType::Triangle), 2)
+//! - The cell type and element degree: for our example, this is ([`ReferenceCellType::Triangle`](ndelement::types::ReferenceCellType::Triangle), 2)
 //!   as our geometry cells are triangles and we use quadratic geometry for each triangle.
 //!
-//! If we did not know the number of points and cells that we will include in out mesh when creating this builder,
-//! we could instead use the function [SingleElementMeshBuilder::new] when initialising the mesh.
+//! If we did not know the number of points and cells that we will include in out mesh when creating the builder,
+//! we could instead use the function [`SingleElementMeshBuilder::new`] when initialising the mesh.
 //!
 //! Now that we have created a mesh builder, we can add the points and cells:
 //!
@@ -211,17 +211,17 @@
 //! # #[cfg(target_os = "linux")]
 //! # extern crate openblas_src;
 //!
-//! This snippets starts by using [Mesh::entity_iter](crate::traits::Mesh::entity_iter) to iterate through each
+//! This snippets starts by using [`Mesh::entity_iter`](crate::traits::Mesh::entity_iter) to iterate through each
 //! cell (ie each entity that is a triangle).
-//! For each cell, we then access the topology information via [Entity::topology](crate::traits::Entity::topology)
-//! and iterate through the vertices (ie the subentities that are points) using [Topology::sub_entity_iter](crate::traits::Topology::sub_entity_iter).
-//! This iterators gives us the index of each vertex: to convert an entity index to an entity, we use [Mesh::entity](crate::traits::Mesh::entity).
+//! For each cell, we then access the topology information via [`Entity::topology`](crate::traits::Entity::topology)
+//! and iterate through the vertices (ie the subentities that are points) using [`Topology::sub_entity_iter`](crate::traits::Topology::sub_entity_iter).
+//! This iterators gives us the index of each vertex: to convert an entity index to an entity, we use [`Mesh::entity`](crate::traits::Mesh::entity).
 //! We now want to get the actual physical coordinate of a vertex.
 //! Since the geometric dimension is 2 we instantiate an array `[f64; 2]` for this. We use
-//! [Entity::geometry](crate::traits::Entity::geometry) to obtain the geometry for the vertex, then use
-//! [Geometry::points](crate::traits::Geometry::points) to get an iterator over the physical points
+//! [`Entity::geometry`](crate::traits::Entity::geometry) to obtain the geometry for the vertex, then use
+//! [`Geometry::points`](crate::traits::Geometry::points) to get an iterator over the physical points
 //! associated with the vertex. Since a vertex has only one associated physical point, we
-//! call `next` once on this iterator to get the point. Finally, we call [Point::coords](crate::traits::Point::coords)
+//! call `next` once on this iterator to get the point. Finally, we call [`Point::coords`](crate::traits::Point::coords)
 //! to get the values of the physical coordinate.
 
 #![cfg_attr(feature = "strict", deny(warnings), deny(unused_crate_dependencies))]

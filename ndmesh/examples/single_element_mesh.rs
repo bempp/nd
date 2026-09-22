@@ -10,6 +10,7 @@ use ndmesh::traits::{Builder, Entity, Geometry, Mesh, Point, Topology};
 /// In a single element mesh, the same finite element will be used to represent the geometry
 /// of each cell. For example, a mesh of bilinear quadrilaterals can be created by using a degree 1
 /// element on a quadrilateral
+#[allow(clippy::print_stdout)]
 fn main() {
     // When creating the mesh builder, we give the physical/geometric dimension (3) and the cell type
     // and degree of the element

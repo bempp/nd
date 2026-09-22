@@ -16,13 +16,14 @@ mod vtk;
 /// VTK ordering is given as `[dof_values[perm[0]], dof_values[perm[1]], ...]`.
 pub fn vtk_ordering(cell_type: ReferenceCellType, npts: usize) -> Vec<usize> {
     match cell_type {
-        crate::types::ReferenceCellType::Point => vec![0],
-        crate::types::ReferenceCellType::Interval => (0..npts).collect_vec(),
-        crate::types::ReferenceCellType::Triangle => vtk_triangle(npts),
-        crate::types::ReferenceCellType::Quadrilateral => vtk_quadrilateral(npts),
-        crate::types::ReferenceCellType::Tetrahedron => vtk_tetrahedron(npts),
-        crate::types::ReferenceCellType::Hexahedron => vtk_hexahedron(npts),
-        crate::types::ReferenceCellType::Prism => todo!(),
-        crate::types::ReferenceCellType::Pyramid => todo!(),
+        ReferenceCellType::Point => vec![0],
+        ReferenceCellType::Interval => (0..npts).collect_vec(),
+        ReferenceCellType::Triangle => vtk_triangle(npts),
+        ReferenceCellType::Quadrilateral => vtk_quadrilateral(npts),
+        ReferenceCellType::Tetrahedron => vtk_tetrahedron(npts),
+        ReferenceCellType::Hexahedron => vtk_hexahedron(npts),
+        _ => {
+            panic!("Cell type not supported.");
+        }
     }
 }

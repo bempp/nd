@@ -71,11 +71,13 @@ pub struct SingleElementMeshBuilder<T: Scalar> {
 
 impl<T: Scalar> SingleElementMeshBuilder<T> {
     /// Create a new mesh builder
+    #[must_use]
     pub fn new(gdim: usize, data: (ReferenceCellType, usize)) -> Self {
         Self::new_with_capacity(gdim, 0, 0, data)
     }
 
     /// Create a new mesh builder with capacaty for a given number of points and cells
+    #[must_use]
     pub fn new_with_capacity(
         gdim: usize,
         npoints: usize,
@@ -114,12 +116,14 @@ impl<T: Scalar> Builder for SingleElementMeshBuilder<T> {
     type EntityDescriptor = ReferenceCellType;
 
     fn add_point(&mut self, id: usize, data: &[T]) {
-        if data.len() != self.gdim {
-            panic!("Point has wrong number of coordinates");
-        }
-        if self.point_indices.contains(&id) {
-            panic!("Cannot add point with duplicate id.");
-        }
+        assert!(
+            (data.len() == self.gdim),
+            "Point has wrong number of coordinates"
+        );
+        assert!(
+            !self.point_indices.contains(&id),
+            "Cannot add point with duplicate id."
+        );
         self.point_ids_to_indices
             .insert(id, self.point_indices_to_ids.len());
         self.point_indices.insert(id);
@@ -128,9 +132,10 @@ impl<T: Scalar> Builder for SingleElementMeshBuilder<T> {
     }
 
     fn add_cell(&mut self, id: usize, cell_data: &[usize]) {
-        if self.cell_indices.contains(&id) {
-            panic!("Cannot add cell with duplicate id.");
-        }
+        assert!(
+            !self.cell_indices.contains(&id),
+            "Cannot add cell with duplicate id."
+        );
         assert_eq!(cell_data.len(), self.points_per_cell);
         self.cell_ids_to_indices
             .insert(id, self.cell_indices_to_ids.len());
@@ -148,9 +153,10 @@ impl<T: Scalar> Builder for SingleElementMeshBuilder<T> {
         cell_type: ReferenceCellType,
         cell_degree: usize,
     ) {
-        if (cell_type, cell_degree) != self.element_data {
-            panic!("Invalid cell type.");
-        }
+        assert!(
+            !((cell_type, cell_degree) != self.element_data),
+            "Invalid cell type."
+        );
         self.add_cell(id, nodes);
     }
 
@@ -170,7 +176,7 @@ impl<T: Scalar> Builder for SingleElementMeshBuilder<T> {
         let vertex_ids = {
             let mut tmp = Vec::<usize>::with_capacity(vertex_ids.len());
             tmp.extend(vertex_ids.iter());
-            tmp.sort();
+            tmp.sort_unstable();
             tmp
         };
 
@@ -332,7 +338,7 @@ impl<T: Scalar> TopologyBuilder for SingleElementMeshBuilder<T> {
         let npoints = self.element.dim();
         while start < cell_points.len() {
             for v in &vertices {
-                cell_vertices.push(cell_points[start + v])
+                cell_vertices.push(cell_points[start + v]);
             }
             start += npoints;
         }

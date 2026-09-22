@@ -190,18 +190,22 @@ impl<T: Scalar, E: MappedFiniteElement> MixedGeometry<T, E> {
         }
     }
     /// Geometric dimension
+    #[must_use]
     pub fn dim(&self) -> usize {
         self.points().shape()[0]
     }
     /// Points
+    #[must_use]
     pub fn points(&self) -> &DynArray<T, 2> {
         &self.points
     }
     /// Cells
+    #[must_use]
     pub fn cells(&self, element_index: usize) -> &DynArray<usize, 2> {
         &self.cells[element_index]
     }
     /// Element for a cell
+    #[must_use]
     pub fn element(&self, element_index: usize) -> &E {
         let elements = &self.elements[element_index];
         let tdim = elements
@@ -217,6 +221,7 @@ impl<T: Scalar, E: MappedFiniteElement> MixedGeometry<T, E> {
         panic!("Could not find element");
     }
     /// Number of elements
+    #[must_use]
     pub fn element_count(&self) -> usize {
         self.elements.len()
     }

@@ -591,7 +591,9 @@ fn cell_degree(cell_type: ReferenceCellType, num_nodes: usize) -> usize {
             assert_eq!(n * n * n, num_nodes, "Unknown hexahedron layout");
             n - 1
         }
-        _ => unimplemented!(),
+        _ => {
+            panic!("Cell type not supported.");
+        }
     }
 }
 

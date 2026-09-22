@@ -111,13 +111,12 @@ impl<
 }
 
 impl<
-    'a,
     T: RlstScalar,
     TMesh: RlstScalar,
     E: Debug + PartialEq + Eq + Clone + Copy + Hash,
     G: Mesh<EntityDescriptor = E, T = TMesh>,
     F: MappedFiniteElement<CellType = E, T = T>,
-> FunctionSpace for FunctionSpaceImpl<'a, T, TMesh, E, G, F>
+> FunctionSpace for FunctionSpaceImpl<'_, T, TMesh, E, G, F>
 {
     type T = T;
     type TMesh = TMesh;

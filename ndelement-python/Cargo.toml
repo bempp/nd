@@ -11,9 +11,7 @@ edition = "2024"
 authors = ["Matthew Scroggs <rust@mscroggs.co.uk>"]
 description = "Python extension for ndelement."
 license = "BSD-3-Clause"
-homepage = "https://codeberg.org/nd-project/nd"
 repository = "https://codeberg.org/nd-project/nd"
-readme = "README.md"
 keywords = ["numerics", "finite-elements", "python"]
 categories = ["mathematics", "science"]
 

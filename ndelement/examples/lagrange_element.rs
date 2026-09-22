@@ -9,6 +9,7 @@ use ndelement::{
     types::{Continuity, ReferenceCellType},
 };
 
+#[allow(clippy::print_stdout)]
 fn main() {
     // Create a hexahedron of degree 4
     let element = lagrange::create::<f64, f64>(

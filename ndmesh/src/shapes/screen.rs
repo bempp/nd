@@ -21,8 +21,8 @@ fn screen_add_points_and_cells<T: Scalar>(
 ) {
     let zero = T::from(0.0).unwrap();
     let n = T::from(ncells).unwrap();
-    for y in 0..ncells + 1 {
-        for x in 0..ncells + 1 {
+    for y in 0..=ncells {
+        for x in 0..=ncells {
             b.add_point(
                 y * (ncells + 1) + x,
                 &[T::from(x).unwrap() / n, T::from(y).unwrap() / n, zero],
@@ -94,6 +94,7 @@ fn screen_add_points_and_cells<T: Scalar>(
 ///
 /// Create a mesh of the square \[0,1\]^2. The input ncells is the number of cells
 /// along each side of the square.
+#[must_use]
 pub fn screen<T: Scalar>(
     ncells: usize,
     cell_type: ReferenceCellType,

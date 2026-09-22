@@ -188,6 +188,7 @@ impl<T: Scalar, E: MappedFiniteElement<CellType = ReferenceCellType, T = T, TGeo
     SingleElementMesh<T, E>
 {
     /// Create new
+    #[must_use]
     pub fn new(topology: SingleTypeTopology, geometry: SingleElementGeometry<T, E>) -> Self {
         Self { topology, geometry }
     }
@@ -292,7 +293,7 @@ impl<T: Scalar, E: MappedFiniteElement<CellType = ReferenceCellType, T = T, TGeo
     }
 
     fn entity_types(&self, dim: usize) -> &[ReferenceCellType] {
-        &self.topology.entity_types()[dim..dim + 1]
+        &self.topology.entity_types()[dim..=dim]
     }
 
     fn entity_count(&self, entity_type: ReferenceCellType) -> usize {
@@ -323,16 +324,13 @@ impl<T: Scalar, E: MappedFiniteElement<CellType = ReferenceCellType, T = T, TGeo
     {
         debug_assert!(points.shape()[0] == reference_cell::dim(entity_type));
         debug_assert!(geometry_degree == self.geometry.element().lagrange_superdegree());
-        if entity_type == self.topology.entity_types()[self.topology_dim()] {
-            GeometryMap::new(
-                self.geometry.element(),
-                points,
-                self.geometry.points(),
-                self.geometry.cells(),
-            )
-        } else {
-            unimplemented!();
-        }
+        debug_assert!(entity_type == self.topology.entity_types()[self.topology_dim()]);
+        GeometryMap::new(
+            self.geometry.element(),
+            points,
+            self.geometry.points(),
+            self.geometry.cells(),
+        )
     }
 }
 

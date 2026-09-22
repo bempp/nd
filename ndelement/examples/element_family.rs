@@ -5,6 +5,7 @@ use ndelement::ciarlet::{LagrangeElementFamily, LagrangeVariant};
 use ndelement::traits::{ElementFamily, FiniteElement};
 use ndelement::types::{Continuity, ReferenceCellType};
 
+#[allow(clippy::print_stdout)]
 fn main() {
     // Create the degree 2 Lagrange element family. A family is a set of finite elements with the
     // same family type, degree, and continuity across a set of cells

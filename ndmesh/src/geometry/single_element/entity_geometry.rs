@@ -18,6 +18,7 @@ pub struct SingleElementEntityGeometry<'a, T: Scalar, E: MappedFiniteElement> {
 
 impl<'a, T: Scalar, E: MappedFiniteElement> SingleElementEntityGeometry<'a, T, E> {
     /// Create new
+    #[must_use]
     pub fn new(
         geometry: &'a SingleElementGeometry<T, E>,
         cell_index: usize,
@@ -60,7 +61,7 @@ impl<T: Scalar, E: MappedFiniteElement<T = T, TGeo = T>> Geometry
             pts.push((
                 i,
                 &self.geometry.points().data().unwrap()[i * gdim..(i + 1) * gdim],
-            ))
+            ));
         }
 
         PointIter::new(pts)

@@ -14,7 +14,7 @@ pub trait FiniteElement {
 
     /// Cell type
     ///
-    /// The cell type is typically defined through [ReferenceCellType](crate::types::ReferenceCellType).
+    /// The cell type is typically defined through [`ReferenceCellType`](crate::types::ReferenceCellType).
     type CellType: Debug + PartialEq + Eq + Clone + Copy + Hash;
 
     /// The reference cell type, eg one of `Point`, `Interval`, `Triangle`, etc.
@@ -46,7 +46,7 @@ pub trait FiniteElement {
     ///   basis function with index 1.
     ///
     /// ## Remark
-    /// Let $d^{i + k} = dx^{i}dy^{j}$ be a derivative with respect to $x$, $y$ in two dimensions and    
+    /// Let $d^{i + k} = dx^{i}dy^{j}$ be a derivative with respect to $x$, $y$ in two dimensions and  
     /// $d^{i + k + j} = dx^{i}dy^{j}dz^{k}$ be a derivative with respect to $x$, $y$, and $z$ in three dimensions.
     /// Then the corresponding index $\ell$ in the first dimension of the `data` array is computed as follows.
     ///
@@ -77,12 +77,12 @@ pub trait FiniteElement {
     ///
     /// Note that this does not return dofs on the boundary of an entity, that means that (for example)
     /// for an edge the dofs associated with the two vertices at the boundary of the edge are not returned.
-    /// To return also the boundary dofs use [FiniteElement::entity_closure_dofs].
+    /// To return also the boundary dofs use [`FiniteElement::entity_closure_dofs`].
     fn entity_dofs(&self, entity_dim: usize, entity_number: usize) -> Option<&[usize]>;
 
     /// The DOFs that are associated with a closure of a subentity of the reference cell.
     ///
-    /// This method is similar to [FiniteElement::entity_dofs], but it includes the dofs
+    /// This method is similar to [`FiniteElement::entity_dofs`], but it includes the dofs
     /// associated with the boundary of an entity. For an edge (for example) it returns the dofs associated
     /// with the vertices at the boundary of the edge (as well as the dofs associated with the edge itself).
     fn entity_closure_dofs(&self, entity_dim: usize, entity_number: usize) -> Option<&[usize]>;
@@ -109,11 +109,11 @@ pub trait MappedFiniteElement: FiniteElement {
     /// Piola transform. This method implements the appropriate transformation for the element.
     ///
     /// - `reference_values`: The values on the reference cell. The shape of this input is the same as the `data` input to the function
-    ///   [[FiniteElement::tabulate]].
+    ///   [[`FiniteElement::tabulate`]].
     /// - `nderivs`: The number of derivatives.
-    /// - `jacobians` should have shape [geometry_dimension, entity_topology_dimension, npts] and use column-major ordering;
+    /// - `jacobians` should have shape [`geometry_dimension`, `entity_topology_dimension`, npts] and use column-major ordering;
     /// - `jacobian_determinants` should have shape \[npts\];
-    /// - `inverse_jacobians` should have shape [entity_topology_dimension, geometry_dimension, npts] and use column-major ordering;
+    /// - `inverse_jacobians` should have shape [`entity_topology_dimension`, `geometry_dimension`, npts] and use column-major ordering;
     /// - `physical_values`: The output array of the push operation. This shape of this array is the same as the `reference_values`
     ///   but with reference value size replaced by the physical value size
     fn push_forward<
@@ -132,7 +132,7 @@ pub trait MappedFiniteElement: FiniteElement {
 
     /// Pull function values back to the reference cell.
     ///
-    /// This is the inverse operation to [MappedFiniteElement::push_forward].
+    /// This is the inverse operation to [`MappedFiniteElement::push_forward`].
     fn pull_back<
         Array3GeoImpl: ValueArrayImpl<Self::TGeo, 3>,
         Array4Impl: ValueArrayImpl<Self::T, 4>,

@@ -18,7 +18,7 @@ fn unit_interval_add_points_and_cells<T: Scalar>(
     nx: usize,
     degree: usize,
 ) {
-    for i in 0..nx + 1 {
+    for i in 0..=nx {
         b.add_point(i, &[T::from(i).unwrap() / T::from(nx).unwrap()]);
     }
 
@@ -48,8 +48,8 @@ fn unit_square_add_points_and_cells<T: Scalar>(
     cell_type: ReferenceCellType,
     degree: usize,
 ) {
-    for i in 0..nx + 1 {
-        for j in 0..ny + 1 {
+    for i in 0..=nx {
+        for j in 0..=ny {
             b.add_point(
                 i * (ny + 1) + j,
                 &[
@@ -124,7 +124,7 @@ fn unit_square_boundary_add_points_and_cells<T: Scalar>(
     let dx = ny + 1;
     let dy = 1;
 
-    for i in 0..nx + 1 {
+    for i in 0..=nx {
         b.add_point(
             i * dx,
             &[T::from(i).unwrap() / T::from(nx).unwrap(), T::zero()],
@@ -277,8 +277,8 @@ fn unit_cube_boundary_add_points_and_cells<T: Scalar>(
     cell_type: ReferenceCellType,
     degree: usize,
 ) {
-    for i in 0..nx + 1 {
-        for j in 0..ny + 1 {
+    for i in 0..=nx {
+        for j in 0..=ny {
             for k in if i == 0 || i == nx || j == 0 || j == ny {
                 (0..nz + 1).collect::<Vec<_>>()
             } else {
@@ -400,7 +400,7 @@ fn unit_cube_edges_add_points_and_cells<T: Scalar>(
     nz: usize,
     degree: usize,
 ) {
-    for i in 0..nx + 1 {
+    for i in 0..=nx {
         for j in if i == 0 || i == nx {
             (0..ny + 1).collect::<Vec<_>>()
         } else {
@@ -474,6 +474,7 @@ fn unit_cube_edges_add_points_and_cells<T: Scalar>(
 /// Create a unit interval mesh
 ///
 /// The unit interval is the interval between (0,) and (1,)
+#[must_use]
 pub fn unit_interval<T: Scalar>(
     nx: usize,
     degree: usize,
@@ -503,6 +504,7 @@ pub fn unit_interval_distributed<T: Scalar + Equivalence, C: Communicator>(
 /// Create a unit square mesh
 ///
 /// The unit square is the square with corners at (0,0), (1,0), (0,1) and (1,1)
+#[must_use]
 pub fn unit_square<T: Scalar>(
     nx: usize,
     ny: usize,
@@ -536,6 +538,7 @@ pub fn unit_square_distributed<T: Scalar + Equivalence, C: Communicator>(
 /// Create a mesh of the boundary of a unit square
 ///
 /// The unit square is the square with corners at (0,0), (1,0), (0,1) and (1,1)
+#[must_use]
 pub fn unit_square_boundary<T: Scalar>(
     nx: usize,
     ny: usize,
@@ -569,6 +572,7 @@ pub fn unit_square_boundary_distributed<T: Scalar + Equivalence, C: Communicator
 ///
 /// The unit cube is the cube with corners at (0,0,0), (1,0,0), (0,1,0), (1,1,0), (0,0,1),
 /// (1,0,1), (0,1,1) and (1,1,1)
+#[must_use]
 pub fn unit_cube<T: Scalar>(
     nx: usize,
     ny: usize,
@@ -606,6 +610,7 @@ pub fn unit_cube_distributed<T: Scalar + Equivalence, C: Communicator>(
 ///
 /// The unit cube is the cube with corners at (0,0,0), (1,0,0), (0,1,0), (1,1,0), (0,0,1),
 /// (1,0,1), (0,1,1) and (1,1,1)
+#[must_use]
 pub fn unit_cube_boundary<T: Scalar>(
     nx: usize,
     ny: usize,
@@ -642,6 +647,7 @@ pub fn unit_cube_boundary_distributed<T: Scalar + Equivalence, C: Communicator>(
 ///
 /// The unit cube is the cube with corners at (0,0,0), (1,0,0), (0,1,0), (1,1,0), (0,0,1),
 /// (1,0,1), (0,1,1) and (1,1,1)
+#[must_use]
 pub fn unit_cube_edges<T: Scalar>(
     nx: usize,
     ny: usize,

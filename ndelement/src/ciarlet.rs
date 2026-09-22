@@ -97,9 +97,9 @@ where
     ///
     /// The majority of users will not wish to use this directly, and should insteal call
     /// the `create`function for one of the following special cases of a general Ciarlet element:
-    /// - [crate::ciarlet::lagrange::create]: Create a new Lagrange element.
-    /// - [crate::ciarlet::nedelec::create]: Create a new Nedelec element.
-    /// - [crate::ciarlet::raviart_thomas::create]: Create a Raviart-Thomas element.
+    /// - [`crate::ciarlet::lagrange::create`]: Create a new Lagrange element.
+    /// - [`crate::ciarlet::nedelec::create`]: Create a new Nedelec element.
+    /// - [`crate::ciarlet::raviart_thomas::create`]: Create a Raviart-Thomas element.
     #[allow(clippy::too_many_arguments)]
     pub fn create(
         family_name: String,
@@ -131,9 +131,7 @@ where
 
         for matrices in &interpolation_weights {
             for mat in matrices {
-                if mat.shape()[1] != value_size {
-                    panic!("Incompatible value size");
-                }
+                assert!(mat.shape()[1] == value_size, "Incompatible value size");
             }
         }
 
@@ -147,7 +145,7 @@ where
                 }
             }
             let mut col = 0;
-            for pts_i in interpolation_points.iter() {
+            for pts_i in &interpolation_points {
                 for pts in pts_i {
                     let ncols = pts.shape()[1];
                     all_pts
@@ -172,7 +170,7 @@ where
                     new_wts[i].push(rlst_dynamic_array!(T, [0, value_size, 0]));
                 }
             }
-            for mi in interpolation_weights.iter() {
+            for mi in &interpolation_weights {
                 for mat in mi {
                     let dim0 = mat.shape()[0];
                     let dim2 = mat.shape()[2];
@@ -281,7 +279,7 @@ where
                 {
                     for index in connectivity_edim_eindex_edim2 {
                         for i in &entity_dofs[edim2][*index] {
-                            cdofs.push(*i)
+                            cdofs.push(*i);
                         }
                     }
                 }
@@ -442,7 +440,7 @@ where
                 .iter()
                 .enumerate()
                 {
-                    *pts.get_mut([i, p]).unwrap() = *c
+                    *pts.get_mut([i, p]).unwrap() = *c;
                 }
             }
 
@@ -715,7 +713,7 @@ impl<T: RlstScalar, M: Map, TGeo: RlstScalar> MappedFiniteElement for CiarletEle
             jacobian_determinants,
             inverse_jacobians,
             physical_values,
-        )
+        );
     }
 
     fn pull_back<
@@ -738,7 +736,7 @@ impl<T: RlstScalar, M: Map, TGeo: RlstScalar> MappedFiniteElement for CiarletEle
             jacobian_determinants,
             inverse_jacobians,
             reference_values,
-        )
+        );
     }
 
     fn physical_value_shape(&self, gdim: usize) -> Vec<usize> {
@@ -777,9 +775,9 @@ impl<T: RlstScalar, M: Map, TGeo: RlstScalar> MappedFiniteElement for CiarletEle
                     math::apply_permutation(
                         perm,
                         &mut data[block_size * dofs[0]..block_size * (dofs[dofs.len() - 1] + 1)],
-                    )
+                    );
                 }
-                n += 1
+                n += 1;
             }
         }
         if tdim > 2 {
@@ -804,7 +802,7 @@ impl<T: RlstScalar, M: Map, TGeo: RlstScalar> MappedFiniteElement for CiarletEle
                             perm,
                             &mut data
                                 [block_size * dofs[0]..block_size * (dofs[dofs.len() - 1] + 1)],
-                        )
+                        );
                     }
                 }
                 n += 2;
@@ -820,7 +818,7 @@ impl<T: RlstScalar, M: Map, TGeo: RlstScalar> MappedFiniteElement for CiarletEle
                     math::apply_permutation(
                         perm,
                         &mut data[block_size * dofs[0]..block_size * (dofs[dofs.len() - 1] + 1)],
-                    )
+                    );
                 }
                 n += 1;
             }
@@ -850,9 +848,9 @@ impl<T: RlstScalar, M: Map, TGeo: RlstScalar> MappedFiniteElement for CiarletEle
                     math::apply_matrix(
                         mat,
                         &mut data[block_size * dofs[0]..block_size * (dofs[dofs.len() - 1] + 1)],
-                    )
+                    );
                 }
-                n += 1
+                n += 1;
             }
         }
         if tdim > 2 {
@@ -876,7 +874,7 @@ impl<T: RlstScalar, M: Map, TGeo: RlstScalar> MappedFiniteElement for CiarletEle
                             mat,
                             &mut data
                                 [block_size * dofs[0]..block_size * (dofs[dofs.len() - 1] + 1)],
-                        )
+                        );
                     }
                 }
                 n += 2;
@@ -891,7 +889,7 @@ impl<T: RlstScalar, M: Map, TGeo: RlstScalar> MappedFiniteElement for CiarletEle
                     math::apply_matrix(
                         mat,
                         &mut data[block_size * dofs[0]..block_size * (dofs[dofs.len() - 1] + 1)],
-                    )
+                    );
                 }
                 n += 1;
             }

@@ -28,7 +28,7 @@ pub trait GeometryMap {
 
     /// Write the physical points for the entity with index `entity_index` into `points`
     ///
-    /// `points` should have shape [geometry_dimension, npts] and use column-major ordering.
+    /// `points` should have shape [`geometry_dimension`, npts] and use column-major ordering.
     fn physical_points<Array2Impl: MutableArrayImpl<Self::T, 2>>(
         &self,
         entity_index: usize,
@@ -37,7 +37,7 @@ pub trait GeometryMap {
 
     /// Write the jacobians at the physical points for the entity with index `entity_index` into `jacobians`
     ///
-    /// `jacobians` should have shape [geometry_dimension, entity_topology_dimension, npts] and use column-major ordering
+    /// `jacobians` should have shape [`geometry_dimension`, `entity_topology_dimension`, npts] and use column-major ordering
     fn jacobians<Array3MutImpl: MutableArrayImpl<Self::T, 3>>(
         &self,
         entity_index: usize,
@@ -47,8 +47,8 @@ pub trait GeometryMap {
     /// Write the jacobians, their inverses and their determinants for the entity with
     /// index `entity_index` into `jacobians`, `inverse_jacobians` and `jdets`.
     ///
-    /// `jacobians` should have shape [geometry_dimension, entity_topology_dimension, npts] and use column-major ordering;
-    /// `inverse_jacobians` should have shape [entity_topology_dimension, geometry_dimension, npts] and use column-major ordering;
+    /// `jacobians` should have shape [`geometry_dimension`, `entity_topology_dimension`, npts] and use column-major ordering;
+    /// `inverse_jacobians` should have shape [`entity_topology_dimension`, `geometry_dimension`, npts] and use column-major ordering;
     /// `jdets` should have shape \[npts\];
     fn jacobians_inverses_dets<Array3MutImpl: MutableArrayImpl<Self::T, 3>>(
         &self,
@@ -61,10 +61,10 @@ pub trait GeometryMap {
     /// Write the jacobians, their inverses, their determinants, and the normals at the physical points for the entity with
     /// index `entity_index` into `jacobians`, `inverse_jacobians`, `jdets` and `normals`.
     ///
-    /// `jacobians` should have shape [geometry_dimension, entity_topology_dimension, npts] and use column-major ordering;
-    /// `inverse_jacobians` should have shape [entity_topology_dimension, geometry_dimension, npts] and use column-major ordering;
+    /// `jacobians` should have shape [`geometry_dimension`, `entity_topology_dimension`, npts] and use column-major ordering;
+    /// `inverse_jacobians` should have shape [`entity_topology_dimension`, `geometry_dimension`, npts] and use column-major ordering;
     /// `jdets` should have shape \[npts\];
-    /// `normals` should have shape [geometry_dimension, npts] and use column-major ordering
+    /// `normals` should have shape [`geometry_dimension`, npts] and use column-major ordering
     fn jacobians_inverses_dets_normals<
         Array2Impl: MutableArrayImpl<Self::T, 2>,
         Array3MutImpl: MutableArrayImpl<Self::T, 3>,

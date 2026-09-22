@@ -169,6 +169,7 @@ fn test_rt_mass_matrix() {
 }
 
 /// Run tests
+#[allow(clippy::print_stdout)]
 fn main() {
     println!("Testing Lagrange mass matrix");
     test_lagrange_mass_matrix();

@@ -203,6 +203,7 @@ impl<T: Scalar, E: MappedFiniteElement<CellType = ReferenceCellType, T = T, TGeo
     MixedMesh<T, E>
 {
     /// Create new
+    #[must_use]
     pub fn new(topology: MixedTopology, geometry: MixedGeometry<T, E>) -> Self {
         Self { topology, geometry }
     }
@@ -360,7 +361,7 @@ impl<T: Scalar, E: MappedFiniteElement<CellType = ReferenceCellType, T = T, TGeo
                 return GeometryMap::new(e, points, self.geometry.points(), self.geometry.cells(i));
             }
         }
-        unimplemented!();
+        panic!("Cannot use geometry map for entity type not in mesh.");
     }
 }
 

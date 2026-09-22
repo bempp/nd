@@ -17,6 +17,7 @@ use crate::types::ReferenceCellType;
 use rlst::RlstScalar;
 
 /// The topological dimension of the cell
+#[must_use]
 pub fn dim(cell: ReferenceCellType) -> usize {
     match cell {
         ReferenceCellType::Point => 0,
@@ -30,6 +31,7 @@ pub fn dim(cell: ReferenceCellType) -> usize {
     }
 }
 /// Is the cell a simplex?
+#[must_use]
 pub fn is_simplex(cell: ReferenceCellType) -> bool {
     match cell {
         ReferenceCellType::Point => true,
@@ -44,6 +46,7 @@ pub fn is_simplex(cell: ReferenceCellType) -> bool {
 }
 
 /// The vertices of the reference cell
+#[must_use]
 pub fn vertices<T: RlstScalar>(cell: ReferenceCellType) -> Vec<Vec<T>> {
     let zero = T::from(0.0).unwrap();
     let one = T::from(1.0).unwrap();
@@ -92,6 +95,7 @@ pub fn vertices<T: RlstScalar>(cell: ReferenceCellType) -> Vec<Vec<T>> {
 }
 
 /// The midpoint of the cell
+#[must_use]
 pub fn midpoint<T: RlstScalar>(cell: ReferenceCellType) -> Vec<T> {
     let half = T::from(0.5).unwrap();
     let third = T::from(1.0).unwrap() / T::from(3.0).unwrap();
@@ -112,6 +116,7 @@ pub fn midpoint<T: RlstScalar>(cell: ReferenceCellType) -> Vec<T> {
 }
 
 /// The edges (dimension 1 entities) of the reference cell
+#[must_use]
 pub fn edges(cell: ReferenceCellType) -> Vec<Vec<usize>> {
     match cell {
         ReferenceCellType::Point => vec![],
@@ -165,6 +170,7 @@ pub fn edges(cell: ReferenceCellType) -> Vec<Vec<usize>> {
 }
 
 /// The faces (dimension 2 entities) of the reference cell
+#[must_use]
 pub fn faces(cell: ReferenceCellType) -> Vec<Vec<usize>> {
     match cell {
         ReferenceCellType::Point => vec![],
@@ -200,6 +206,7 @@ pub fn faces(cell: ReferenceCellType) -> Vec<Vec<usize>> {
 }
 
 /// The volumes (dimension 3 entities) of the reference cell
+#[must_use]
 pub fn volumes(cell: ReferenceCellType) -> Vec<Vec<usize>> {
     match cell {
         ReferenceCellType::Point => vec![],
@@ -214,6 +221,7 @@ pub fn volumes(cell: ReferenceCellType) -> Vec<Vec<usize>> {
 }
 
 /// The facets (dimension dim-1 entities) of the reference cell
+#[must_use]
 pub fn facets(cell: ReferenceCellType) -> Vec<Vec<usize>> {
     match dim(cell) {
         0 => vec![],
@@ -230,6 +238,7 @@ pub fn facets(cell: ReferenceCellType) -> Vec<Vec<usize>> {
 }
 
 /// The ridges (dimension dim-2 entities) of the reference cell
+#[must_use]
 pub fn ridges(cell: ReferenceCellType) -> Vec<Vec<usize>> {
     match dim(cell) {
         0 => vec![],
@@ -246,6 +255,7 @@ pub fn ridges(cell: ReferenceCellType) -> Vec<Vec<usize>> {
 }
 
 /// The peaks (dimension dim-3 entities) of the reference cell
+#[must_use]
 pub fn peaks(cell: ReferenceCellType) -> Vec<Vec<usize>> {
     match dim(cell) {
         0 => vec![],
@@ -262,6 +272,7 @@ pub fn peaks(cell: ReferenceCellType) -> Vec<Vec<usize>> {
 }
 
 /// The normals to the facets of the reference cell. The length of each normal is the volume of the facet
+#[must_use]
 pub fn facet_normals<T: RlstScalar>(cell: ReferenceCellType) -> Vec<Vec<T>> {
     let zero = T::from(0.0).unwrap();
     let one = T::from(1.0).unwrap();
@@ -307,9 +318,10 @@ pub fn facet_normals<T: RlstScalar>(cell: ReferenceCellType) -> Vec<Vec<T>> {
 }
 
 /// The unit normals to the facets of the reference cell
+#[must_use]
 pub fn facet_unit_normals<T: RlstScalar>(cell: ReferenceCellType) -> Vec<Vec<T>> {
     let mut normals = facet_normals::<T>(cell);
-    for normal in normals.iter_mut() {
+    for normal in &mut normals {
         let size = normal.iter().map(|x| x.powi(2)).sum::<T>().sqrt();
         for value in normal.iter_mut() {
             *value /= size;
@@ -319,6 +331,7 @@ pub fn facet_unit_normals<T: RlstScalar>(cell: ReferenceCellType) -> Vec<Vec<T>>
 }
 
 /// The types of the subentities of the reference cell
+#[must_use]
 pub fn entity_types(cell: ReferenceCellType) -> Vec<Vec<ReferenceCellType>> {
     match cell {
         ReferenceCellType::Point => vec![vec![ReferenceCellType::Point], vec![], vec![], vec![]],
@@ -380,6 +393,7 @@ pub fn entity_types(cell: ReferenceCellType) -> Vec<Vec<ReferenceCellType>> {
 }
 
 /// The local indices of the subentities of the reference cell, with each entity type indexed separately
+#[must_use]
 pub fn entity_indices(cell: ReferenceCellType) -> Vec<Vec<usize>> {
     match cell {
         ReferenceCellType::Point => vec![vec![0], vec![], vec![], vec![]],
@@ -416,6 +430,7 @@ pub fn entity_indices(cell: ReferenceCellType) -> Vec<Vec<usize>> {
 }
 
 /// The number of subentities of each dimension
+#[must_use]
 pub fn entity_counts(cell: ReferenceCellType) -> Vec<usize> {
     match cell {
         ReferenceCellType::Point => vec![1, 0, 0, 0],
@@ -432,6 +447,7 @@ pub fn entity_counts(cell: ReferenceCellType) -> Vec<usize> {
 /// The connectivity of the reference cell
 ///
 /// The indices of the result are \[dim0\]\[index0\]\[dim1\]\[\]
+#[must_use]
 pub fn connectivity(cell: ReferenceCellType) -> Vec<Vec<Vec<Vec<usize>>>> {
     match cell {
         ReferenceCellType::Point => vec![vec![vec![vec![0]]]],

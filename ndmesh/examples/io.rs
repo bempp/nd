@@ -13,6 +13,7 @@ use ndmesh::{SingleElementMesh, SingleElementMeshBuilder, shapes};
 /// Demonstration of importing and exporting a mesh in serial
 ///
 /// Parallel I/O is demonstrated in the example `parallel_io.rs`
+#[allow(clippy::print_stdout)]
 fn main() {
     // Create a mesh using the shapes module: unit_cube_boundary will mesh the surface of a cube
     let g = shapes::unit_cube_boundary::<f64>(4, 5, 4, ReferenceCellType::Triangle, 1);

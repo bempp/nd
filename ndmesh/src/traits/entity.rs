@@ -13,7 +13,7 @@ pub trait Entity {
     type T: Scalar;
 
     /// Type used as identifier of different entity types.
-    /// In most cases this is given by [ReferenceCellType](ndelement::types::ReferenceCellType).
+    /// In most cases this is given by [`ReferenceCellType`](ndelement::types::ReferenceCellType).
     type EntityDescriptor: Debug + PartialEq + Eq + Clone + Copy + Hash;
 
     /// Topology type

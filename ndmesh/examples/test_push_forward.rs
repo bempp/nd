@@ -203,6 +203,7 @@ fn test_nc_push_forward() {
 }
 
 /// Run tests
+#[allow(clippy::print_stdout)]
 fn main() {
     println!("Testing Lagrange push forward (identity)");
     test_lagrange_push_forward();

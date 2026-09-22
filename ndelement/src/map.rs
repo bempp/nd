@@ -24,9 +24,7 @@ impl Map for IdentityMap {
         _inverse_jacobians: &Array<Array3GeoImpl, 3>,
         physical_values: &mut Array<Array4MutImpl, 4>,
     ) {
-        if nderivs > 0 {
-            unimplemented!();
-        }
+        assert!(nderivs == 0, "Maps with derivatives not supported.");
 
         physical_values.fill_from(reference_values);
     }
@@ -45,9 +43,7 @@ impl Map for IdentityMap {
         _inverse_jacobians: &Array<Array3GeoImpl, 3>,
         reference_values: &mut Array<Array4MutImpl, 4>,
     ) {
-        if nderivs > 0 {
-            unimplemented!();
-        }
+        assert!(nderivs == 0, "Maps with derivatives not supported.");
 
         reference_values.fill_from(physical_values);
     }
@@ -92,9 +88,7 @@ impl Map for CovariantPiolaMap {
         assert_eq!(reference_values.shape()[2], physical_values.shape()[2]);
         assert_eq!(reference_values.shape()[3], tdim);
         assert_eq!(physical_values.shape()[3], gdim);
-        if nderivs > 0 {
-            unimplemented!();
-        }
+        assert!(nderivs == 0, "Maps with derivatives not supported.");
         for p in 0..reference_values.shape()[1] {
             for b in 0..reference_values.shape()[2] {
                 for gd in 0..gdim {
@@ -132,9 +126,7 @@ impl Map for CovariantPiolaMap {
         assert_eq!(reference_values.shape()[2], physical_values.shape()[2]);
         assert_eq!(reference_values.shape()[3], tdim);
         assert_eq!(physical_values.shape()[3], gdim);
-        if nderivs > 0 {
-            unimplemented!();
-        }
+        assert!(nderivs == 0, "Maps with derivatives not supported.");
         for p in 0..physical_values.shape()[1] {
             for b in 0..physical_values.shape()[2] {
                 for td in 0..tdim {
@@ -192,9 +184,7 @@ impl Map for ContravariantPiolaMap {
         assert_eq!(reference_values.shape()[2], physical_values.shape()[2]);
         assert_eq!(reference_values.shape()[3], tdim);
         assert_eq!(physical_values.shape()[3], gdim);
-        if nderivs > 0 {
-            unimplemented!();
-        }
+        assert!(nderivs == 0, "Maps with derivatives not supported.");
         for p in 0..physical_values.shape()[1] {
             for b in 0..physical_values.shape()[2] {
                 for gd in 0..gdim {
@@ -233,9 +223,7 @@ impl Map for ContravariantPiolaMap {
         assert_eq!(reference_values.shape()[2], physical_values.shape()[2]);
         assert_eq!(reference_values.shape()[3], tdim);
         assert_eq!(physical_values.shape()[3], gdim);
-        if nderivs > 0 {
-            unimplemented!();
-        }
+        assert!(nderivs == 0, "Maps with derivatives not supported.");
         for p in 0..physical_values.shape()[1] {
             for b in 0..physical_values.shape()[2] {
                 for td in 0..tdim {

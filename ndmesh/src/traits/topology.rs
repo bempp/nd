@@ -27,7 +27,7 @@ pub trait Topology {
     /// Iterator over sub-entities
     ///
     /// This iterator iterates over all subentities of a given type. It returns the index of the corresponding entity.
-    /// This index can then be used with the [Mesh::entity](crate::traits::Mesh::entity) to return the corresponding actual entity.
+    /// This index can then be used with the [`Mesh::entity`](crate::traits::Mesh::entity) to return the corresponding actual entity.
     fn sub_entity_iter(&self, entity_type: Self::EntityDescriptor) -> Self::EntityIndexIter<'_>;
 
     /// An index of a sub-entity of this entity

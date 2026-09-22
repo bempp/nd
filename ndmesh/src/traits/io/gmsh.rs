@@ -61,13 +61,11 @@ pub trait GmshImport: Builder {
                 .expect("Unable to read mesh");
 
             content.replace_range(0..0, "$Nodes\n");
-            for (f, r) in [
+            for (f, r) in &[
                 ("$ENDNOD", "$EndNodes"),
                 ("$ELM", "$Elements"),
                 ("$ENDELM", "$EndElements"),
-            ]
-            .iter()
-            {
+            ] {
                 let Some(offset) = content.find(f) else {
                     panic!("Invalid file format");
                 };
@@ -80,8 +78,8 @@ pub trait GmshImport: Builder {
 
         reader.read_line(&mut line).expect("Unable to read header");
 
-        let [version, binary_mode, data_size] = line.split("\n").collect::<Vec<_>>()[1]
-            .split(" ")
+        let [version, binary_mode, data_size] = line.split('\n').collect::<Vec<_>>()[1]
+            .split(' ')
             .collect::<Vec<_>>()[..]
         else {
             panic!("Unrecognised format");
@@ -106,7 +104,7 @@ pub trait GmshImport: Builder {
 
             let is_le = u32::from_le_bytes(buf) == 1;
 
-            if version.starts_with("2") {
+            if version.starts_with('2') {
                 self.import_from_gmsh_binary_v2(reader, data_size, is_le);
             } else {
                 self.import_from_gmsh_binary_v4(reader, data_size, is_le);
@@ -117,7 +115,7 @@ pub trait GmshImport: Builder {
                 .read_to_string(&mut content)
                 .expect("Unable to read content");
 
-            if version.starts_with("2") {
+            if version.starts_with('2') {
                 self.import_from_gmsh_string_v2(content);
             } else {
                 self.import_from_gmsh_string_v4(content);

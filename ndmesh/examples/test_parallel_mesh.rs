@@ -209,6 +209,7 @@ fn test_noncontiguous_numbering<C: Communicator>(comm: &C) {
 }
 
 /// Run tests
+#[allow(clippy::print_stdout)]
 fn main() {
     let universe: Universe = mpi::initialize().unwrap();
     let world = universe.world();

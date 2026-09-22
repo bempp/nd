@@ -35,6 +35,7 @@ pub trait RONImport: Sized + Mesh {
     fn from_ron_string(s: String) -> Self;
 
     /// Import from RON
+    #[must_use]
     fn import_from_ron(filename: &str) -> Self {
         let content = fs::read_to_string(filename).expect("Unable to read file");
         Self::from_ron_string(content)

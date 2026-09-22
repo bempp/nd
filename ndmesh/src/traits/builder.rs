@@ -10,7 +10,7 @@ use std::hash::Hash;
 /// A builder is a factory that creates meshes.
 ///
 /// After instantiation points and cells can be added.
-/// To build the actual mesh call [Builder::create_mesh].
+/// To build the actual mesh call [`Builder::create_mesh`].
 pub trait Builder {
     /// Type used as identifier of different entity types
     type EntityDescriptor: Debug + PartialEq + Eq + Clone + Copy + Hash;

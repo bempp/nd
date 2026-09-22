@@ -42,6 +42,7 @@ pub struct MixedMeshBuilder<T: Scalar> {
 
 impl<T: Scalar> MixedMeshBuilder<T> {
     /// Create a new mesh builder
+    #[must_use]
     pub fn new(gdim: usize) -> Self {
         Self {
             gdim,
@@ -72,12 +73,14 @@ impl<T: Scalar> Builder for MixedMeshBuilder<T> {
     type EntityDescriptor = ReferenceCellType;
 
     fn add_point(&mut self, id: usize, data: &[T]) {
-        if data.len() != self.gdim {
-            panic!("Point has wrong number of coordinates");
-        }
-        if self.point_indices.contains(&id) {
-            panic!("Cannot add point with duplicate id.");
-        }
+        assert!(
+            (data.len() == self.gdim),
+            "Point has wrong number of coordinates"
+        );
+        assert!(
+            !self.point_indices.contains(&id),
+            "Cannot add point with duplicate id."
+        );
         self.point_ids_to_indices
             .insert(id, self.point_indices_to_ids.len());
         self.point_indices.insert(id);
@@ -103,13 +106,15 @@ impl<T: Scalar> Builder for MixedMeshBuilder<T> {
         self.cell_families.push(element_index);
         self.cell_starts.push(self.cells.len());
         self.cell_types.push(cell_data.0);
-        if reference_cell::dim(cell_data.0) != reference_cell::dim(self.cell_types[0]) {
-            panic!("Cannot create mesh with cells of different topological dimensions");
-        }
+        assert!(
+            (reference_cell::dim(cell_data.0) == reference_cell::dim(self.cell_types[0])),
+            "Cannot create mesh with cells of different topological dimensions"
+        );
         self.cell_degrees.push(cell_data.1);
-        if self.cell_indices.contains(&id) {
-            panic!("Cannot add cell with duplicate id.");
-        }
+        assert!(
+            !self.cell_indices.contains(&id),
+            "Cannot add cell with duplicate id."
+        );
         assert_eq!(cell_data.2.len(), self.points_per_cell[element_index]);
         self.cell_ids_to_indices
             .insert(id, self.cell_indices_to_ids.len());
@@ -146,7 +151,7 @@ impl<T: Scalar> Builder for MixedMeshBuilder<T> {
         let vertex_ids = {
             let mut tmp = Vec::<usize>::with_capacity(vertex_ids.len());
             tmp.extend(vertex_ids.iter());
-            tmp.sort();
+            tmp.sort_unstable();
             tmp
         };
 
@@ -178,8 +183,7 @@ impl<T: Scalar> Builder for MixedMeshBuilder<T> {
         &self.point_indices_to_ids
     }
     fn cell_indices_to_ids(&self) -> &[usize] {
-        unimplemented!();
-        // &self.cell_indices_to_ids
+        &self.cell_indices_to_ids
     }
     fn cell_points(&self, index: usize) -> &[usize] {
         &self.cells[self.cell_starts[index]
@@ -251,7 +255,7 @@ impl<T: Scalar> GeometryBuilder for MixedMeshBuilder<T> {
                     LagrangeVariant::Equispaced,
                 ));
                 n
-            }))
+            }));
         }
 
         MixedGeometry::<T, CiarletElement<T, IdentityMap, T>>::new(
@@ -305,7 +309,7 @@ impl<T: Scalar> TopologyBuilder for MixedMeshBuilder<T> {
             let e = &self.elements[self.element_indices[&(*t, *d)]];
             for v in 0..reference_cell::entity_counts(*t)[0] {
                 for d in e.entity_dofs(0, v).unwrap() {
-                    cell_vertices.push(cell_points[start + *d])
+                    cell_vertices.push(cell_points[start + *d]);
                 }
             }
             start += e.dim();
