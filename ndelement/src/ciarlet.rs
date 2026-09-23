@@ -294,9 +294,9 @@ where
             ReferenceCellType::Interval => vec![],
             ReferenceCellType::Triangle => vec![(
                 ReferenceCellType::Interval,
-                2,
+                0,
                 Transformation::Reflection,
-                (|x| vec![x[1], x[0]]) as fn(&[TGeo]) -> Vec<TGeo>,
+                (|x| vec![TGeo::one() - x[0], x[1]]) as fn(&[TGeo]) -> Vec<TGeo>,
             )],
             ReferenceCellType::Quadrilateral => vec![(
                 ReferenceCellType::Interval,
@@ -307,21 +307,21 @@ where
             ReferenceCellType::Tetrahedron => vec![
                 (
                     ReferenceCellType::Interval,
-                    5,
+                    0,
                     Transformation::Reflection,
-                    (|x| vec![x[0], x[2], x[1]]) as fn(&[TGeo]) -> Vec<TGeo>,
+                    (|x| vec![TGeo::one() - x[0], x[1], x[2]]) as fn(&[TGeo]) -> Vec<TGeo>,
                 ),
                 (
                     ReferenceCellType::Triangle,
-                    3,
+                    0,
                     Transformation::Rotation,
-                    (|x| vec![x[1], x[2], x[0]]) as fn(&[TGeo]) -> Vec<TGeo>,
+                    (|x| vec![x[1], TGeo::one() - x[0] - x[1], x[2]]) as fn(&[TGeo]) -> Vec<TGeo>,
                 ),
                 (
                     ReferenceCellType::Triangle,
-                    3,
+                    0,
                     Transformation::Reflection,
-                    (|x| vec![x[0], x[2], x[1]]) as fn(&[TGeo]) -> Vec<TGeo>,
+                    (|x| vec![x[1], x[0], x[2]]) as fn(&[TGeo]) -> Vec<TGeo>,
                 ),
             ],
             ReferenceCellType::Hexahedron => vec![
@@ -755,7 +755,6 @@ impl<T: RlstScalar, M: Map, TGeo: RlstScalar> MappedFiniteElement for CiarletEle
         debug_assert_eq!(data.len() % self.dim, 0);
         let block_size = data.len() / self.dim;
         let tdim = reference_cell::dim(self.cell_type);
-        let mut n = 0;
         if tdim > 1
             && let Some(perm) = match self
                 .dof_transformations
@@ -766,38 +765,13 @@ impl<T: RlstScalar, M: Map, TGeo: RlstScalar> MappedFiniteElement for CiarletEle
                 _ => None,
             }
         {
-            for dofs in &self.entity_dofs[1] {
-                #[cfg(debug_assertions)]
-                for (i, j) in izip!(&dofs[..dofs.len() - 1], &dofs[1..]) {
-                    assert_eq!(i + 1, *j);
-                }
-                if (cell_orientation >> n) & 1 == 1 {
-                    math::apply_permutation(
-                        perm,
-                        &mut data[block_size * dofs[0]..block_size * (dofs[dofs.len() - 1] + 1)],
-                    );
-                }
-                n += 1;
-            }
-        }
-        if tdim > 2 {
-            for (ftype, dofs) in izip!(
-                &reference_cell::entity_types(self.cell_type)[2],
-                &self.entity_dofs[2]
-            ) {
-                #[cfg(debug_assertions)]
-                for (i, j) in izip!(&dofs[..dofs.len() - 1], &dofs[1..]) {
-                    assert_eq!(i + 1, *j);
-                }
-                if let Some(perm) = match self
-                    .dof_transformations
-                    .get(&(*ftype, Transformation::Rotation))
-                {
-                    Some(DofTransformation::Permutation(p)) => Some(p),
-                    Some(DofTransformation::Transformation(_, p)) => Some(p),
-                    _ => None,
-                } {
-                    for _ in 0..(cell_orientation >> n) & 3 {
+            for (n, dofs) in self.entity_dofs[1].iter().enumerate() {
+                if !dofs.is_empty() {
+                    #[cfg(debug_assertions)]
+                    for (i, j) in izip!(&dofs[..dofs.len() - 1], &dofs[1..]) {
+                        assert_eq!(i + 1, *j);
+                    }
+                    if (cell_orientation >> n) & 1 == 1 {
                         math::apply_permutation(
                             perm,
                             &mut data
@@ -805,22 +779,53 @@ impl<T: RlstScalar, M: Map, TGeo: RlstScalar> MappedFiniteElement for CiarletEle
                         );
                     }
                 }
-                n += 2;
-                if let Some(perm) = match self
-                    .dof_transformations
-                    .get(&(*ftype, Transformation::Reflection))
-                {
-                    Some(DofTransformation::Permutation(p)) => Some(p),
-                    Some(DofTransformation::Transformation(_, p)) => Some(p),
-                    _ => None,
-                } && (cell_orientation >> n) & 1 == 1
-                {
-                    math::apply_permutation(
-                        perm,
-                        &mut data[block_size * dofs[0]..block_size * (dofs[dofs.len() - 1] + 1)],
-                    );
+            }
+        }
+        if tdim > 2 {
+            let n_edges = self.entity_dofs[1].len();
+            for (n, (ftype, dofs)) in izip!(
+                &reference_cell::entity_types(self.cell_type)[2],
+                &self.entity_dofs[2]
+            )
+            .enumerate()
+            {
+                if !dofs.is_empty() {
+                    #[cfg(debug_assertions)]
+                    for (i, j) in izip!(&dofs[..dofs.len() - 1], &dofs[1..]) {
+                        assert_eq!(i + 1, *j);
+                    }
+                    if let Some(perm) = match self
+                        .dof_transformations
+                        .get(&(*ftype, Transformation::Rotation))
+                    {
+                        Some(DofTransformation::Permutation(p)) => Some(p),
+                        Some(DofTransformation::Transformation(_, p)) => Some(p),
+                        _ => None,
+                    } {
+                        for _ in 0..(cell_orientation >> (n_edges + n * 3)) & 3 {
+                            math::apply_permutation(
+                                perm,
+                                &mut data
+                                    [block_size * dofs[0]..block_size * (dofs[dofs.len() - 1] + 1)],
+                            );
+                        }
+                    }
+                    if let Some(perm) = match self
+                        .dof_transformations
+                        .get(&(*ftype, Transformation::Reflection))
+                    {
+                        Some(DofTransformation::Permutation(p)) => Some(p),
+                        Some(DofTransformation::Transformation(_, p)) => Some(p),
+                        _ => None,
+                    } && (cell_orientation >> (n_edges + n * 3 + 2)) & 1 == 1
+                    {
+                        math::apply_permutation(
+                            perm,
+                            &mut data
+                                [block_size * dofs[0]..block_size * (dofs[dofs.len() - 1] + 1)],
+                        );
+                    }
                 }
-                n += 1;
             }
         }
     }
@@ -829,7 +834,6 @@ impl<T: RlstScalar, M: Map, TGeo: RlstScalar> MappedFiniteElement for CiarletEle
         debug_assert_eq!(data.len() % self.dim, 0);
         let block_size = data.len() / self.dim;
         let tdim = reference_cell::dim(self.cell_type);
-        let mut n = 0;
         if tdim > 1
             && let Some(mat) = match self
                 .dof_transformations
@@ -839,37 +843,13 @@ impl<T: RlstScalar, M: Map, TGeo: RlstScalar> MappedFiniteElement for CiarletEle
                 _ => None,
             }
         {
-            for dofs in &self.entity_dofs[1] {
-                #[cfg(debug_assertions)]
-                for (i, j) in izip!(&dofs[..dofs.len() - 1], &dofs[1..]) {
-                    assert_eq!(i + 1, *j);
-                }
-                if (cell_orientation >> n) & 1 == 1 {
-                    math::apply_matrix(
-                        mat,
-                        &mut data[block_size * dofs[0]..block_size * (dofs[dofs.len() - 1] + 1)],
-                    );
-                }
-                n += 1;
-            }
-        }
-        if tdim > 2 {
-            for (ftype, dofs) in izip!(
-                &reference_cell::entity_types(self.cell_type)[2],
-                &self.entity_dofs[2]
-            ) {
-                #[cfg(debug_assertions)]
-                for (i, j) in izip!(&dofs[..dofs.len() - 1], &dofs[1..]) {
-                    assert_eq!(i + 1, *j);
-                }
-                if let Some(mat) = match self
-                    .dof_transformations
-                    .get(&(*ftype, Transformation::Rotation))
-                {
-                    Some(DofTransformation::Transformation(m, _)) => Some(m),
-                    _ => None,
-                } {
-                    for _ in 0..(cell_orientation >> n) & 3 {
+            for (n, dofs) in self.entity_dofs[1].iter().enumerate() {
+                if !dofs.is_empty() {
+                    #[cfg(debug_assertions)]
+                    for (i, j) in izip!(&dofs[..dofs.len() - 1], &dofs[1..]) {
+                        assert_eq!(i + 1, *j);
+                    }
+                    if (cell_orientation >> n) & 1 == 1 {
                         math::apply_matrix(
                             mat,
                             &mut data
@@ -877,21 +857,51 @@ impl<T: RlstScalar, M: Map, TGeo: RlstScalar> MappedFiniteElement for CiarletEle
                         );
                     }
                 }
-                n += 2;
-                if let Some(mat) = match self
-                    .dof_transformations
-                    .get(&(*ftype, Transformation::Reflection))
-                {
-                    Some(DofTransformation::Transformation(m, _)) => Some(m),
-                    _ => None,
-                } && (cell_orientation >> n) & 1 == 1
-                {
-                    math::apply_matrix(
-                        mat,
-                        &mut data[block_size * dofs[0]..block_size * (dofs[dofs.len() - 1] + 1)],
-                    );
+            }
+        }
+        if tdim > 2 {
+            let n_edges = self.entity_dofs[1].len();
+            for (n, (ftype, dofs)) in izip!(
+                &reference_cell::entity_types(self.cell_type)[2],
+                &self.entity_dofs[2]
+            )
+            .enumerate()
+            {
+                if !dofs.is_empty() {
+                    #[cfg(debug_assertions)]
+                    for (i, j) in izip!(&dofs[..dofs.len() - 1], &dofs[1..]) {
+                        assert_eq!(i + 1, *j);
+                    }
+                    if let Some(mat) = match self
+                        .dof_transformations
+                        .get(&(*ftype, Transformation::Rotation))
+                    {
+                        Some(DofTransformation::Transformation(m, _)) => Some(m),
+                        _ => None,
+                    } {
+                        for _ in 0..(cell_orientation >> (n_edges + 3 * n)) & 3 {
+                            math::apply_matrix(
+                                mat,
+                                &mut data
+                                    [block_size * dofs[0]..block_size * (dofs[dofs.len() - 1] + 1)],
+                            );
+                        }
+                    }
+                    if let Some(mat) = match self
+                        .dof_transformations
+                        .get(&(*ftype, Transformation::Reflection))
+                    {
+                        Some(DofTransformation::Transformation(m, _)) => Some(m),
+                        _ => None,
+                    } && (cell_orientation >> (n_edges + 3 * n + 2)) & 1 == 1
+                    {
+                        math::apply_matrix(
+                            mat,
+                            &mut data
+                                [block_size * dofs[0]..block_size * (dofs[dofs.len() - 1] + 1)],
+                        );
+                    }
                 }
-                n += 1;
             }
         }
     }
@@ -1754,4 +1764,483 @@ mod test {
             assert_eq!(*i, j);
         }
     }
+
+    macro_rules! test_dof_transformation_apply_triangle {
+        ($family:ident, $degree:expr $(, $arg:expr)*) => {
+            paste! {
+                #[test]
+                fn [<test_dof_transformation_apply_triangle_ $family:lower _ $degree>]() {
+                    let element = [<$family>]::create::<f64, f64>(ReferenceCellType::Triangle, [<$degree>], Continuity::Standard $(, $arg)*);
+
+                    let n = 5;
+                    let npts = (n + 1) * (n + 2) / 2;
+                    let mut points = rlst_dynamic_array!(f64, [2, npts]);
+                    let mut index = 0;
+                    for i in 0..=n {
+                        for j in 0..=n-i {
+                            *points.get_mut([0, index]).unwrap() = i as f64 / n as f64;
+                            *points.get_mut([1, index]).unwrap() = j as f64 / n as f64;
+                            index += 1;
+                        }
+                    }
+
+                    let mut values = DynArray::<f64, 4>::from_shape(element.tabulate_array_shape(0, npts));
+                    element.tabulate(&points, 0, &mut values);
+
+                    let dofs = element.entity_dofs(1, 0).unwrap();
+                    if !dofs.is_empty() {
+                        let mut reflected_points = rlst_dynamic_array!(f64, [2, npts]);
+                        for index in 0..npts {
+                            *reflected_points.get_mut([0, index]).unwrap() = 1.0 - *points.get([0, index]).unwrap() - *points.get([1, index]).unwrap();
+                            *reflected_points.get_mut([1, index]).unwrap() = *points.get([1, index]).unwrap();
+                        }
+                        let mut reflected_values = DynArray::<f64, 4>::from_shape(element.tabulate_array_shape(0, npts));
+                        element.tabulate(&reflected_points, 0, &mut reflected_values);
+
+                        let mut j = rlst_dynamic_array!(f64, [2, 2, npts]);
+                        let det_j = vec![-1.0; npts];
+                        let mut j_inv = rlst_dynamic_array!(f64, [2, 2, npts]);
+                        for i in 0..npts {
+                            *j.get_mut([0, 0, i]).unwrap() = -1.0;
+                            *j.get_mut([0, 1, i]).unwrap() = -1.0;
+                            *j.get_mut([1, 1, i]).unwrap() = 1.0;
+                            *j_inv.get_mut([0, 0, i]).unwrap() = -1.0;
+                            *j_inv.get_mut([0, 1, i]).unwrap() = -1.0;
+                            *j_inv.get_mut([1, 1, i]).unwrap() = 1.0;
+                        }
+
+                        let mut mapped_values = rlst_dynamic_array!(f64, reflected_values.shape());
+                        element.push_forward(&reflected_values, 0, &j, &det_j, &j_inv, &mut mapped_values);
+
+                        for d in 0..values.shape()[3] {
+                            element.apply_dof_permutations_and_transformations(values.r_mut().slice::<3>(3, d).data_mut().unwrap(), 1);
+                        }
+
+                        for p in 0..values.shape()[1] {
+                            for dof in dofs {
+                                for v in 0..values.shape()[3] {
+                                    assert_relative_eq!(
+                                        values[[0, p, *dof, v]],
+                                        mapped_values[[0, p, *dof, v]],
+                                        epsilon = 1e-8
+                                    );
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        };
+    }
+
+    macro_rules! test_dof_transformation_apply_quadrilateral {
+        ($family:ident, $degree:expr $(, $arg:expr)*) => {
+            paste! {
+                #[test]
+                fn [<test_dof_transformation_apply_quadrilateral_ $family:lower _ $degree>]() {
+                    let element = [<$family>]::create::<f64, f64>(ReferenceCellType::Quadrilateral, [<$degree>], Continuity::Standard $(, $arg)*);
+
+                    let n = 5;
+                    let npts = (n + 1) * (n + 1);
+                    let mut points = rlst_dynamic_array!(f64, [2, npts]);
+                    let mut index = 0;
+                    for i in 0..=n {
+                        for j in 0..=n {
+                            *points.get_mut([0, index]).unwrap() = i as f64 / n as f64;
+                            *points.get_mut([1, index]).unwrap() = j as f64 / n as f64;
+                            index += 1;
+                        }
+                    }
+
+                    let mut values = DynArray::<f64, 4>::from_shape(element.tabulate_array_shape(0, npts));
+                    element.tabulate(&points, 0, &mut values);
+
+                    let dofs = element.entity_dofs(1, 0).unwrap();
+                    if !dofs.is_empty() {
+                        let mut reflected_points = rlst_dynamic_array!(f64, [2, npts]);
+                        for index in 0..npts {
+                            *reflected_points.get_mut([0, index]).unwrap() = 1.0 - *points.get([0, index]).unwrap();
+                            *reflected_points.get_mut([1, index]).unwrap() = *points.get([1, index]).unwrap();
+                        }
+                        let mut reflected_values = DynArray::<f64, 4>::from_shape(element.tabulate_array_shape(0, npts));
+                        element.tabulate(&reflected_points, 0, &mut reflected_values);
+
+                        let mut j = rlst_dynamic_array!(f64, [2, 2, npts]);
+                        let det_j = vec![-1.0; npts];
+                        let mut j_inv = rlst_dynamic_array!(f64, [2, 2, npts]);
+                        for i in 0..npts {
+                            *j.get_mut([0, 0, i]).unwrap() = -1.0;
+                            *j.get_mut([1, 1, i]).unwrap() = 1.0;
+                            *j_inv.get_mut([0, 0, i]).unwrap() = -1.0;
+                            *j_inv.get_mut([1, 1, i]).unwrap() = 1.0;
+                        }
+
+                        let mut mapped_values = rlst_dynamic_array!(f64, reflected_values.shape());
+                        element.push_forward(&reflected_values, 0, &j, &det_j, &j_inv, &mut mapped_values);
+
+                        for d in 0..values.shape()[3] {
+                            element.apply_dof_permutations_and_transformations(values.r_mut().slice::<3>(3, d).data_mut().unwrap(), 1);
+                        }
+
+                        for p in 0..values.shape()[1] {
+                            for dof in dofs {
+                                for v in 0..values.shape()[3] {
+                                    assert_relative_eq!(
+                                        values[[0, p, *dof, v]],
+                                        mapped_values[[0, p, *dof, v]],
+                                        epsilon = 1e-8
+                                    );
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        };
+    }
+
+    macro_rules! test_dof_transformation_apply_tetrahedron {
+        ($family:ident, $degree:expr $(, $arg:expr)*) => {
+            paste! {
+                #[test]
+                fn [<test_dof_transformation_apply_tetrahedron_ $family:lower _ $degree>]() {
+                    let element = [<$family>]::create::<f64, f64>(ReferenceCellType::Tetrahedron, [<$degree>], Continuity::Standard $(, $arg)*);
+
+                    let n = 5;
+                    let npts = (n + 1) * (n + 2) * (n + 3) / 2;
+                    let mut points = rlst_dynamic_array!(f64, [3, npts]);
+                    let mut index = 0;
+                    for i in 0..=n {
+                        for j in 0..=n-i {
+                            for k in 0..=n-i-j {
+                                *points.get_mut([0, index]).unwrap() = i as f64 / n as f64;
+                                *points.get_mut([1, index]).unwrap() = j as f64 / n as f64;
+                                *points.get_mut([1, index]).unwrap() = k as f64 / n as f64;
+                                index += 1;
+                            }
+                        }
+                    }
+
+                    let mut values = DynArray::<f64, 4>::from_shape(element.tabulate_array_shape(0, npts));
+
+                    let dofs = element.entity_dofs(1, 0).unwrap();
+                    if !dofs.is_empty() {
+                        element.tabulate(&points, 0, &mut values);
+                        let mut reflected_points = rlst_dynamic_array!(f64, [3, npts]);
+                        for index in 0..npts {
+                            *reflected_points.get_mut([0, index]).unwrap() = 1.0 - *points.get([0, index]).unwrap() - *points.get([1, index]).unwrap() - *points.get([2, index]).unwrap();
+                            *reflected_points.get_mut([1, index]).unwrap() = *points.get([1, index]).unwrap();
+                            *reflected_points.get_mut([2, index]).unwrap() = *points.get([2, index]).unwrap();
+                        }
+                        let mut reflected_values = DynArray::<f64, 4>::from_shape(element.tabulate_array_shape(0, npts));
+                        element.tabulate(&reflected_points, 0, &mut reflected_values);
+
+                        let mut j = rlst_dynamic_array!(f64, [3, 3, npts]);
+                        let det_j = vec![-1.0; npts];
+                        let mut j_inv = rlst_dynamic_array!(f64, [3, 3, npts]);
+                        for i in 0..npts {
+                            *j.get_mut([0, 0, i]).unwrap() = -1.0;
+                            *j.get_mut([0, 1, i]).unwrap() = -1.0;
+                            *j.get_mut([0, 2, i]).unwrap() = -1.0;
+                            *j.get_mut([1, 1, i]).unwrap() = 1.0;
+                            *j.get_mut([2, 2, i]).unwrap() = 1.0;
+                            *j_inv.get_mut([0, 0, i]).unwrap() = -1.0;
+                            *j_inv.get_mut([0, 1, i]).unwrap() = -1.0;
+                            *j_inv.get_mut([0, 2, i]).unwrap() = -1.0;
+                            *j_inv.get_mut([1, 1, i]).unwrap() = 1.0;
+                            *j_inv.get_mut([2, 2, i]).unwrap() = 1.0;
+                        }
+
+                        let mut mapped_values = rlst_dynamic_array!(f64, reflected_values.shape());
+                        element.push_forward(&reflected_values, 0, &j, &det_j, &j_inv, &mut mapped_values);
+
+                        for d in 0..values.shape()[3] {
+                            element.apply_dof_permutations_and_transformations(values.r_mut().slice::<3>(3, d).data_mut().unwrap(), 1);
+                        }
+
+                        for p in 0..values.shape()[1] {
+                            for dof in dofs {
+                                for v in 0..values.shape()[3] {
+                                    assert_relative_eq!(
+                                        values[[0, p, *dof, v]],
+                                        mapped_values[[0, p, *dof, v]],
+                                        epsilon = 1e-8
+                                    );
+                                }
+                            }
+                        }
+                    }
+
+                    let dofs = element.entity_dofs(2, 0).unwrap();
+                    if !dofs.is_empty() {
+                        // Reflection of face
+                        element.tabulate(&points, 0, &mut values);
+                        let mut reflected_points = rlst_dynamic_array!(f64, [3, npts]);
+                        for index in 0..npts {
+                            *reflected_points.get_mut([0, index]).unwrap() = *points.get([1, index]).unwrap();
+                            *reflected_points.get_mut([1, index]).unwrap() = *points.get([0, index]).unwrap();
+                            *reflected_points.get_mut([2, index]).unwrap() = *points.get([2, index]).unwrap();
+                        }
+                        let mut reflected_values = DynArray::<f64, 4>::from_shape(element.tabulate_array_shape(0, npts));
+                        element.tabulate(&reflected_points, 0, &mut reflected_values);
+
+                        let mut j = rlst_dynamic_array!(f64, [3, 3, npts]);
+                        let det_j = vec![-1.0; npts];
+                        let mut j_inv = rlst_dynamic_array!(f64, [3, 3, npts]);
+                        for i in 0..npts {
+                            *j.get_mut([0, 1, i]).unwrap() = 1.0;
+                            *j.get_mut([1, 0, i]).unwrap() = 1.0;
+                            *j.get_mut([2, 2, i]).unwrap() = 1.0;
+                            *j_inv.get_mut([0, 1, i]).unwrap() = 1.0;
+                            *j_inv.get_mut([1, 0, i]).unwrap() = 1.0;
+                            *j_inv.get_mut([2, 2, i]).unwrap() = 1.0;
+                        }
+
+                        let mut mapped_values = rlst_dynamic_array!(f64, reflected_values.shape());
+                        element.push_forward(&reflected_values, 0, &j, &det_j, &j_inv, &mut mapped_values);
+
+                        for d in 0..values.shape()[3] {
+                            element.apply_dof_permutations_and_transformations(values.r_mut().slice::<3>(3, d).data_mut().unwrap(), 1 << (6 + 2));
+                        }
+
+                        for p in 0..values.shape()[1] {
+                            for dof in dofs {
+                                for v in 0..values.shape()[3] {
+                                    assert_relative_eq!(
+                                        values[[0, p, *dof, v]],
+                                        mapped_values[[0, p, *dof, v]],
+                                        epsilon = 1e-8
+                                    );
+                                }
+                            }
+                        }
+
+                        // Rotation of face
+                        element.tabulate(&points, 0, &mut values);
+                        let mut rotated_points = rlst_dynamic_array!(f64, [3, npts]);
+                        for index in 0..npts {
+                            *rotated_points.get_mut([0, index]).unwrap() = 1.0 - *points.get([0, index]).unwrap() - *points.get([1, index]).unwrap() - *points.get([2, index]).unwrap();
+                            *rotated_points.get_mut([1, index]).unwrap() = *points.get([0, index]).unwrap();
+                            *rotated_points.get_mut([2, index]).unwrap() = *points.get([2, index]).unwrap();
+                        }
+                        let mut rotated_values = DynArray::<f64, 4>::from_shape(element.tabulate_array_shape(0, npts));
+                        element.tabulate(&rotated_points, 0, &mut rotated_values);
+
+                        let mut j = rlst_dynamic_array!(f64, [3, 3, npts]);
+                        let det_j = vec![1.0; npts];
+                        let mut j_inv = rlst_dynamic_array!(f64, [3, 3, npts]);
+                        for i in 0..npts {
+                            *j.get_mut([1, 0, i]).unwrap() = -1.0;
+                            *j.get_mut([0, 1, i]).unwrap() = 1.0;
+                            *j.get_mut([1, 1, i]).unwrap() = -1.0;
+                            *j.get_mut([1, 2, i]).unwrap() = -1.0;
+                            *j.get_mut([2, 2, i]).unwrap() = 1.0;
+                            *j_inv.get_mut([0, 0, i]).unwrap() = -1.0;
+                            *j_inv.get_mut([1, 0, i]).unwrap() = 1.0;
+                            *j_inv.get_mut([0, 1, i]).unwrap() = -1.0;
+                            *j_inv.get_mut([0, 2, i]).unwrap() = -1.0;
+                            *j_inv.get_mut([2, 2, i]).unwrap() = 1.0;
+                        }
+
+                        let mut mapped_values = rlst_dynamic_array!(f64, rotated_values.shape());
+                        element.push_forward(&rotated_values, 0, &j, &det_j, &j_inv, &mut mapped_values);
+
+                        for d in 0..values.shape()[3] {
+                            element.apply_dof_permutations_and_transformations(values.r_mut().slice::<3>(3, d).data_mut().unwrap(), 1 << 6);
+                        }
+
+                        for p in 0..values.shape()[1] {
+                            for dof in dofs {
+                                for v in 0..values.shape()[3] {
+                                    assert_relative_eq!(
+                                        values[[0, p, *dof, v]],
+                                        mapped_values[[0, p, *dof, v]],
+                                        epsilon = 1e-8
+                                    );
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        };
+    }
+
+    macro_rules! test_dof_transformation_apply_hexahedron {
+        ($family:ident, $degree:expr $(, $arg:expr)*) => {
+            paste! {
+                #[test]
+                fn [<test_dof_transformation_apply_hexahedron_ $family:lower _ $degree>]() {
+                    let element = [<$family>]::create::<f64, f64>(ReferenceCellType::Hexahedron, [<$degree>], Continuity::Standard $(, $arg)*);
+
+                    let n = 5;
+                    let npts = (n + 1) * (n + 1) * (n + 1);
+                    let mut points = rlst_dynamic_array!(f64, [3, npts]);
+                    let mut index = 0;
+                    for i in 0..=n {
+                        for j in 0..=n-i {
+                            for k in 0..=n-i-j {
+                                *points.get_mut([0, index]).unwrap() = i as f64 / n as f64;
+                                *points.get_mut([1, index]).unwrap() = j as f64 / n as f64;
+                                *points.get_mut([1, index]).unwrap() = k as f64 / n as f64;
+                                index += 1;
+                            }
+                        }
+                    }
+
+                    let mut values = DynArray::<f64, 4>::from_shape(element.tabulate_array_shape(0, npts));
+
+                    let dofs = element.entity_dofs(1, 0).unwrap();
+                    if !dofs.is_empty() {
+                        element.tabulate(&points, 0, &mut values);
+                        let mut reflected_points = rlst_dynamic_array!(f64, [3, npts]);
+                        for index in 0..npts {
+                            *reflected_points.get_mut([0, index]).unwrap() = 1.0 - *points.get([0, index]).unwrap();
+                            *reflected_points.get_mut([1, index]).unwrap() = *points.get([1, index]).unwrap();
+                            *reflected_points.get_mut([2, index]).unwrap() = *points.get([2, index]).unwrap();
+                        }
+                        let mut reflected_values = DynArray::<f64, 4>::from_shape(element.tabulate_array_shape(0, npts));
+                        element.tabulate(&reflected_points, 0, &mut reflected_values);
+
+                        let mut j = rlst_dynamic_array!(f64, [3, 3, npts]);
+                        let det_j = vec![-1.0; npts];
+                        let mut j_inv = rlst_dynamic_array!(f64, [3, 3, npts]);
+                        for i in 0..npts {
+                            *j.get_mut([0, 0, i]).unwrap() = -1.0;
+                            *j.get_mut([1, 1, i]).unwrap() = 1.0;
+                            *j.get_mut([2, 2, i]).unwrap() = 1.0;
+                            *j_inv.get_mut([0, 0, i]).unwrap() = -1.0;
+                            *j_inv.get_mut([1, 1, i]).unwrap() = 1.0;
+                            *j_inv.get_mut([2, 2, i]).unwrap() = 1.0;
+                        }
+
+                        let mut mapped_values = rlst_dynamic_array!(f64, reflected_values.shape());
+                        element.push_forward(&reflected_values, 0, &j, &det_j, &j_inv, &mut mapped_values);
+
+                        for d in 0..values.shape()[3] {
+                            element.apply_dof_permutations_and_transformations(values.r_mut().slice::<3>(3, d).data_mut().unwrap(), 1);
+                        }
+
+                        for p in 0..values.shape()[1] {
+                            for dof in dofs {
+                                for v in 0..values.shape()[3] {
+                                    assert_relative_eq!(
+                                        values[[0, p, *dof, v]],
+                                        mapped_values[[0, p, *dof, v]],
+                                        epsilon = 1e-8
+                                    );
+                                }
+                            }
+                        }
+                    }
+
+                    let dofs = element.entity_dofs(2, 0).unwrap();
+                    if !dofs.is_empty() {
+                        // Reflection of face
+                        element.tabulate(&points, 0, &mut values);
+                        let mut reflected_points = rlst_dynamic_array!(f64, [3, npts]);
+                        for index in 0..npts {
+                            *reflected_points.get_mut([0, index]).unwrap() = *points.get([1, index]).unwrap();
+                            *reflected_points.get_mut([1, index]).unwrap() = *points.get([0, index]).unwrap();
+                            *reflected_points.get_mut([2, index]).unwrap() = *points.get([2, index]).unwrap();
+                        }
+                        let mut reflected_values = DynArray::<f64, 4>::from_shape(element.tabulate_array_shape(0, npts));
+                        element.tabulate(&reflected_points, 0, &mut reflected_values);
+
+                        let mut j = rlst_dynamic_array!(f64, [3, 3, npts]);
+                        let det_j = vec![-1.0; npts];
+                        let mut j_inv = rlst_dynamic_array!(f64, [3, 3, npts]);
+                        for i in 0..npts {
+                            *j.get_mut([0, 1, i]).unwrap() = 1.0;
+                            *j.get_mut([1, 0, i]).unwrap() = 1.0;
+                            *j.get_mut([2, 2, i]).unwrap() = 1.0;
+                            *j_inv.get_mut([0, 1, i]).unwrap() = 1.0;
+                            *j_inv.get_mut([1, 0, i]).unwrap() = 1.0;
+                            *j_inv.get_mut([2, 2, i]).unwrap() = 1.0;
+                        }
+
+                        let mut mapped_values = rlst_dynamic_array!(f64, reflected_values.shape());
+                        element.push_forward(&reflected_values, 0, &j, &det_j, &j_inv, &mut mapped_values);
+
+                        for d in 0..values.shape()[3] {
+                            element.apply_dof_permutations_and_transformations(values.r_mut().slice::<3>(3, d).data_mut().unwrap(), 1 << (12 + 2));
+                        }
+
+                        for p in 0..values.shape()[1] {
+                            for dof in dofs {
+                                for v in 0..values.shape()[3] {
+                                    assert_relative_eq!(
+                                        values[[0, p, *dof, v]],
+                                        mapped_values[[0, p, *dof, v]],
+                                        epsilon = 1e-8
+                                    );
+                                }
+                            }
+                        }
+
+                        // Rotation of face
+                        element.tabulate(&points, 0, &mut values);
+                        let mut rotated_points = rlst_dynamic_array!(f64, [3, npts]);
+                        for index in 0..npts {
+                            *rotated_points.get_mut([0, index]).unwrap() = 1.0 - *points.get([1, index]).unwrap();
+                            *rotated_points.get_mut([1, index]).unwrap() = *points.get([0, index]).unwrap();
+                            *rotated_points.get_mut([2, index]).unwrap() = *points.get([2, index]).unwrap();
+                        }
+                        let mut rotated_values = DynArray::<f64, 4>::from_shape(element.tabulate_array_shape(0, npts));
+                        element.tabulate(&rotated_points, 0, &mut rotated_values);
+
+                        let mut j = rlst_dynamic_array!(f64, [3, 3, npts]);
+                        let det_j = vec![1.0; npts];
+                        let mut j_inv = rlst_dynamic_array!(f64, [3, 3, npts]);
+                        for i in 0..npts {
+                            *j.get_mut([1, 0, i]).unwrap() = -1.0;
+                            *j.get_mut([0, 1, i]).unwrap() = 1.0;
+                            *j.get_mut([2, 2, i]).unwrap() = 1.0;
+                            *j_inv.get_mut([1, 0, i]).unwrap() = 1.0;
+                            *j_inv.get_mut([0, 1, i]).unwrap() = -1.0;
+                            *j_inv.get_mut([2, 2, i]).unwrap() = 1.0;
+                        }
+
+                        let mut mapped_values = rlst_dynamic_array!(f64, rotated_values.shape());
+                        element.push_forward(&rotated_values, 0, &j, &det_j, &j_inv, &mut mapped_values);
+
+                        for d in 0..values.shape()[3] {
+                            element.apply_dof_permutations_and_transformations(values.r_mut().slice::<3>(3, d).data_mut().unwrap(), 1 << 12);
+                        }
+
+                        for p in 0..values.shape()[1] {
+                            for dof in dofs {
+                                for v in 0..values.shape()[3] {
+                                    assert_relative_eq!(
+                                        values[[0, p, *dof, v]],
+                                        mapped_values[[0, p, *dof, v]],
+                                        epsilon = 1e-8
+                                    );
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        };
+    }
+
+    test_dof_transformation_apply_triangle!(lagrange, 3, LagrangeVariant::Equispaced);
+    test_dof_transformation_apply_triangle!(nedelec, 3);
+    test_dof_transformation_apply_triangle!(raviart_thomas, 3);
+    test_dof_transformation_apply_triangle!(lagrange, 4, LagrangeVariant::Equispaced);
+    test_dof_transformation_apply_triangle!(nedelec, 4);
+    test_dof_transformation_apply_triangle!(raviart_thomas, 4);
+    test_dof_transformation_apply_quadrilateral!(lagrange, 3, LagrangeVariant::Equispaced);
+    test_dof_transformation_apply_quadrilateral!(nedelec, 3);
+    test_dof_transformation_apply_quadrilateral!(raviart_thomas, 3);
+    test_dof_transformation_apply_quadrilateral!(lagrange, 4, LagrangeVariant::Equispaced);
+    test_dof_transformation_apply_quadrilateral!(nedelec, 4);
+    test_dof_transformation_apply_quadrilateral!(raviart_thomas, 4);
+    test_dof_transformation_apply_tetrahedron!(lagrange, 3, LagrangeVariant::Equispaced);
+    test_dof_transformation_apply_tetrahedron!(nedelec, 3);
+    test_dof_transformation_apply_tetrahedron!(raviart_thomas, 3);
+    test_dof_transformation_apply_hexahedron!(lagrange, 3, LagrangeVariant::Equispaced);
+    test_dof_transformation_apply_hexahedron!(nedelec, 2);
+    test_dof_transformation_apply_hexahedron!(raviart_thomas, 2);
 }

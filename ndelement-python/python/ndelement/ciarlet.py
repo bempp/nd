@@ -145,23 +145,23 @@ class CiarletElement:
     def apply_dof_permutations(self, data: npt.NDArray, orientation: np.int32):
         """Apply permutation parts of DOF transformations."""
         if data.dtype == np.float64:
-            self._rs.apply_dof_permutations_f64(data, orientation)
+            self._rs.apply_dof_permutations_f64(data.reshape(-1), orientation)
         elif data.dtype == np.int64:
-            self._rs.apply_dof_permutations_i64(data, orientation)
+            self._rs.apply_dof_permutations_i64(data.reshape(-1), orientation)
         elif data.dtype == np.uint64:
-            self._rs.apply_dof_permutations_u64(data, orientation)
+            self._rs.apply_dof_permutations_u64(data.reshape(-1), orientation)
         else:
             raise TypeError(f"Unsupported data type: {data.dtype}")
 
     def apply_dof_transformations(self, data: npt.NDArray[np.float64], orientation: np.int32):
         """Apply non-permutation parts of DOF transformations."""
-        self._rs.apply_dof_transformations(data, orientation)
+        self._rs.apply_dof_transformations(data.reshape(-1), orientation)
 
     def apply_dof_permutations_and_transformations(
         self, data: npt.NDArray[np.float64], orientation: np.int32
     ):
         """Apply DOF transformations."""
-        self._rs.apply_dof_permutations_and_transformations(data, orientation)
+        self._rs.apply_dof_permutations_and_transformations(data.reshape(-1), orientation)
 
 
 class ElementFamily:

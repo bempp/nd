@@ -32,7 +32,7 @@ jobs:
         run: sudo apt-get install -y libopenblas-dev liblapack-dev libscotch-dev
 
       - name: Run unit tests
-        run: RUST_MIN_STACK=8388608 cargo test ${{ matrix.feature-flags }}
+        run: cargo test ${{ matrix.feature-flags }}
 
   rust:
     name: Rust tests and examples
@@ -61,7 +61,7 @@ jobs:
         run: sudo apt-get install -y libopenblas-dev liblapack-dev libscotch-dev
 
       - name: Run tests
-        run: RUST_MIN_STACK=8388608 cargo test --examples --release --features "strict"
+        run: cargo test --examples --release --features "strict"
 
       - name: Run examples
         run: |
@@ -109,7 +109,7 @@ jobs:
         run: |
           cd ndelement-python
           source .venv/bin/activate
-          maturin develop
+          maturin develop --release
       - name: Run ndelement Python tests
         run: |
           cd ndelement-python
