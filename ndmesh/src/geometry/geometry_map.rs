@@ -196,14 +196,14 @@ impl<T: Scalar, B2D: ValueArrayImpl<T, 2>, C2D: ValueArrayImpl<usize, 2>> Geomet
         self.gdim
     }
     fn point_count(&self) -> usize {
-        self.table.shape()[1]
+        self.table.shape()[0]
     }
     fn physical_points<Array2Impl: MutableArrayImpl<T, 2>>(
         &self,
         entity_index: usize,
         points: &mut Array<Array2Impl, 2>,
     ) {
-        let npts = self.table.shape()[1];
+        let npts = self.table.shape()[0];
         debug_assert!(points.shape()[0] == self.gdim);
         debug_assert!(points.shape()[1] == npts);
 
@@ -211,7 +211,7 @@ impl<T: Scalar, B2D: ValueArrayImpl<T, 2>, C2D: ValueArrayImpl<usize, 2>> Geomet
         for i in 0..self.entities.shape()[0] {
             let v = unsafe { self.entities.get_value_unchecked([i, entity_index]) };
             for point_index in 0..npts {
-                let t = unsafe { *self.table.get_unchecked([0, point_index, i, 0]) };
+                let t = unsafe { *self.table.get_unchecked([point_index, 0, 0, i]) };
                 for gd in 0..self.gdim {
                     unsafe {
                         *points.get_unchecked_mut([gd, point_index]) +=
@@ -226,7 +226,7 @@ impl<T: Scalar, B2D: ValueArrayImpl<T, 2>, C2D: ValueArrayImpl<usize, 2>> Geomet
         entity_index: usize,
         jacobians: &mut Array<Array3MutImpl, 3>,
     ) {
-        let npts = self.table.shape()[1];
+        let npts = self.table.shape()[0];
         debug_assert!(jacobians.shape()[0] == self.gdim);
         debug_assert!(jacobians.shape()[1] == self.tdim);
         debug_assert!(jacobians.shape()[2] == npts);
@@ -236,7 +236,7 @@ impl<T: Scalar, B2D: ValueArrayImpl<T, 2>, C2D: ValueArrayImpl<usize, 2>> Geomet
             let v = unsafe { self.entities.get_value_unchecked([i, entity_index]) };
             for point_index in 0..npts {
                 for td in 0..self.tdim {
-                    let t = unsafe { self.table.get_value_unchecked([1 + td, point_index, i, 0]) };
+                    let t = unsafe { self.table.get_value_unchecked([point_index, 0, 1 + td, i]) };
                     for gd in 0..self.gdim {
                         unsafe {
                             *jacobians.get_unchecked_mut([gd, td, point_index]) +=
@@ -255,7 +255,7 @@ impl<T: Scalar, B2D: ValueArrayImpl<T, 2>, C2D: ValueArrayImpl<usize, 2>> Geomet
         inverse_jacobians: &mut Array<Array3MutImpl, 3>,
         jdets: &mut [T],
     ) {
-        let npts = self.table.shape()[1];
+        let npts = self.table.shape()[0];
         debug_assert!(jacobians.shape()[0] == self.gdim);
         debug_assert!(jacobians.shape()[1] == self.tdim);
         debug_assert!(jacobians.shape()[2] == npts);
@@ -289,7 +289,7 @@ impl<T: Scalar, B2D: ValueArrayImpl<T, 2>, C2D: ValueArrayImpl<usize, 2>> Geomet
             (self.tdim + 1 == self.gdim),
             "Can only compute normal for entities where tdim + 1 == gdim"
         );
-        let npts = self.table.shape()[1];
+        let npts = self.table.shape()[0];
         debug_assert!(jacobians.shape()[0] == self.gdim);
         debug_assert!(jacobians.shape()[1] == self.tdim);
         debug_assert!(jacobians.shape()[2] == npts);
@@ -323,6 +323,7 @@ mod test {
     use approx::assert_relative_eq;
     use ndelement::{
         ciarlet::lagrange,
+        traits::FiniteElement,
         types::{Continuity, ReferenceCellType},
     };
     use rand::{Rng, SeedableRng};
@@ -485,6 +486,261 @@ mod test {
                     );
                 }
             }
+        }
+    }
+
+    /// Evaluate a known test map $F$ from a reference cell into $\mathbb{R}^{gdim}$, and its
+    /// Jacobian, at the reference point $\xi$.
+    ///
+    /// The geometry map tests use this as the exact answer. They place each geometry point of
+    /// a cell at $F$ of the corresponding Lagrange interpolation point, so the cell's geometry
+    /// is the Lagrange interpolant of $F$. $F$ is chosen to lie in the span of the degree
+    /// `degree` Lagrange element on the cell, so the interpolant equals $F$ exactly. The
+    /// physical points and Jacobians computed by [`GeometryMap`] can then be compared with
+    /// $F$ and $\partial F / \partial \xi$ to rounding error.
+    ///
+    /// Component $g$ of the map, for $g = 0, \dots, gdim - 1$, is
+    /// $$
+    /// F_g(\xi) = \frac{g + 1}{2} + \sum_{t=0}^{tdim-1} A_{gt} \xi_t
+    ///     + q_g \xi_0 \xi_1 + s_g \xi_{tdim-1}^2,
+    /// $$
+    /// with
+    /// - $A_{gt} = 0.1 (g + 2t + 1)$, plus $1.5 + 0.5 g$ on the diagonal $g = t$. The
+    ///   diagonal term makes the leading $tdim \times tdim$ block of $A$ diagonally
+    ///   dominant, so the affine part has full rank. All entries are distinct, so a Jacobian
+    ///   that is transposed or has its rows or columns permuted does not match.
+    /// - $q_g = 0.2 (g + 1)$ if `tdim >= 2` and either `tensor_product` is set or
+    ///   `degree >= 2`, and $q_g = 0$ otherwise. The bilinear term $\xi_0 \xi_1$ is in the
+    ///   degree 1 space on quadrilaterals and hexahedra, but not on triangles or tetrahedra.
+    /// - $s_g = 0.15 (g + 1)$ if `degree >= 2`, and $s_g = 0$ otherwise. This makes the
+    ///   map genuinely curved for higher degree cells.
+    ///
+    /// So on a degree 1 simplex $F$ is affine, and in every other case the Jacobian varies
+    /// with $\xi$.
+    ///
+    /// # Arguments
+    /// - `tdim`: The topological dimension of the reference cell, which is the length of `xi`.
+    /// - `gdim`: The geometric dimension, which is the number of components of $F$.
+    /// - `degree`: The degree of the Lagrange element used for the geometry.
+    /// - `tensor_product`: Whether the cell is a quadrilateral or hexahedron.
+    /// - `xi`: The reference point at which to evaluate the map.
+    ///
+    /// Returns `(f, jac)`, where `f[g]` is $F_g(\xi)$ and `jac[g][t]` is
+    /// $\partial F_g / \partial \xi_t (\xi)$.
+    fn polynomial_map(
+        tdim: usize,
+        gdim: usize,
+        degree: usize,
+        tensor_product: bool,
+        xi: &[f64],
+    ) -> (Vec<f64>, Vec<Vec<f64>>) {
+        let mut f = vec![0.0; gdim];
+        let mut jac = vec![vec![0.0; tdim]; gdim];
+        for g in 0..gdim {
+            let gf = g as f64;
+            // Constant term
+            f[g] = 0.5 * (gf + 1.0);
+            // Affine term A xi
+            for t in 0..tdim {
+                let a =
+                    if g == t { 1.5 + 0.5 * gf } else { 0.0 } + 0.1 * (gf + 2.0 * t as f64 + 1.0);
+                f[g] += a * xi[t];
+                jac[g][t] += a;
+            }
+            // Bilinear term q xi_0 xi_1
+            if tdim >= 2 && (tensor_product || degree >= 2) {
+                let q = 0.2 * (gf + 1.0);
+                f[g] += q * xi[0] * xi[1];
+                jac[g][0] += q * xi[1];
+                jac[g][1] += q * xi[0];
+            }
+            // Quadratic term s xi_last^2 in the last reference coordinate
+            if degree >= 2 {
+                let s = 0.15 * (gf + 1.0);
+                let last = tdim - 1;
+                f[g] += s * xi[last] * xi[last];
+                jac[g][last] += 2.0 * s * xi[last];
+            }
+        }
+        (f, jac)
+    }
+
+    /// Determinant of a square matrix of size at most 3
+    fn det(m: &[Vec<f64>]) -> f64 {
+        match m.len() {
+            1 => m[0][0],
+            2 => m[0][0] * m[1][1] - m[0][1] * m[1][0],
+            3 => {
+                m[0][0] * (m[1][1] * m[2][2] - m[1][2] * m[2][1])
+                    - m[0][1] * (m[1][0] * m[2][2] - m[1][2] * m[2][0])
+                    + m[0][2] * (m[1][0] * m[2][1] - m[1][1] * m[2][0])
+            }
+            _ => panic!("Unsupported size"),
+        }
+    }
+
+    /// Check a geometry map for a single cell whose geometry is given by `polynomial_map`.
+    fn check_polynomial_geometry(cell: ReferenceCellType, degree: usize, gdim: usize) {
+        let tdim = reference_cell::dim(cell);
+        let tensor_product = matches!(
+            cell,
+            ReferenceCellType::Quadrilateral | ReferenceCellType::Hexahedron
+        );
+        let e = lagrange::create::<f64, f64>(
+            cell,
+            degree,
+            Continuity::Standard,
+            lagrange::LagrangeVariant::Equispaced,
+        );
+
+        // Put the geometry point for each DOF at the image of its interpolation point
+        let mut geo_points = rlst_dynamic_array!(f64, [gdim, e.dim()]);
+        for d in 0..=tdim {
+            for (i, pts) in e.interpolation_points()[d].iter().enumerate() {
+                for (col, dof) in e.entity_dofs(d, i).unwrap().iter().enumerate() {
+                    let xi = (0..tdim).map(|t| pts[[t, col]]).collect::<Vec<_>>();
+                    let (f, _) = polynomial_map(tdim, gdim, degree, tensor_product, &xi);
+                    for g in 0..gdim {
+                        geo_points[[g, *dof]] = f[g];
+                    }
+                }
+            }
+        }
+        let mut entities = rlst_dynamic_array!(usize, [e.dim(), 1]);
+        for i in 0..e.dim() {
+            entities[[i, 0]] = i;
+        }
+
+        let coords: &[&[f64]] = match cell {
+            ReferenceCellType::Interval => &[&[0.15], &[0.4], &[0.85]],
+            ReferenceCellType::Triangle => &[&[0.2, 0.3], &[0.1, 0.6], &[0.55, 0.15]],
+            ReferenceCellType::Quadrilateral => &[&[0.2, 0.7], &[0.6, 0.1], &[0.85, 0.45]],
+            ReferenceCellType::Tetrahedron => {
+                &[&[0.1, 0.2, 0.3], &[0.3, 0.1, 0.25], &[0.15, 0.45, 0.2]]
+            }
+            ReferenceCellType::Hexahedron => {
+                &[&[0.2, 0.7, 0.4], &[0.6, 0.1, 0.8], &[0.35, 0.55, 0.15]]
+            }
+            _ => panic!("Unsupported cell type: {cell:?}"),
+        };
+        let npts = coords.len();
+        let mut points = rlst_dynamic_array!(f64, [tdim, npts]);
+        for (p, c) in coords.iter().enumerate() {
+            for t in 0..tdim {
+                points[[t, p]] = c[t];
+            }
+        }
+
+        let gmap = GeometryMap::new(&e, &points, &geo_points, &entities);
+        assert_eq!(gmap.point_count(), npts);
+
+        let mut physical_points = rlst_dynamic_array!(f64, [gdim, npts]);
+        let mut jacobians = rlst_dynamic_array!(f64, [gdim, tdim, npts]);
+        let mut jinv = rlst_dynamic_array!(f64, [tdim, gdim, npts]);
+        let mut jdets = vec![0.0; npts];
+        let mut normals = rlst_dynamic_array!(f64, [gdim, npts]);
+
+        gmap.physical_points(0, &mut physical_points);
+        if gdim == tdim + 1 {
+            gmap.jacobians_inverses_dets_normals(
+                0,
+                &mut jacobians,
+                &mut jinv,
+                &mut jdets,
+                &mut normals,
+            );
+        } else {
+            gmap.jacobians_inverses_dets(0, &mut jacobians, &mut jinv, &mut jdets);
+        }
+
+        for (p, xi) in coords.iter().enumerate() {
+            let (f, jac) = polynomial_map(tdim, gdim, degree, tensor_product, xi);
+            for g in 0..gdim {
+                assert_relative_eq!(physical_points[[g, p]], f[g], epsilon = 1e-12);
+                for t in 0..tdim {
+                    assert_relative_eq!(jacobians[[g, t, p]], jac[g][t], epsilon = 1e-12);
+                }
+            }
+
+            // sqrt(det(J^T J))
+            let jtj = (0..tdim)
+                .map(|s| {
+                    (0..tdim)
+                        .map(|t| (0..gdim).map(|g| jac[g][s] * jac[g][t]).sum::<f64>())
+                        .collect::<Vec<_>>()
+                })
+                .collect::<Vec<_>>();
+            assert_relative_eq!(jdets[p], det(&jtj).sqrt(), epsilon = 1e-12);
+
+            // J^{-1} J is the identity
+            let jinv_jac = (0..tdim)
+                .map(|s| {
+                    (0..tdim)
+                        .map(|t| (0..gdim).map(|g| jinv[[s, g, p]] * jac[g][t]).sum::<f64>())
+                        .collect::<Vec<_>>()
+                })
+                .collect::<Vec<_>>();
+            for (s, row) in jinv_jac.iter().enumerate() {
+                for (t, value) in row.iter().enumerate() {
+                    assert_relative_eq!(*value, if s == t { 1.0 } else { 0.0 }, epsilon = 1e-10);
+                }
+            }
+
+            if gdim == tdim + 1 {
+                let n = match tdim {
+                    1 => vec![jac[1][0], -jac[0][0]],
+                    2 => vec![
+                        jac[1][0] * jac[2][1] - jac[2][0] * jac[1][1],
+                        jac[2][0] * jac[0][1] - jac[0][0] * jac[2][1],
+                        jac[0][0] * jac[1][1] - jac[1][0] * jac[0][1],
+                    ],
+                    _ => panic!("Unsupported dimension"),
+                };
+                for g in 0..gdim {
+                    assert_relative_eq!(normals[[g, p]], n[g] / jdets[p], epsilon = 1e-12);
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn test_geometry_map_polynomial_interval() {
+        for degree in 1..=2 {
+            for gdim in 1..=3 {
+                check_polynomial_geometry(ReferenceCellType::Interval, degree, gdim);
+            }
+        }
+    }
+
+    #[test]
+    fn test_geometry_map_polynomial_triangle() {
+        for degree in 1..=2 {
+            for gdim in 2..=3 {
+                check_polynomial_geometry(ReferenceCellType::Triangle, degree, gdim);
+            }
+        }
+    }
+
+    #[test]
+    fn test_geometry_map_polynomial_quadrilateral() {
+        for degree in 1..=2 {
+            for gdim in 2..=3 {
+                check_polynomial_geometry(ReferenceCellType::Quadrilateral, degree, gdim);
+            }
+        }
+    }
+
+    #[test]
+    fn test_geometry_map_polynomial_tetrahedron() {
+        for degree in 1..=2 {
+            check_polynomial_geometry(ReferenceCellType::Tetrahedron, degree, 3);
+        }
+    }
+
+    #[test]
+    fn test_geometry_map_polynomial_hexahedron() {
+        for degree in 1..=2 {
+            check_polynomial_geometry(ReferenceCellType::Hexahedron, degree, 3);
         }
     }
 }

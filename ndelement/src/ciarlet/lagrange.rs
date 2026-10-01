@@ -336,8 +336,9 @@ impl<T: RlstScalar + Getrf + Getri, TGeo: RlstScalar> ElementFamily
 
 #[cfg(test)]
 mod test {
-    use super::super::test::check_dofs;
+    use super::super::test::{check_dofs, check_tabulate_layout, tabulate};
     use super::*;
+    use crate::polynomials::test::{derivative_index, interior_points, multi_indices};
     use crate::traits::FiniteElement;
     use approx::*;
     use paste::paste;
@@ -372,7 +373,7 @@ mod test {
         e.tabulate(&points, 0, &mut data);
 
         for pt in 0..4 {
-            assert_relative_eq!(*data.get([0, pt, 0, 0]).unwrap(), 1.0);
+            assert_relative_eq!(*data.get([pt, 0, 0, 0]).unwrap(), 1.0);
         }
         check_dofs(e);
     }
@@ -396,8 +397,8 @@ mod test {
 
         for pt in 0..4 {
             let x = *points.get([0, pt]).unwrap();
-            assert_relative_eq!(*data.get([0, pt, 0, 0]).unwrap(), 1.0 - x);
-            assert_relative_eq!(*data.get([0, pt, 1, 0]).unwrap(), x);
+            assert_relative_eq!(*data.get([pt, 0, 0, 0]).unwrap(), 1.0 - x);
+            assert_relative_eq!(*data.get([pt, 0, 0, 1]).unwrap(), x);
         }
         check_dofs(e);
     }
@@ -430,7 +431,7 @@ mod test {
         e.tabulate(&points, 0, &mut data);
 
         for pt in 0..6 {
-            assert_relative_eq!(*data.get([0, pt, 0, 0]).unwrap(), 1.0);
+            assert_relative_eq!(*data.get([pt, 0, 0, 0]).unwrap(), 1.0);
         }
         check_dofs(e);
     }
@@ -463,9 +464,9 @@ mod test {
         for pt in 0..6 {
             let x = *points.get([0, pt]).unwrap();
             let y = *points.get([1, pt]).unwrap();
-            assert_relative_eq!(*data.get([0, pt, 0, 0]).unwrap(), 1.0 - x - y);
-            assert_relative_eq!(*data.get([0, pt, 1, 0]).unwrap(), x);
-            assert_relative_eq!(*data.get([0, pt, 2, 0]).unwrap(), y);
+            assert_relative_eq!(*data.get([pt, 0, 0, 0]).unwrap(), 1.0 - x - y);
+            assert_relative_eq!(*data.get([pt, 0, 0, 1]).unwrap(), x);
+            assert_relative_eq!(*data.get([pt, 0, 0, 2]).unwrap(), y);
         }
         check_dofs(e);
     }
@@ -496,7 +497,7 @@ mod test {
         e.tabulate(&points, 0, &mut data);
 
         for pt in 0..6 {
-            assert_relative_eq!(*data.get([0, pt, 0, 0]).unwrap(), 1.0);
+            assert_relative_eq!(*data.get([pt, 0, 0, 0]).unwrap(), 1.0);
         }
         check_dofs(e);
     }
@@ -530,10 +531,10 @@ mod test {
         for pt in 0..6 {
             let x = *points.get([0, pt]).unwrap();
             let y = *points.get([1, pt]).unwrap();
-            assert_relative_eq!(*data.get([0, pt, 0, 0]).unwrap(), (1.0 - x) * (1.0 - y));
-            assert_relative_eq!(*data.get([0, pt, 1, 0]).unwrap(), x * (1.0 - y));
-            assert_relative_eq!(*data.get([0, pt, 2, 0]).unwrap(), (1.0 - x) * y);
-            assert_relative_eq!(*data.get([0, pt, 3, 0]).unwrap(), x * y);
+            assert_relative_eq!(*data.get([pt, 0, 0, 0]).unwrap(), (1.0 - x) * (1.0 - y));
+            assert_relative_eq!(*data.get([pt, 0, 0, 1]).unwrap(), x * (1.0 - y));
+            assert_relative_eq!(*data.get([pt, 0, 0, 2]).unwrap(), (1.0 - x) * y);
+            assert_relative_eq!(*data.get([pt, 0, 0, 3]).unwrap(), x * y);
         }
         check_dofs(e);
     }
@@ -568,47 +569,47 @@ mod test {
             let x = *points.get([0, pt]).unwrap();
             let y = *points.get([1, pt]).unwrap();
             assert_relative_eq!(
-                *data.get([0, pt, 0, 0]).unwrap(),
+                *data.get([pt, 0, 0, 0]).unwrap(),
                 (1.0 - x) * (1.0 - 2.0 * x) * (1.0 - y) * (1.0 - 2.0 * y),
                 epsilon = 1e-14
             );
             assert_relative_eq!(
-                *data.get([0, pt, 1, 0]).unwrap(),
+                *data.get([pt, 0, 0, 1]).unwrap(),
                 x * (2.0 * x - 1.0) * (1.0 - y) * (1.0 - 2.0 * y),
                 epsilon = 1e-14
             );
             assert_relative_eq!(
-                *data.get([0, pt, 2, 0]).unwrap(),
+                *data.get([pt, 0, 0, 2]).unwrap(),
                 (1.0 - x) * (1.0 - 2.0 * x) * y * (2.0 * y - 1.0),
                 epsilon = 1e-14
             );
             assert_relative_eq!(
-                *data.get([0, pt, 3, 0]).unwrap(),
+                *data.get([pt, 0, 0, 3]).unwrap(),
                 x * (2.0 * x - 1.0) * y * (2.0 * y - 1.0),
                 epsilon = 1e-14
             );
             assert_relative_eq!(
-                *data.get([0, pt, 4, 0]).unwrap(),
+                *data.get([pt, 0, 0, 4]).unwrap(),
                 4.0 * x * (1.0 - x) * (1.0 - y) * (1.0 - 2.0 * y),
                 epsilon = 1e-14
             );
             assert_relative_eq!(
-                *data.get([0, pt, 5, 0]).unwrap(),
+                *data.get([pt, 0, 0, 5]).unwrap(),
                 (1.0 - x) * (1.0 - 2.0 * x) * 4.0 * y * (1.0 - y),
                 epsilon = 1e-14
             );
             assert_relative_eq!(
-                *data.get([0, pt, 6, 0]).unwrap(),
+                *data.get([pt, 0, 0, 6]).unwrap(),
                 x * (2.0 * x - 1.0) * 4.0 * y * (1.0 - y),
                 epsilon = 1e-14
             );
             assert_relative_eq!(
-                *data.get([0, pt, 7, 0]).unwrap(),
+                *data.get([pt, 0, 0, 7]).unwrap(),
                 4.0 * x * (1.0 - x) * y * (2.0 * y - 1.0),
                 epsilon = 1e-14
             );
             assert_relative_eq!(
-                *data.get([0, pt, 8, 0]).unwrap(),
+                *data.get([pt, 0, 0, 8]).unwrap(),
                 4.0 * x * (1.0 - x) * 4.0 * y * (1.0 - y),
                 epsilon = 1e-14
             );
@@ -648,7 +649,7 @@ mod test {
         e.tabulate(&points, 0, &mut data);
 
         for pt in 0..6 {
-            assert_relative_eq!(*data.get([0, pt, 0, 0]).unwrap(), 1.0);
+            assert_relative_eq!(*data.get([pt, 0, 0, 0]).unwrap(), 1.0);
         }
         check_dofs(e);
     }
@@ -662,7 +663,7 @@ mod test {
             LagrangeVariant::Equispaced,
         );
         assert_eq!(e.value_size(), 1);
-        let mut data = DynArray::<f64, 4>::from_shape(e.tabulate_array_shape(0, 6));
+        let mut data = DynArray::<f64, 4>::from_shape(e.tabulate_array_shape(2, 6));
         let mut points = rlst_dynamic_array!(f64, [3, 6]);
         *points.get_mut([0, 0]).unwrap() = 0.0;
         *points.get_mut([1, 0]).unwrap() = 0.0;
@@ -683,20 +684,50 @@ mod test {
         *points.get_mut([1, 5]).unwrap() = 0.1;
         *points.get_mut([2, 5]).unwrap() = 0.15;
 
-        e.tabulate(&points, 0, &mut data);
+        e.tabulate(&points, 2, &mut data);
 
         for pt in 0..6 {
             let x = *points.get([0, pt]).unwrap();
             let y = *points.get([1, pt]).unwrap();
             let z = *points.get([2, pt]).unwrap();
             assert_relative_eq!(
-                *data.get([0, pt, 0, 0]).unwrap(),
+                *data.get([pt, 0, 0, 0]).unwrap(),
                 1.0 - x - y - z,
                 epsilon = 1e-14
             );
-            assert_relative_eq!(*data.get([0, pt, 1, 0]).unwrap(), x, epsilon = 1e-14);
-            assert_relative_eq!(*data.get([0, pt, 2, 0]).unwrap(), y, epsilon = 1e-14);
-            assert_relative_eq!(*data.get([0, pt, 3, 0]).unwrap(), z, epsilon = 1e-14);
+            assert_relative_eq!(*data.get([pt, 0, 0, 1]).unwrap(), x, epsilon = 1e-14);
+            assert_relative_eq!(*data.get([pt, 0, 0, 2]).unwrap(), y, epsilon = 1e-14);
+            assert_relative_eq!(*data.get([pt, 0, 0, 3]).unwrap(), z, epsilon = 1e-14);
+        }
+
+        let cell = ReferenceCellType::Tetrahedron;
+        let gradients = [
+            [-1.0, -1.0, -1.0],
+            [1.0, 0.0, 0.0],
+            [0.0, 1.0, 0.0],
+            [0.0, 0.0, 1.0],
+        ];
+        for pt in 0..6 {
+            for (b, gradient) in gradients.iter().enumerate() {
+                for (alpha, value) in [[1, 0, 0], [0, 1, 0], [0, 0, 1]].iter().zip(gradient) {
+                    assert_relative_eq!(
+                        *data.get([pt, 0, derivative_index(cell, alpha), b]).unwrap(),
+                        *value,
+                        epsilon = 1e-12
+                    );
+                }
+                // All second derivatives vanish
+                for alpha in multi_indices(3, 2)
+                    .iter()
+                    .filter(|a| a.iter().sum::<usize>() == 2)
+                {
+                    assert_relative_eq!(
+                        *data.get([pt, 0, derivative_index(cell, alpha), b]).unwrap(),
+                        0.0,
+                        epsilon = 1e-12
+                    );
+                }
+            }
         }
         check_dofs(e);
     }
@@ -733,7 +764,7 @@ mod test {
         e.tabulate(&points, 0, &mut data);
 
         for pt in 0..6 {
-            assert_relative_eq!(*data.get([0, pt, 0, 0]).unwrap(), 1.0);
+            assert_relative_eq!(*data.get([pt, 0, 0, 0]).unwrap(), 1.0);
         }
         check_dofs(e);
     }
@@ -775,42 +806,42 @@ mod test {
             let y = *points.get([1, pt]).unwrap();
             let z = *points.get([2, pt]).unwrap();
             assert_relative_eq!(
-                *data.get([0, pt, 0, 0]).unwrap(),
+                *data.get([pt, 0, 0, 0]).unwrap(),
                 (1.0 - x) * (1.0 - y) * (1.0 - z),
                 epsilon = 1e-14
             );
             assert_relative_eq!(
-                *data.get([0, pt, 1, 0]).unwrap(),
+                *data.get([pt, 0, 0, 1]).unwrap(),
                 x * (1.0 - y) * (1.0 - z),
                 epsilon = 1e-14
             );
             assert_relative_eq!(
-                *data.get([0, pt, 2, 0]).unwrap(),
+                *data.get([pt, 0, 0, 2]).unwrap(),
                 (1.0 - x) * y * (1.0 - z),
                 epsilon = 1e-14
             );
             assert_relative_eq!(
-                *data.get([0, pt, 3, 0]).unwrap(),
+                *data.get([pt, 0, 0, 3]).unwrap(),
                 x * y * (1.0 - z),
                 epsilon = 1e-14
             );
             assert_relative_eq!(
-                *data.get([0, pt, 4, 0]).unwrap(),
+                *data.get([pt, 0, 0, 4]).unwrap(),
                 (1.0 - x) * (1.0 - y) * z,
                 epsilon = 1e-14
             );
             assert_relative_eq!(
-                *data.get([0, pt, 5, 0]).unwrap(),
+                *data.get([pt, 0, 0, 5]).unwrap(),
                 x * (1.0 - y) * z,
                 epsilon = 1e-14
             );
             assert_relative_eq!(
-                *data.get([0, pt, 6, 0]).unwrap(),
+                *data.get([pt, 0, 0, 6]).unwrap(),
                 (1.0 - x) * y * z,
                 epsilon = 1e-14
             );
             assert_relative_eq!(
-                *data.get([0, pt, 7, 0]).unwrap(),
+                *data.get([pt, 0, 0, 7]).unwrap(),
                 x * y * z,
                 epsilon = 1e-14
             );
@@ -993,11 +1024,11 @@ mod test {
 
         e.tabulate(&points, 0, &mut data);
 
-        for pt in 0..data.shape()[1] {
-            for basis in 0..data.shape()[1] {
+        for pt in 0..data.shape()[0] {
+            for basis in 0..data.shape()[3] {
                 assert!(
-                    data.get([0, pt, basis, 0]).unwrap().abs() < 1e-10
-                        || (1.0 - data.get([0, pt, basis, 0]).unwrap()).abs() < 1e-14
+                    data.get([pt, 0, 0, basis]).unwrap().abs() < 1e-10
+                        || (1.0 - data.get([pt, 0, 0, basis]).unwrap()).abs() < 1e-14
                 );
             }
         }
@@ -1019,9 +1050,9 @@ mod test {
 
         e.tabulate(&points, 0, &mut data);
 
-        for pt in 0..data.shape()[1] {
-            for basis in 0..data.shape()[1] {
-                assert!(data.get([0, pt, basis, 0]).unwrap().abs() > 1e-10);
+        for pt in 0..data.shape()[0] {
+            for basis in 0..data.shape()[3] {
+                assert!(data.get([pt, 0, 0, basis]).unwrap().abs() > 1e-10);
             }
         }
     }
@@ -1048,11 +1079,11 @@ mod test {
 
         e.tabulate(&points, 0, &mut data);
 
-        for pt in 0..data.shape()[1] {
-            for basis in 0..data.shape()[1] {
+        for pt in 0..data.shape()[0] {
+            for basis in 0..data.shape()[3] {
                 assert!(
-                    data.get([0, pt, basis, 0]).unwrap().abs() < 1e-10
-                        || (1.0 - data.get([0, pt, basis, 0]).unwrap()).abs() < 1e-14
+                    data.get([pt, 0, 0, basis]).unwrap().abs() < 1e-10
+                        || (1.0 - data.get([pt, 0, 0, basis]).unwrap()).abs() < 1e-14
                 );
             }
         }
@@ -1080,9 +1111,9 @@ mod test {
 
         e.tabulate(&points, 0, &mut data);
 
-        for pt in 0..data.shape()[1] {
-            for basis in 0..data.shape()[1] {
-                assert!(data.get([0, pt, basis, 0]).unwrap().abs() > 1e-10);
+        for pt in 0..data.shape()[0] {
+            for basis in 0..data.shape()[3] {
+                assert!(data.get([pt, 0, 0, basis]).unwrap().abs() > 1e-10);
             }
         }
     }
@@ -1129,4 +1160,194 @@ mod test {
     test_point_ordering!(Quadrilateral, 7);
     test_point_ordering!(Tetrahedron, 6);
     test_point_ordering!(Hexahedron, 3);
+
+    #[test]
+    fn test_tabulate_array_shape() {
+        use ReferenceCellType::{Hexahedron, Interval, Quadrilateral, Tetrahedron, Triangle};
+        let npts = 5;
+
+        for (cell, degree, nderivs, shape) in [
+            (Interval, 3, 0, [npts, 1, 1, 4]),
+            (Interval, 3, 2, [npts, 1, 3, 4]),
+            (Triangle, 2, 0, [npts, 1, 1, 6]),
+            (Triangle, 2, 1, [npts, 1, 3, 6]),
+            (Triangle, 2, 2, [npts, 1, 6, 6]),
+            (Triangle, 2, 3, [npts, 1, 10, 6]),
+            (Quadrilateral, 2, 1, [npts, 1, 3, 9]),
+            (Quadrilateral, 2, 2, [npts, 1, 6, 9]),
+            (Tetrahedron, 2, 1, [npts, 1, 4, 10]),
+            (Tetrahedron, 2, 2, [npts, 1, 10, 10]),
+            (Hexahedron, 1, 1, [npts, 1, 4, 8]),
+            (Hexahedron, 1, 2, [npts, 1, 10, 8]),
+        ] {
+            assert_eq!(
+                create::<f64, f64>(
+                    cell,
+                    degree,
+                    Continuity::Standard,
+                    LagrangeVariant::Equispaced
+                )
+                .tabulate_array_shape(nderivs, npts),
+                shape,
+                "Lagrange {cell:?} {degree} {nderivs}"
+            );
+        }
+    }
+
+    #[test]
+    fn test_tabulate_lagrange_2_triangle_derivatives() {
+        let cell = ReferenceCellType::Triangle;
+        let e = create::<f64, f64>(cell, 2, Continuity::Standard, LagrangeVariant::Equispaced);
+        let points = interior_points(cell);
+        let data = tabulate(&e, &points, 3);
+
+        for p in 0..points.shape()[1] {
+            let x = points[[0, p]];
+            let y = points[[1, p]];
+            // Basis functions from DefElement
+            // (https://defelement.org/elements/examples/triangle-lagrange-equispaced-2.html)
+            // listed as [f, df/dx, df/dy, d2f/dx2, d2f/dxdy, d2f/dy2]
+            let expected = [
+                [
+                    (x + y - 1.0) * (2.0 * x + 2.0 * y - 1.0),
+                    4.0 * x + 4.0 * y - 3.0,
+                    4.0 * x + 4.0 * y - 3.0,
+                    4.0,
+                    4.0,
+                    4.0,
+                ],
+                [x * (2.0 * x - 1.0), 4.0 * x - 1.0, 0.0, 4.0, 0.0, 0.0],
+                [y * (2.0 * y - 1.0), 0.0, 4.0 * y - 1.0, 0.0, 0.0, 4.0],
+                [
+                    4.0 * x * (1.0 - x - y),
+                    4.0 - 8.0 * x - 4.0 * y,
+                    -4.0 * x,
+                    -8.0,
+                    -4.0,
+                    0.0,
+                ],
+                [
+                    4.0 * y * (1.0 - x - y),
+                    -4.0 * y,
+                    4.0 - 4.0 * x - 8.0 * y,
+                    0.0,
+                    -4.0,
+                    -8.0,
+                ],
+                [4.0 * x * y, 4.0 * y, 4.0 * x, 0.0, 4.0, 0.0],
+            ];
+            let alphas = [[0, 0], [1, 0], [0, 1], [2, 0], [1, 1], [0, 2]];
+            for (b, values) in expected.iter().enumerate() {
+                for (alpha, value) in alphas.iter().zip(values) {
+                    assert_relative_eq!(
+                        data[[p, 0, derivative_index(cell, alpha), b]],
+                        *value,
+                        epsilon = 1e-12
+                    );
+                }
+                // All third derivatives vanish
+                for alpha in [[3, 0], [2, 1], [1, 2], [0, 3]] {
+                    assert_relative_eq!(
+                        data[[p, 0, derivative_index(cell, &alpha), b]],
+                        0.0,
+                        epsilon = 1e-10
+                    );
+                }
+            }
+        }
+    }
+
+    /// Check the degree 1 Lagrange element on an interval, quadrilateral or hexahedron.
+    ///
+    /// The basis function for the vertex $v$ is the product over the coordinates $x_i$ of
+    /// $x_i$ (if $v_i = 1$) or $1 - x_i$ (if $v_i = 0$). This checks the mixed derivatives,
+    /// which are the only non-zero higher order derivatives.
+    fn check_tensor_product_lagrange_1(cell: ReferenceCellType) {
+        let tdim = reference_cell::dim(cell);
+        let e = create::<f64, f64>(cell, 1, Continuity::Standard, LagrangeVariant::Equispaced);
+        let points = interior_points(cell);
+        let nderivs = tdim + 1;
+        let data = tabulate(&e, &points, nderivs);
+        let vertices = reference_cell::vertices::<f64>(cell);
+        assert_eq!(e.dim(), vertices.len());
+
+        for p in 0..points.shape()[1] {
+            for (v, vertex) in vertices.iter().enumerate() {
+                for alpha in multi_indices(tdim, nderivs) {
+                    let expected = (0..tdim)
+                        .map(|i| {
+                            let x = points[[i, p]];
+                            match (alpha[i], vertex[i] == 1.0) {
+                                (0, true) => x,
+                                (0, false) => 1.0 - x,
+                                (1, true) => 1.0,
+                                (1, false) => -1.0,
+                                _ => 0.0,
+                            }
+                        })
+                        .product::<f64>();
+                    assert_relative_eq!(
+                        data[[p, 0, derivative_index(cell, &alpha), v]],
+                        expected,
+                        epsilon = 1e-12
+                    );
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn test_tabulate_lagrange_1_interval_derivatives() {
+        check_tensor_product_lagrange_1(ReferenceCellType::Interval);
+    }
+
+    #[test]
+    fn test_tabulate_lagrange_1_quadrilateral_derivatives() {
+        check_tensor_product_lagrange_1(ReferenceCellType::Quadrilateral);
+    }
+
+    #[test]
+    fn test_tabulate_lagrange_1_hexahedron_derivatives() {
+        check_tensor_product_lagrange_1(ReferenceCellType::Hexahedron);
+    }
+
+    #[test]
+    fn test_tabulate_layout_lagrange() {
+        for (cell, max_degree) in [
+            (ReferenceCellType::Interval, 4),
+            (ReferenceCellType::Triangle, 3),
+            (ReferenceCellType::Quadrilateral, 3),
+            (ReferenceCellType::Tetrahedron, 3),
+            (ReferenceCellType::Hexahedron, 2),
+        ] {
+            for degree in 1..=max_degree {
+                let e = create::<f64, f64>(
+                    cell,
+                    degree,
+                    Continuity::Standard,
+                    LagrangeVariant::Equispaced,
+                );
+                check_tabulate_layout(&e, 3);
+            }
+        }
+    }
+
+    #[test]
+    fn test_tabulate_layout_discontinuous_lagrange_0() {
+        for cell in [
+            ReferenceCellType::Interval,
+            ReferenceCellType::Triangle,
+            ReferenceCellType::Quadrilateral,
+            ReferenceCellType::Tetrahedron,
+            ReferenceCellType::Hexahedron,
+        ] {
+            let e = create::<f64, f64>(
+                cell,
+                0,
+                Continuity::Discontinuous,
+                LagrangeVariant::Equispaced,
+            );
+            check_tabulate_layout(&e, 2);
+        }
+    }
 }

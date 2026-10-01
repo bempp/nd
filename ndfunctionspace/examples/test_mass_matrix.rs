@@ -65,8 +65,8 @@ fn test_lagrange_mass_matrix() {
                     .map(|(i, w)| {
                         jdets[i]
                             * *w
-                            * *table.get([0, i, test_i, 0]).unwrap()
-                            * *table.get([0, i, trial_i, 0]).unwrap()
+                            * *table.get([i, 0, 0, test_i]).unwrap()
+                            * *table.get([i, 0, 0, trial_i]).unwrap()
                     })
                     .sum::<f64>();
             }
@@ -116,7 +116,7 @@ fn test_rt_mass_matrix() {
     element.tabulate(&pts, 0, &mut table);
     let mut pushed_table = rlst_dynamic_array!(
         f64,
-        [table.shape()[0], table.shape()[1], table.shape()[2], 3]
+        [table.shape()[0], 3, table.shape()[2], table.shape()[3]]
     );
 
     let gmap = mesh.geometry_map(ReferenceCellType::Triangle, 1, &pts);
@@ -141,8 +141,8 @@ fn test_rt_mass_matrix() {
                             * *w
                             * (0..3)
                                 .map(|j| {
-                                    *pushed_table.get([0, i, test_i, j]).unwrap()
-                                        * *pushed_table.get([0, i, trial_i, j]).unwrap()
+                                    *pushed_table.get([i, j, 0, test_i]).unwrap()
+                                        * *pushed_table.get([i, j, 0, trial_i]).unwrap()
                                 })
                                 .sum::<f64>()
                     })

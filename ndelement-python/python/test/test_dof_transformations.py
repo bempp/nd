@@ -37,15 +37,9 @@ def test_transformation_of_tabulated_data_quadrilateral(family, degree, family_k
         K = np.array([np.linalg.inv(_J) for p in points])
         mapped_values = element.push_forward(reflected_values, 0, J, detJ, K)
 
-        # TODO: Change this to the following once #93 is resolved
-        # element.apply_dof_permutations_and_transformations(values, np.int32(1))
-        for d in range(values.shape[0]):
-            element.apply_dof_permutations_and_transformations(values[d], np.int32(1))
+        element.apply_dof_permutations_and_transformations(values, np.int32(1))
 
-        # TODO: Remove the `:, ` at the start of each access once #93 is resolved
-        assert np.allclose(
-            values[:, start : start + ndofs], mapped_values[:, start : start + ndofs]
-        )
+        assert np.allclose(values[start : start + ndofs], mapped_values[start : start + ndofs])
 
 
 @pytest.mark.parametrize(
@@ -82,15 +76,9 @@ def test_transformation_of_tabulated_data_triangle(family, degree, family_kwargs
         K = np.array([np.linalg.inv(_J) for p in points])
         mapped_values = element.push_forward(reflected_values, 0, J, detJ, K)
 
-        # TODO: Change this to the following once #93 is resolved
-        # element.apply_dof_permutations_and_transformations(values, np.int32(1))
-        for d in range(values.shape[0]):
-            element.apply_dof_permutations_and_transformations(values[d], np.int32(1))
+        element.apply_dof_permutations_and_transformations(values, np.int32(1))
 
-        # TODO: Remove the `:, ` at the start of each access once #93 is resolved
-        assert np.allclose(
-            values[:, start : start + ndofs], mapped_values[:, start : start + ndofs]
-        )
+        assert np.allclose(values[start : start + ndofs], mapped_values[start : start + ndofs])
 
 
 @pytest.mark.parametrize(
@@ -129,15 +117,9 @@ def test_transformation_of_tabulated_data_hexahedron(family, degree, family_kwar
         K = np.array([np.linalg.inv(_J) for p in points])
         mapped_values = element.push_forward(reflected_values, 0, J, detJ, K)
 
-        # TODO: Change this to the following once #93 is resolved
-        # element.apply_dof_permutations_and_transformations(values, np.int32(1))
-        for d in range(values.shape[0]):
-            element.apply_dof_permutations_and_transformations(values[d], np.int32(1))
+        element.apply_dof_permutations_and_transformations(values, np.int32(1))
 
-        # TODO: Remove the `:, ` at the start of each access once #93 is resolved
-        assert np.allclose(
-            values[:, start : start + ndofs], mapped_values[:, start : start + ndofs]
-        )
+        assert np.allclose(values[start : start + ndofs], mapped_values[start : start + ndofs])
 
     dofs = element.entity_dofs(2, 0)
     ndofs = len(dofs)
@@ -156,15 +138,9 @@ def test_transformation_of_tabulated_data_hexahedron(family, degree, family_kwar
         K = np.array([np.linalg.inv(_J) for p in points])
         mapped_values = element.push_forward(reflected_values, 0, J, detJ, K)
 
-        # TODO: Change this to the following once #93 is resolved
-        # element.apply_dof_permutations_and_transformations(values, np.int32(1))
-        for d in range(values.shape[0]):
-            element.apply_dof_permutations_and_transformations(values[d], np.int32(1 << (12 + 2)))
+        element.apply_dof_permutations_and_transformations(values, np.int32(1 << (12 + 2)))
 
-        # TODO: Remove the `:, ` at the start of each access once #93 is resolved
-        assert np.allclose(
-            values[:, start : start + ndofs], mapped_values[:, start : start + ndofs]
-        )
+        assert np.allclose(values[start : start + ndofs], mapped_values[start : start + ndofs])
 
         # Rotation of face
         values = element.tabulate(points, 0)
@@ -177,15 +153,9 @@ def test_transformation_of_tabulated_data_hexahedron(family, degree, family_kwar
         K = np.array([np.linalg.inv(_J) for p in points])
         mapped_values = element.push_forward(rotated_values, 0, J, detJ, K)
 
-        # TODO: Change this to the following once #93 is resolved
-        # element.apply_dof_permutations_and_transformations(values, np.int32(1))
-        for d in range(values.shape[0]):
-            element.apply_dof_permutations_and_transformations(values[d], np.int32(1 << 12))
+        element.apply_dof_permutations_and_transformations(values, np.int32(1 << 12))
 
-        # TODO: Remove the `:, ` at the start of each access once #93 is resolved
-        assert np.allclose(
-            values[:, start : start + ndofs], mapped_values[:, start : start + ndofs]
-        )
+        assert np.allclose(values[start : start + ndofs], mapped_values[start : start + ndofs])
 
 
 @pytest.mark.parametrize(
@@ -229,15 +199,9 @@ def test_transformation_of_tabulated_data_tetrahedron(family, degree, family_kwa
         K = np.array([np.linalg.inv(_J) for p in points])
         mapped_values = element.push_forward(reflected_values, 0, J, detJ, K)
 
-        # TODO: Change this to the following once #93 is resolved
-        # element.apply_dof_permutations_and_transformations(values, np.int32(1))
-        for d in range(values.shape[0]):
-            element.apply_dof_permutations_and_transformations(values[d], np.int32(1))
+        element.apply_dof_permutations_and_transformations(values, np.int32(1))
 
-        # TODO: Remove the `:, ` at the start of each access once #93 is resolved
-        assert np.allclose(
-            values[:, start : start + ndofs], mapped_values[:, start : start + ndofs]
-        )
+        assert np.allclose(values[start : start + ndofs], mapped_values[start : start + ndofs])
 
     dofs = element.entity_dofs(2, 0)
     ndofs = len(dofs)
@@ -256,15 +220,9 @@ def test_transformation_of_tabulated_data_tetrahedron(family, degree, family_kwa
         K = np.array([np.linalg.inv(_J) for p in points])
         mapped_values = element.push_forward(reflected_values, 0, J, detJ, K)
 
-        # TODO: Change this to the following once #93 is resolved
-        # element.apply_dof_permutations_and_transformations(values, np.int32(1))
-        for d in range(values.shape[0]):
-            element.apply_dof_permutations_and_transformations(values[d], np.int32(1 << (6 + 2)))
+        element.apply_dof_permutations_and_transformations(values, np.int32(1 << (6 + 2)))
 
-        # TODO: Remove the `:, ` at the start of each access once #93 is resolved
-        assert np.allclose(
-            values[:, start : start + ndofs], mapped_values[:, start : start + ndofs]
-        )
+        assert np.allclose(values[start : start + ndofs], mapped_values[start : start + ndofs])
 
         # Rotation of face
         values = element.tabulate(points, 0)
@@ -277,12 +235,6 @@ def test_transformation_of_tabulated_data_tetrahedron(family, degree, family_kwa
         K = np.array([np.linalg.inv(_J) for p in points])
         mapped_values = element.push_forward(rotated_values, 0, J, detJ, K)
 
-        # TODO: Change this to the following once #93 is resolved
-        # element.apply_dof_permutations_and_transformations(values, np.int32(1))
-        for d in range(values.shape[0]):
-            element.apply_dof_permutations_and_transformations(values[d], np.int32(1 << 6))
+        element.apply_dof_permutations_and_transformations(values, np.int32(1 << 6))
 
-        # TODO: Remove the `:, ` at the start of each access once #93 is resolved
-        assert np.allclose(
-            values[:, start : start + ndofs], mapped_values[:, start : start + ndofs]
-        )
+        assert np.allclose(values[start : start + ndofs], mapped_values[start : start + ndofs])

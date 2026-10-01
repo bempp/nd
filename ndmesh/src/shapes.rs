@@ -71,7 +71,8 @@ fn resample_cells_map_points<T: Scalar, const GDIM: usize, const NPTS: usize>(
     for (et, e) in elements {
         let points = &e.interpolation_points()[reference_cell::dim(et)][0];
         let p1_element = p1_family.element(et);
-        let mut table = rlst_dynamic_array!(T, [1, points.shape()[1], p1_element.dim(), 1]);
+        let mut table =
+            rlst_dynamic_array!(T, p1_element.tabulate_array_shape(0, points.shape()[1]));
         p1_element.tabulate(points, 0, &mut table);
         tables.insert(et, table);
     }
@@ -97,8 +98,8 @@ fn resample_cells_map_points<T: Scalar, const GDIM: usize, const NPTS: usize>(
                             .entry(sorted_entity)
                             .or_insert_with(|| {
                                 let table = &tables[et];
-                                let npts = table.shape()[1];
-                                let p1_dim = table.shape()[2];
+                                let npts = table.shape()[0];
+                                let p1_dim = table.shape()[3];
 
                                 let mut vertices = rlst_dynamic_array!(T, [gdim, p1_dim]);
                                 for (i, v) in vs[0].iter().enumerate() {
@@ -111,7 +112,7 @@ fn resample_cells_map_points<T: Scalar, const GDIM: usize, const NPTS: usize>(
                                     let mut vertex = [T::zero(); GDIM];
                                     for c in 0..GDIM {
                                         vertex[c] = (0..p1_dim)
-                                            .map(|v_i| vertices[[c, v_i]] * table[[0, p_i, v_i, 0]])
+                                            .map(|v_i| vertices[[c, v_i]] * table[[p_i, 0, 0, v_i]])
                                             .sum::<T>();
                                     }
                                     pt_i.push(b.point_count());

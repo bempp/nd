@@ -43,7 +43,7 @@ def test_lagrange_2_triangle_tabulate():
         ]
     ):
         for j, p in enumerate(points):
-            data2[0, i, j, 0] = function(*p)
+            data2[i, 0, 0, j] = function(*p)
     # x-derivatives
     for i, function in enumerate(
         [
@@ -56,7 +56,7 @@ def test_lagrange_2_triangle_tabulate():
         ]
     ):
         for j, p in enumerate(points):
-            data2[0, i, j, 1] = function(*p)
+            data2[i, 1, 0, j] = function(*p)
     # y-derivatives
     for i, function in enumerate(
         [
@@ -69,7 +69,7 @@ def test_lagrange_2_triangle_tabulate():
         ]
     ):
         for j, p in enumerate(points):
-            data2[0, i, j, 2] = function(*p)
+            data2[i, 2, 0, j] = function(*p)
 
     assert np.allclose(data, data2)
 
@@ -246,20 +246,18 @@ def test_nedelec_1_triangle(continuity):
     [
         (
             Family.Lagrange,
-            np.array([[[[1.0], [0.5]], [[0.0], [2.0]]]]),
-            np.array([[[[1.0], [0.5]], [[0.0], [2.0]]]]),
+            np.array([[[[1.0, 0.5]]], [[[0.0, 2.0]]]]),
+            np.array([[[[1.0, 0.5]]], [[[0.0, 2.0]]]]),
         ),
         (
             Family.NedelecFirstKind,
-            np.array([[[[1.0], [0.0]], [[0.5], [2.0]]], [[[0.0], [1.0]], [[1.5], [2.0]]]]),
-            np.array(
-                [[[[1.0], [0.0]], [[0.5], [1.0]]], [[[-1.0], [1.0 / 3.0]], [[1.0], [2.0 / 3.0]]]]
-            ),
+            np.array([[[[1.0, 0.0], [0.0, 1.0]]], [[[0.5, 2.0], [1.5, 2.0]]]]),
+            np.array([[[[1.0, 0.0], [-1.0, 1.0 / 3.0]]], [[[0.5, 1.0], [1.0, 2.0 / 3.0]]]]),
         ),
         (
             Family.RaviartThomas,
-            np.array([[[[1.0], [0.0]], [[0.5], [2.0]]], [[[0.0], [1.0]], [[1.5], [2.0]]]]),
-            np.array([[[[1.0], [0.0]], [[2.0], [2.0 / 3.0]]], [[[0.0], [0.5]], [[1.5], [1.0]]]]),
+            np.array([[[[1.0, 0.0], [0.0, 1.0]]], [[[0.5, 2.0], [1.5, 2.0]]]]),
+            np.array([[[[1.0, 0.0], [0.0, 0.5]]], [[[2.0, 2.0 / 3.0], [1.5, 1.0]]]]),
         ),
     ],
 )

@@ -69,8 +69,8 @@ fn test_lagrange_push_forward() {
     ) {
         for i in 0..npts {
             assert_relative_eq!(
-                cell0_table[[0, i, *cell0_dof, 0]],
-                cell1_table[[0, i, *cell1_dof, 0]],
+                cell0_table[[i, 0, 0, *cell0_dof]],
+                cell1_table[[i, 0, 0, *cell1_dof]],
                 epsilon = 1e-10
             );
         }
@@ -119,7 +119,7 @@ fn test_rt_push_forward() {
     gmap.jacobians_inverses_dets(1, &mut jacobians, &mut jinv, &mut jdets);
 
     let mut cell1_table =
-        DynArray::<f64, 4>::from_shape([table.shape()[0], table.shape()[1], table.shape()[2], 3]);
+        DynArray::<f64, 4>::from_shape([table.shape()[0], 3, table.shape()[2], table.shape()[3]]);
     e.push_forward(&table, 0, &jacobians, &jdets, &jinv, &mut cell1_table);
 
     // Check that basis functions dotted with normal to edge are continuous between cells
@@ -129,11 +129,11 @@ fn test_rt_push_forward() {
     ) {
         for i in 0..npts {
             assert_relative_eq!(
-                (cell0_table[[0, i, *cell0_dof, 0]] + cell0_table[[0, i, *cell0_dof, 1]])
+                (cell0_table[[i, 0, 0, *cell0_dof]] + cell0_table[[i, 1, 0, *cell0_dof]])
                     / f64::sqrt(2.0),
-                (cell1_table[[0, i, *cell1_dof, 0]]
-                    + cell1_table[[0, i, *cell1_dof, 1]]
-                    + 2.0 * cell1_table[[0, i, *cell1_dof, 2]])
+                (cell1_table[[i, 0, 0, *cell1_dof]]
+                    + cell1_table[[i, 1, 0, *cell1_dof]]
+                    + 2.0 * cell1_table[[i, 2, 0, *cell1_dof]])
                     / f64::sqrt(6.0),
                 epsilon = 1e-10
             );
@@ -182,7 +182,7 @@ fn test_nc_push_forward() {
     gmap.jacobians_inverses_dets(1, &mut jacobians, &mut jinv, &mut jdets);
 
     let mut cell1_table =
-        DynArray::<f64, 4>::from_shape([table.shape()[0], table.shape()[1], table.shape()[2], 3]);
+        DynArray::<f64, 4>::from_shape([table.shape()[0], 3, table.shape()[2], table.shape()[3]]);
     e.push_forward(&table, 0, &jacobians, &jdets, &jinv, &mut cell1_table);
 
     // Check that basis functions dotted with tangent to edge are continuous between cells
@@ -192,9 +192,9 @@ fn test_nc_push_forward() {
     ) {
         for i in 0..npts {
             assert_relative_eq!(
-                (cell0_table[[0, i, *cell0_dof, 0]] - cell0_table[[0, i, *cell0_dof, 1]])
+                (cell0_table[[i, 0, 0, *cell0_dof]] - cell0_table[[i, 1, 0, *cell0_dof]])
                     / f64::sqrt(2.0),
-                (cell1_table[[0, i, *cell1_dof, 0]] - cell1_table[[0, i, *cell1_dof, 1]])
+                (cell1_table[[i, 0, 0, *cell1_dof]] - cell1_table[[i, 1, 0, *cell1_dof]])
                     / f64::sqrt(2.0),
                 epsilon = 1e-10
             );

@@ -501,12 +501,12 @@ where
             ));
             tabulate_legendre_polynomials(cell_type, &pts, embedded_superdegree, 0, &mut table);
 
-            let mut data = rlst_dynamic_array!(T, [1, npts, endofs, value_size]);
-            for p in 0..npts {
+            let mut data = rlst_dynamic_array!(T, [npts, value_size, 1, endofs]);
+            for (b, dof) in edofs.iter().enumerate() {
                 for j in 0..value_size {
-                    for (b, dof) in edofs.iter().enumerate() {
-                        // data[0, p, b, j] = inner(self.coefficients[b, j, :], table[0, :, p])
-                        *data.get_mut([0, p, b, j]).unwrap() = coefficients
+                    for p in 0..npts {
+                        // data[p, j, 0, b] = inner(self.coefficients[b, j, :], table[0, :, p])
+                        *data.get_mut([p, j, 0, b]).unwrap() = coefficients
                             .r()
                             .slice::<2>(0, *dof)
                             .slice(0, j)
@@ -516,7 +516,7 @@ where
                 }
             }
 
-            let mut pushed_data = rlst_dynamic_array!(T, [1, npts, endofs, value_size]);
+            let mut pushed_data = rlst_dynamic_array!(T, [npts, value_size, 1, endofs]);
             map.push_forward(&data, 0, &j, &jdet, &jinv, &mut pushed_data);
 
             let mut dof_transform = rlst_dynamic_array!(T, [edofs.len(), edofs.len()]);
@@ -527,7 +527,7 @@ where
                             (0..npts)
                                 .map(|m| {
                                     *wts.get([j, l, m]).unwrap()
-                                        * *pushed_data.get([0, m, i, l]).unwrap()
+                                        * *pushed_data.get([m, l, 0, i]).unwrap()
                                 })
                                 .sum::<T>()
                         })
@@ -643,12 +643,12 @@ impl<T: RlstScalar, M: Map, TGeo: RlstScalar> FiniteElement for CiarletElement<T
             &mut table,
         );
 
-        for d in 0..table.shape()[0] {
-            for p in 0..points.shape()[1] {
+        for b in 0..self.dim {
+            for d in 0..table.shape()[0] {
                 for j in 0..self.value_size {
-                    for b in 0..self.dim {
-                        // data[d, p, b, j] = inner(self.coefficients[b, j, :], table[d, :, p])
-                        *data.get_mut([d, p, b, j]).unwrap() = self
+                    for p in 0..points.shape()[1] {
+                        // data[p, j, d, b] = inner(self.coefficients[b, j, :], table[d, :, p])
+                        *data.get_mut([p, j, d, b]).unwrap() = self
                             .coefficients
                             .r()
                             .slice::<2>(0, b)
@@ -666,7 +666,7 @@ impl<T: RlstScalar, M: Map, TGeo: RlstScalar> FiniteElement for CiarletElement<T
         let point_count = npoints;
         let basis_count = self.dim();
         let value_size = self.value_size();
-        [deriv_count, point_count, basis_count, value_size]
+        [point_count, value_size, deriv_count, basis_count]
     }
 
     fn entity_dofs(&self, entity_dim: usize, entity_number: usize) -> Option<&[usize]> {
@@ -917,6 +917,9 @@ impl<T: RlstScalar, M: Map, TGeo: RlstScalar> MappedFiniteElement for CiarletEle
 #[cfg(test)]
 mod test {
     use super::*;
+    use crate::polynomials::test::{
+        derivative_index, interior_points, multi_indices, shift_points,
+    };
     use approx::*;
     use paste::paste;
     use rlst::rlst_dynamic_array;
@@ -943,404 +946,142 @@ mod test {
         assert_eq!(ndofs, e.dim());
     }
 
-    #[test]
-    fn test_raviart_thomas_1_triangle() {
-        let e = raviart_thomas::create::<f64, f64>(
-            ReferenceCellType::Triangle,
-            1,
-            Continuity::Standard,
-        );
-        assert_eq!(e.value_size(), 2);
-        let mut data = DynArray::<f64, 4>::from_shape(e.tabulate_array_shape(0, 6));
-        let mut points = rlst_dynamic_array!(f64, [2, 6]);
-        *points.get_mut([0, 0]).unwrap() = 0.0;
-        *points.get_mut([1, 0]).unwrap() = 0.0;
-        *points.get_mut([0, 1]).unwrap() = 1.0;
-        *points.get_mut([1, 1]).unwrap() = 0.0;
-        *points.get_mut([0, 2]).unwrap() = 0.0;
-        *points.get_mut([1, 2]).unwrap() = 1.0;
-        *points.get_mut([0, 3]).unwrap() = 0.5;
-        *points.get_mut([1, 3]).unwrap() = 0.0;
-        *points.get_mut([0, 4]).unwrap() = 0.0;
-        *points.get_mut([1, 4]).unwrap() = 0.5;
-        *points.get_mut([0, 5]).unwrap() = 0.5;
-        *points.get_mut([1, 5]).unwrap() = 0.5;
-        e.tabulate(&points, 0, &mut data);
+    /// Tabulate `e` at `points`.
+    pub fn tabulate<M: Map>(
+        e: &CiarletElement<f64, M, f64>,
+        points: &DynArray<f64, 2>,
+        nderivs: usize,
+    ) -> DynArray<f64, 4> {
+        let mut data =
+            DynArray::<f64, 4>::from_shape(e.tabulate_array_shape(nderivs, points.shape()[1]));
+        e.tabulate(points, nderivs, &mut data);
+        data
+    }
 
-        for pt in 0..6 {
-            let x = *points.get([0, pt]).unwrap();
-            let y = *points.get([1, pt]).unwrap();
-            for (i, basis_f) in [[-x, 1.0 - y], [x - 1.0, y], [-x, -y]].iter().enumerate() {
-                for (d, value) in basis_f.iter().enumerate() {
-                    assert_relative_eq!(*data.get([0, pt, i, d]).unwrap(), value, epsilon = 1e-14);
+    /// Check the values and first derivatives of a vector-valued element on a triangle.
+    ///
+    /// `basis` returns, for a point (x, y), the value of each basis function and its x- and
+    /// y-derivatives, each as a vector.
+    pub fn check_vector_triangle<M: Map>(
+        e: &CiarletElement<f64, M, f64>,
+        basis: impl Fn(f64, f64) -> Vec<[[f64; 2]; 3]>,
+    ) {
+        let cell = ReferenceCellType::Triangle;
+        let points = interior_points(cell);
+        let data = tabulate(e, &points, 1);
+        assert_eq!(e.value_size(), 2);
+
+        for p in 0..points.shape()[1] {
+            let expected = basis(points[[0, p]], points[[1, p]]);
+            assert_eq!(expected.len(), e.dim());
+            for (b, [value, dx, dy]) in expected.iter().enumerate() {
+                for c in 0..2 {
+                    assert_relative_eq!(data[[p, c, 0, b]], value[c], epsilon = 1e-12);
+                    assert_relative_eq!(
+                        data[[p, c, derivative_index(cell, &[1, 0]), b]],
+                        dx[c],
+                        epsilon = 1e-12
+                    );
+                    assert_relative_eq!(
+                        data[[p, c, derivative_index(cell, &[0, 1]), b]],
+                        dy[c],
+                        epsilon = 1e-12
+                    );
                 }
             }
         }
-        check_dofs(e);
     }
 
-    #[test]
-    fn test_raviart_thomas_2_triangle() {
-        let e = raviart_thomas::create::<f64, f64>(
-            ReferenceCellType::Triangle,
-            2,
-            Continuity::Standard,
-        );
-        assert_eq!(e.value_size(), 2);
-        check_dofs(e);
-    }
+    /// Check the layout of the tabulated data of an element in ways that do not depend on
+    /// knowing its basis functions.
+    ///
+    /// - The shape is (number of points, value size, number of derivatives, dimension).
+    /// - The point axis follows the columns of the input points.
+    /// - The entries for derivatives up to order `k` do not depend on the value of `nderivs >= k`.
+    /// - Every derivative matches a central difference approximation of a lower order derivative.
+    pub fn check_tabulate_layout<M: Map>(e: &CiarletElement<f64, M, f64>, nderivs: usize) {
+        let cell = e.cell_type();
+        let tdim = reference_cell::dim(cell);
+        let points = interior_points(cell);
+        let npts = points.shape()[1];
+        let data = tabulate(e, &points, nderivs);
+        let description = format!("{} degree {} on {cell:?}", e.family_name, e.degree());
 
-    #[test]
-    fn test_raviart_thomas_3_triangle() {
-        let e = raviart_thomas::create::<f64, f64>(
-            ReferenceCellType::Triangle,
-            3,
-            Continuity::Standard,
+        assert_eq!(
+            data.shape(),
+            [
+                npts,
+                e.value_size(),
+                multi_indices(tdim, nderivs).len(),
+                e.dim()
+            ],
+            "{description}"
         );
-        assert_eq!(e.value_size(), 2);
-        check_dofs(e);
-    }
 
-    #[test]
-    fn test_raviart_thomas_1_quadrilateral() {
-        let e = raviart_thomas::create::<f64, f64>(
-            ReferenceCellType::Quadrilateral,
-            1,
-            Continuity::Standard,
-        );
-        assert_eq!(e.value_size(), 2);
-        let mut data = DynArray::<f64, 4>::from_shape(e.tabulate_array_shape(0, 6));
-        let mut points = rlst_dynamic_array!(f64, [2, 6]);
-        *points.get_mut([0, 0]).unwrap() = 0.0;
-        *points.get_mut([1, 0]).unwrap() = 0.0;
-        *points.get_mut([0, 1]).unwrap() = 1.0;
-        *points.get_mut([1, 1]).unwrap() = 0.0;
-        *points.get_mut([0, 2]).unwrap() = 0.0;
-        *points.get_mut([1, 2]).unwrap() = 1.0;
-        *points.get_mut([0, 3]).unwrap() = 0.5;
-        *points.get_mut([1, 3]).unwrap() = 0.0;
-        *points.get_mut([0, 4]).unwrap() = 1.0;
-        *points.get_mut([1, 4]).unwrap() = 0.5;
-        *points.get_mut([0, 5]).unwrap() = 0.5;
-        *points.get_mut([1, 5]).unwrap() = 0.5;
-        e.tabulate(&points, 0, &mut data);
-
-        for pt in 0..6 {
-            let x = *points.get([0, pt]).unwrap();
-            let y = *points.get([1, pt]).unwrap();
-            for (i, basis_f) in [[0.0, 1.0 - y], [x - 1.0, 0.0], [-x, 0.0], [0.0, y]]
-                .iter()
-                .enumerate()
-            {
-                for (d, value) in basis_f.iter().enumerate() {
-                    assert_relative_eq!(*data.get([0, pt, i, d]).unwrap(), value, epsilon = 1e-14);
+        // Tabulating at each point on its own gives the same values
+        for p in 0..npts {
+            let mut point = rlst_dynamic_array!(f64, [tdim, 1]);
+            for i in 0..tdim {
+                point[[i, 0]] = points[[i, p]];
+            }
+            let single = tabulate(e, &point, nderivs);
+            for d in 0..data.shape()[2] {
+                for b in 0..e.dim() {
+                    for v in 0..e.value_size() {
+                        assert_relative_eq!(
+                            data[[p, v, d, b]],
+                            single[[0, v, d, b]],
+                            epsilon = 1e-13
+                        );
+                    }
                 }
             }
         }
-        check_dofs(e);
-    }
 
-    #[test]
-    fn test_raviart_thomas_2_quadrilateral() {
-        let e = raviart_thomas::create::<f64, f64>(
-            ReferenceCellType::Quadrilateral,
-            2,
-            Continuity::Standard,
-        );
-        assert_eq!(e.value_size(), 2);
-        check_dofs(e);
-    }
-
-    #[test]
-    fn test_raviart_thomas_3_quadrilateral() {
-        let e = raviart_thomas::create::<f64, f64>(
-            ReferenceCellType::Quadrilateral,
-            3,
-            Continuity::Standard,
-        );
-        assert_eq!(e.value_size(), 2);
-        check_dofs(e);
-    }
-
-    #[test]
-    fn test_raviart_thomas_1_tetrahedron() {
-        let e = raviart_thomas::create::<f64, f64>(
-            ReferenceCellType::Tetrahedron,
-            1,
-            Continuity::Standard,
-        );
-        assert_eq!(e.value_size(), 3);
-        check_dofs(e);
-    }
-
-    #[test]
-    fn test_raviart_thomas_2_tetrahedron() {
-        let e = raviart_thomas::create::<f64, f64>(
-            ReferenceCellType::Tetrahedron,
-            2,
-            Continuity::Standard,
-        );
-        assert_eq!(e.value_size(), 3);
-        check_dofs(e);
-    }
-
-    #[test]
-    fn test_raviart_thomas_3_tetrahedron() {
-        let e = raviart_thomas::create::<f64, f64>(
-            ReferenceCellType::Tetrahedron,
-            3,
-            Continuity::Standard,
-        );
-        assert_eq!(e.value_size(), 3);
-        check_dofs(e);
-    }
-
-    #[test]
-    fn test_raviart_thomas_1_hexahedron() {
-        let e = raviart_thomas::create::<f64, f64>(
-            ReferenceCellType::Hexahedron,
-            1,
-            Continuity::Standard,
-        );
-        assert_eq!(e.value_size(), 3);
-        let mut data = DynArray::<f64, 4>::from_shape(e.tabulate_array_shape(0, 6));
-        let mut points = rlst_dynamic_array!(f64, [3, 6]);
-        *points.get_mut([0, 0]).unwrap() = 0.0;
-        *points.get_mut([1, 0]).unwrap() = 0.0;
-        *points.get_mut([2, 0]).unwrap() = 0.0;
-        *points.get_mut([0, 1]).unwrap() = 1.0;
-        *points.get_mut([1, 1]).unwrap() = 0.0;
-        *points.get_mut([2, 1]).unwrap() = 0.8;
-        *points.get_mut([0, 2]).unwrap() = 0.0;
-        *points.get_mut([1, 2]).unwrap() = 1.0;
-        *points.get_mut([2, 2]).unwrap() = 1.0;
-        *points.get_mut([0, 3]).unwrap() = 0.5;
-        *points.get_mut([1, 3]).unwrap() = 0.0;
-        *points.get_mut([2, 3]).unwrap() = 0.1;
-        *points.get_mut([0, 4]).unwrap() = 1.0;
-        *points.get_mut([1, 4]).unwrap() = 0.5;
-        *points.get_mut([2, 4]).unwrap() = 0.5;
-        *points.get_mut([0, 5]).unwrap() = 0.5;
-        *points.get_mut([1, 5]).unwrap() = 0.5;
-        *points.get_mut([2, 5]).unwrap() = 1.0;
-        e.tabulate(&points, 0, &mut data);
-
-        for pt in 0..6 {
-            let x = *points.get([0, pt]).unwrap();
-            let y = *points.get([1, pt]).unwrap();
-            let z = *points.get([2, pt]).unwrap();
-            for (i, basis_f) in [
-                [0.0, 0.0, 1.0 - z],
-                [0.0, y - 1.0, 0.0],
-                [1.0 - x, 0.0, 0.0],
-                [x, 0.0, 0.0],
-                [0.0, -y, 0.0],
-                [0.0, 0.0, z],
-            ]
-            .iter()
-            .enumerate()
-            {
-                for (d, value) in basis_f.iter().enumerate() {
-                    assert_relative_eq!(*data.get([0, pt, i, d]).unwrap(), value, epsilon = 1e-14);
+        // Tabulating fewer derivatives gives the same values for the derivatives that are included
+        for k in 0..nderivs {
+            let lower = tabulate(e, &points, k);
+            for alpha in multi_indices(tdim, k) {
+                let d = derivative_index(cell, &alpha);
+                for p in 0..npts {
+                    for b in 0..e.dim() {
+                        for v in 0..e.value_size() {
+                            assert_relative_eq!(
+                                data[[p, v, d, b]],
+                                lower[[p, v, d, b]],
+                                epsilon = 1e-13
+                            );
+                        }
+                    }
                 }
             }
         }
-        check_dofs(e);
-    }
 
-    #[test]
-    fn test_raviart_thomas_2_hexahedron() {
-        let e = raviart_thomas::create::<f64, f64>(
-            ReferenceCellType::Hexahedron,
-            2,
-            Continuity::Standard,
-        );
-        assert_eq!(e.value_size(), 3);
-        check_dofs(e);
-    }
-
-    #[test]
-    fn test_nedelec_1_triangle() {
-        let e = nedelec::create::<f64, f64>(ReferenceCellType::Triangle, 1, Continuity::Standard);
-        assert_eq!(e.value_size(), 2);
-        let mut data = DynArray::<f64, 4>::from_shape(e.tabulate_array_shape(0, 6));
-        let mut points = rlst_dynamic_array!(f64, [2, 6]);
-        *points.get_mut([0, 0]).unwrap() = 0.0;
-        *points.get_mut([1, 0]).unwrap() = 0.0;
-        *points.get_mut([0, 1]).unwrap() = 1.0;
-        *points.get_mut([1, 1]).unwrap() = 0.0;
-        *points.get_mut([0, 2]).unwrap() = 0.0;
-        *points.get_mut([1, 2]).unwrap() = 1.0;
-        *points.get_mut([0, 3]).unwrap() = 0.5;
-        *points.get_mut([1, 3]).unwrap() = 0.0;
-        *points.get_mut([0, 4]).unwrap() = 0.0;
-        *points.get_mut([1, 4]).unwrap() = 0.5;
-        *points.get_mut([0, 5]).unwrap() = 0.5;
-        *points.get_mut([1, 5]).unwrap() = 0.5;
-        e.tabulate(&points, 0, &mut data);
-
-        for pt in 0..6 {
-            let x = *points.get([0, pt]).unwrap();
-            let y = *points.get([1, pt]).unwrap();
-            for (i, basis_f) in [[1.0 - y, x], [y, 1.0 - x], [-y, x]].iter().enumerate() {
-                for (d, value) in basis_f.iter().enumerate() {
-                    assert_relative_eq!(*data.get([0, pt, i, d]).unwrap(), value, epsilon = 1e-14);
+        // The derivative with multi-index alpha + e_m is the derivative in direction m of the
+        // derivative with multi-index alpha
+        let h = 1e-5;
+        for m in 0..tdim {
+            let plus = tabulate(e, &shift_points(&points, m, h), nderivs);
+            let minus = tabulate(e, &shift_points(&points, m, -h), nderivs);
+            for alpha in multi_indices(tdim, nderivs - 1) {
+                let mut beta = alpha.clone();
+                beta[m] += 1;
+                let a = derivative_index(cell, &alpha);
+                let b = derivative_index(cell, &beta);
+                for p in 0..npts {
+                    for basis in 0..e.dim() {
+                        for v in 0..e.value_size() {
+                            assert_relative_eq!(
+                                data[[p, v, b, basis]],
+                                (plus[[p, v, a, basis]] - minus[[p, v, a, basis]]) / (2.0 * h),
+                                epsilon = 1e-5,
+                                max_relative = 1e-6
+                            );
+                        }
+                    }
                 }
             }
         }
-        check_dofs(e);
-    }
-
-    #[test]
-    fn test_nedelec_2_triangle() {
-        let e = nedelec::create::<f64, f64>(ReferenceCellType::Triangle, 2, Continuity::Standard);
-        assert_eq!(e.value_size(), 2);
-        check_dofs(e);
-    }
-
-    #[test]
-    fn test_nedelec_3_triangle() {
-        let e = nedelec::create::<f64, f64>(ReferenceCellType::Triangle, 3, Continuity::Standard);
-        assert_eq!(e.value_size(), 2);
-        check_dofs(e);
-    }
-
-    #[test]
-    fn test_nedelec_1_quadrilateral() {
-        let e =
-            nedelec::create::<f64, f64>(ReferenceCellType::Quadrilateral, 1, Continuity::Standard);
-        assert_eq!(e.value_size(), 2);
-        let mut data = DynArray::<f64, 4>::from_shape(e.tabulate_array_shape(0, 6));
-        let mut points = rlst_dynamic_array!(f64, [2, 6]);
-        *points.get_mut([0, 0]).unwrap() = 0.0;
-        *points.get_mut([1, 0]).unwrap() = 0.0;
-        *points.get_mut([0, 1]).unwrap() = 1.0;
-        *points.get_mut([1, 1]).unwrap() = 0.0;
-        *points.get_mut([0, 2]).unwrap() = 0.0;
-        *points.get_mut([1, 2]).unwrap() = 1.0;
-        *points.get_mut([0, 3]).unwrap() = 0.5;
-        *points.get_mut([1, 3]).unwrap() = 0.0;
-        *points.get_mut([0, 4]).unwrap() = 1.0;
-        *points.get_mut([1, 4]).unwrap() = 0.5;
-        *points.get_mut([0, 5]).unwrap() = 0.5;
-        *points.get_mut([1, 5]).unwrap() = 0.5;
-        e.tabulate(&points, 0, &mut data);
-
-        for pt in 0..6 {
-            let x = *points.get([0, pt]).unwrap();
-            let y = *points.get([1, pt]).unwrap();
-            for (i, basis_f) in [[1.0 - y, 0.0], [0.0, 1.0 - x], [0.0, x], [y, 0.0]]
-                .iter()
-                .enumerate()
-            {
-                for (d, value) in basis_f.iter().enumerate() {
-                    assert_relative_eq!(*data.get([0, pt, i, d]).unwrap(), value, epsilon = 1e-14);
-                }
-            }
-        }
-        check_dofs(e);
-    }
-
-    #[test]
-    fn test_nedelec_2_quadrilateral() {
-        let e =
-            nedelec::create::<f64, f64>(ReferenceCellType::Quadrilateral, 2, Continuity::Standard);
-        assert_eq!(e.value_size(), 2);
-        check_dofs(e);
-    }
-
-    #[test]
-    fn test_nedelec_3_quadrilateral() {
-        let e =
-            nedelec::create::<f64, f64>(ReferenceCellType::Quadrilateral, 3, Continuity::Standard);
-        assert_eq!(e.value_size(), 2);
-        check_dofs(e);
-    }
-
-    #[test]
-    fn test_nedelec_1_tetrahedron() {
-        let e =
-            nedelec::create::<f64, f64>(ReferenceCellType::Tetrahedron, 1, Continuity::Standard);
-        assert_eq!(e.value_size(), 3);
-        check_dofs(e);
-    }
-
-    #[test]
-    fn test_nedelec_2_tetrahedron() {
-        let e =
-            nedelec::create::<f64, f64>(ReferenceCellType::Tetrahedron, 2, Continuity::Standard);
-        assert_eq!(e.value_size(), 3);
-        check_dofs(e);
-    }
-
-    #[test]
-    fn test_nedelec_3_tetrahedron() {
-        let e =
-            nedelec::create::<f64, f64>(ReferenceCellType::Tetrahedron, 3, Continuity::Standard);
-        assert_eq!(e.value_size(), 3);
-        check_dofs(e);
-    }
-
-    #[test]
-    fn test_nedelec_1_hexahedron() {
-        let e = nedelec::create::<f64, f64>(ReferenceCellType::Hexahedron, 1, Continuity::Standard);
-        assert_eq!(e.value_size(), 3);
-        let mut data = DynArray::<f64, 4>::from_shape(e.tabulate_array_shape(0, 6));
-        let mut points = rlst_dynamic_array!(f64, [3, 6]);
-        *points.get_mut([0, 0]).unwrap() = 0.0;
-        *points.get_mut([1, 0]).unwrap() = 0.0;
-        *points.get_mut([2, 0]).unwrap() = 0.0;
-        *points.get_mut([0, 1]).unwrap() = 1.0;
-        *points.get_mut([1, 1]).unwrap() = 0.0;
-        *points.get_mut([2, 1]).unwrap() = 0.8;
-        *points.get_mut([0, 2]).unwrap() = 0.0;
-        *points.get_mut([1, 2]).unwrap() = 1.0;
-        *points.get_mut([2, 2]).unwrap() = 1.0;
-        *points.get_mut([0, 3]).unwrap() = 0.5;
-        *points.get_mut([1, 3]).unwrap() = 0.0;
-        *points.get_mut([2, 3]).unwrap() = 0.1;
-        *points.get_mut([0, 4]).unwrap() = 1.0;
-        *points.get_mut([1, 4]).unwrap() = 0.5;
-        *points.get_mut([2, 4]).unwrap() = 0.5;
-        *points.get_mut([0, 5]).unwrap() = 0.5;
-        *points.get_mut([1, 5]).unwrap() = 0.5;
-        *points.get_mut([2, 5]).unwrap() = 1.0;
-        e.tabulate(&points, 0, &mut data);
-
-        for pt in 0..6 {
-            let x = *points.get([0, pt]).unwrap();
-            let y = *points.get([1, pt]).unwrap();
-            let z = *points.get([2, pt]).unwrap();
-            for (i, basis_f) in [
-                [(1.0 - y) * (1.0 - z), 0.0, 0.0],
-                [0.0, (1.0 - x) * (1.0 - z), 0.0],
-                [0.0, 0.0, (1.0 - x) * (1.0 - y)],
-                [0.0, x * (1.0 - z), 0.0],
-                [0.0, 0.0, x * (1.0 - y)],
-                [y * (1.0 - z), 0.0, 0.0],
-                [0.0, 0.0, (1.0 - x) * y],
-                [0.0, 0.0, x * y],
-                [(1.0 - y) * z, 0.0, 0.0],
-                [0.0, (1.0 - x) * z, 0.0],
-                [0.0, x * z, 0.0],
-                [y * z, 0.0, 0.0],
-            ]
-            .iter()
-            .enumerate()
-            {
-                for (d, value) in basis_f.iter().enumerate() {
-                    assert_relative_eq!(*data.get([0, pt, i, d]).unwrap(), value, epsilon = 1e-14);
-                }
-            }
-        }
-        check_dofs(e);
-    }
-
-    #[test]
-    fn test_nedelec_2_hexahedron() {
-        let e = nedelec::create::<f64, f64>(ReferenceCellType::Hexahedron, 2, Continuity::Standard);
-        assert_eq!(e.value_size(), 3);
-        check_dofs(e);
     }
 
     macro_rules! test_entity_closure_dofs_lagrange {
@@ -1784,6 +1525,8 @@ mod test {
                         }
                     }
 
+                    assert_eq!(index, npts);
+
                     let mut values = DynArray::<f64, 4>::from_shape(element.tabulate_array_shape(0, npts));
                     element.tabulate(&points, 0, &mut values);
 
@@ -1812,16 +1555,14 @@ mod test {
                         let mut mapped_values = rlst_dynamic_array!(f64, reflected_values.shape());
                         element.push_forward(&reflected_values, 0, &j, &det_j, &j_inv, &mut mapped_values);
 
-                        for d in 0..values.shape()[3] {
-                            element.apply_dof_permutations_and_transformations(values.r_mut().slice::<3>(3, d).data_mut().unwrap(), 1);
-                        }
+                        element.apply_dof_permutations_and_transformations(values.data_mut().unwrap(), 1);
 
-                        for p in 0..values.shape()[1] {
+                        for p in 0..values.shape()[0] {
                             for dof in dofs {
-                                for v in 0..values.shape()[3] {
+                                for v in 0..values.shape()[1] {
                                     assert_relative_eq!(
-                                        values[[0, p, *dof, v]],
-                                        mapped_values[[0, p, *dof, v]],
+                                        values[[p, v, 0, *dof]],
+                                        mapped_values[[p, v, 0, *dof]],
                                         epsilon = 1e-8
                                     );
                                 }
@@ -1852,6 +1593,8 @@ mod test {
                         }
                     }
 
+                    assert_eq!(index, npts);
+
                     let mut values = DynArray::<f64, 4>::from_shape(element.tabulate_array_shape(0, npts));
                     element.tabulate(&points, 0, &mut values);
 
@@ -1878,16 +1621,14 @@ mod test {
                         let mut mapped_values = rlst_dynamic_array!(f64, reflected_values.shape());
                         element.push_forward(&reflected_values, 0, &j, &det_j, &j_inv, &mut mapped_values);
 
-                        for d in 0..values.shape()[3] {
-                            element.apply_dof_permutations_and_transformations(values.r_mut().slice::<3>(3, d).data_mut().unwrap(), 1);
-                        }
+                        element.apply_dof_permutations_and_transformations(values.data_mut().unwrap(), 1);
 
-                        for p in 0..values.shape()[1] {
+                        for p in 0..values.shape()[0] {
                             for dof in dofs {
-                                for v in 0..values.shape()[3] {
+                                for v in 0..values.shape()[1] {
                                     assert_relative_eq!(
-                                        values[[0, p, *dof, v]],
-                                        mapped_values[[0, p, *dof, v]],
+                                        values[[p, v, 0, *dof]],
+                                        mapped_values[[p, v, 0, *dof]],
                                         epsilon = 1e-8
                                     );
                                 }
@@ -1907,7 +1648,7 @@ mod test {
                     let element = [<$family>]::create::<f64, f64>(ReferenceCellType::Tetrahedron, [<$degree>], Continuity::Standard $(, $arg)*);
 
                     let n = 5;
-                    let npts = (n + 1) * (n + 2) * (n + 3) / 2;
+                    let npts = (n + 1) * (n + 2) * (n + 3) / 6;
                     let mut points = rlst_dynamic_array!(f64, [3, npts]);
                     let mut index = 0;
                     for i in 0..=n {
@@ -1915,11 +1656,13 @@ mod test {
                             for k in 0..=n-i-j {
                                 *points.get_mut([0, index]).unwrap() = i as f64 / n as f64;
                                 *points.get_mut([1, index]).unwrap() = j as f64 / n as f64;
-                                *points.get_mut([1, index]).unwrap() = k as f64 / n as f64;
+                                *points.get_mut([2, index]).unwrap() = k as f64 / n as f64;
                                 index += 1;
                             }
                         }
                     }
+
+                    assert_eq!(index, npts);
 
                     let mut values = DynArray::<f64, 4>::from_shape(element.tabulate_array_shape(0, npts));
 
@@ -1954,16 +1697,14 @@ mod test {
                         let mut mapped_values = rlst_dynamic_array!(f64, reflected_values.shape());
                         element.push_forward(&reflected_values, 0, &j, &det_j, &j_inv, &mut mapped_values);
 
-                        for d in 0..values.shape()[3] {
-                            element.apply_dof_permutations_and_transformations(values.r_mut().slice::<3>(3, d).data_mut().unwrap(), 1);
-                        }
+                        element.apply_dof_permutations_and_transformations(values.data_mut().unwrap(), 1);
 
-                        for p in 0..values.shape()[1] {
+                        for p in 0..values.shape()[0] {
                             for dof in dofs {
-                                for v in 0..values.shape()[3] {
+                                for v in 0..values.shape()[1] {
                                     assert_relative_eq!(
-                                        values[[0, p, *dof, v]],
-                                        mapped_values[[0, p, *dof, v]],
+                                        values[[p, v, 0, *dof]],
+                                        mapped_values[[p, v, 0, *dof]],
                                         epsilon = 1e-8
                                     );
                                 }
@@ -1999,16 +1740,14 @@ mod test {
                         let mut mapped_values = rlst_dynamic_array!(f64, reflected_values.shape());
                         element.push_forward(&reflected_values, 0, &j, &det_j, &j_inv, &mut mapped_values);
 
-                        for d in 0..values.shape()[3] {
-                            element.apply_dof_permutations_and_transformations(values.r_mut().slice::<3>(3, d).data_mut().unwrap(), 1 << (6 + 2));
-                        }
+                        element.apply_dof_permutations_and_transformations(values.data_mut().unwrap(), 1 << (6 + 2));
 
-                        for p in 0..values.shape()[1] {
+                        for p in 0..values.shape()[0] {
                             for dof in dofs {
-                                for v in 0..values.shape()[3] {
+                                for v in 0..values.shape()[1] {
                                     assert_relative_eq!(
-                                        values[[0, p, *dof, v]],
-                                        mapped_values[[0, p, *dof, v]],
+                                        values[[p, v, 0, *dof]],
+                                        mapped_values[[p, v, 0, *dof]],
                                         epsilon = 1e-8
                                     );
                                 }
@@ -2045,16 +1784,14 @@ mod test {
                         let mut mapped_values = rlst_dynamic_array!(f64, rotated_values.shape());
                         element.push_forward(&rotated_values, 0, &j, &det_j, &j_inv, &mut mapped_values);
 
-                        for d in 0..values.shape()[3] {
-                            element.apply_dof_permutations_and_transformations(values.r_mut().slice::<3>(3, d).data_mut().unwrap(), 1 << 6);
-                        }
+                        element.apply_dof_permutations_and_transformations(values.data_mut().unwrap(), 1 << 6);
 
-                        for p in 0..values.shape()[1] {
+                        for p in 0..values.shape()[0] {
                             for dof in dofs {
-                                for v in 0..values.shape()[3] {
+                                for v in 0..values.shape()[1] {
                                     assert_relative_eq!(
-                                        values[[0, p, *dof, v]],
-                                        mapped_values[[0, p, *dof, v]],
+                                        values[[p, v, 0, *dof]],
+                                        mapped_values[[p, v, 0, *dof]],
                                         epsilon = 1e-8
                                     );
                                 }
@@ -2078,15 +1815,17 @@ mod test {
                     let mut points = rlst_dynamic_array!(f64, [3, npts]);
                     let mut index = 0;
                     for i in 0..=n {
-                        for j in 0..=n-i {
-                            for k in 0..=n-i-j {
+                        for j in 0..=n {
+                            for k in 0..=n {
                                 *points.get_mut([0, index]).unwrap() = i as f64 / n as f64;
                                 *points.get_mut([1, index]).unwrap() = j as f64 / n as f64;
-                                *points.get_mut([1, index]).unwrap() = k as f64 / n as f64;
+                                *points.get_mut([2, index]).unwrap() = k as f64 / n as f64;
                                 index += 1;
                             }
                         }
                     }
+
+                    assert_eq!(index, npts);
 
                     let mut values = DynArray::<f64, 4>::from_shape(element.tabulate_array_shape(0, npts));
 
@@ -2117,16 +1856,14 @@ mod test {
                         let mut mapped_values = rlst_dynamic_array!(f64, reflected_values.shape());
                         element.push_forward(&reflected_values, 0, &j, &det_j, &j_inv, &mut mapped_values);
 
-                        for d in 0..values.shape()[3] {
-                            element.apply_dof_permutations_and_transformations(values.r_mut().slice::<3>(3, d).data_mut().unwrap(), 1);
-                        }
+                        element.apply_dof_permutations_and_transformations(values.data_mut().unwrap(), 1);
 
-                        for p in 0..values.shape()[1] {
+                        for p in 0..values.shape()[0] {
                             for dof in dofs {
-                                for v in 0..values.shape()[3] {
+                                for v in 0..values.shape()[1] {
                                     assert_relative_eq!(
-                                        values[[0, p, *dof, v]],
-                                        mapped_values[[0, p, *dof, v]],
+                                        values[[p, v, 0, *dof]],
+                                        mapped_values[[p, v, 0, *dof]],
                                         epsilon = 1e-8
                                     );
                                 }
@@ -2162,16 +1899,14 @@ mod test {
                         let mut mapped_values = rlst_dynamic_array!(f64, reflected_values.shape());
                         element.push_forward(&reflected_values, 0, &j, &det_j, &j_inv, &mut mapped_values);
 
-                        for d in 0..values.shape()[3] {
-                            element.apply_dof_permutations_and_transformations(values.r_mut().slice::<3>(3, d).data_mut().unwrap(), 1 << (12 + 2));
-                        }
+                        element.apply_dof_permutations_and_transformations(values.data_mut().unwrap(), 1 << (12 + 2));
 
-                        for p in 0..values.shape()[1] {
+                        for p in 0..values.shape()[0] {
                             for dof in dofs {
-                                for v in 0..values.shape()[3] {
+                                for v in 0..values.shape()[1] {
                                     assert_relative_eq!(
-                                        values[[0, p, *dof, v]],
-                                        mapped_values[[0, p, *dof, v]],
+                                        values[[p, v, 0, *dof]],
+                                        mapped_values[[p, v, 0, *dof]],
                                         epsilon = 1e-8
                                     );
                                 }
@@ -2204,16 +1939,14 @@ mod test {
                         let mut mapped_values = rlst_dynamic_array!(f64, rotated_values.shape());
                         element.push_forward(&rotated_values, 0, &j, &det_j, &j_inv, &mut mapped_values);
 
-                        for d in 0..values.shape()[3] {
-                            element.apply_dof_permutations_and_transformations(values.r_mut().slice::<3>(3, d).data_mut().unwrap(), 1 << 12);
-                        }
+                        element.apply_dof_permutations_and_transformations(values.data_mut().unwrap(), 1 << 12);
 
-                        for p in 0..values.shape()[1] {
+                        for p in 0..values.shape()[0] {
                             for dof in dofs {
-                                for v in 0..values.shape()[3] {
+                                for v in 0..values.shape()[1] {
                                     assert_relative_eq!(
-                                        values[[0, p, *dof, v]],
-                                        mapped_values[[0, p, *dof, v]],
+                                        values[[p, v, 0, *dof]],
+                                        mapped_values[[p, v, 0, *dof]],
                                         epsilon = 1e-8
                                     );
                                 }

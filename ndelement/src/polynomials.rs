@@ -50,13 +50,114 @@ pub fn derivative_count(cell_type: ReferenceCellType, degree: usize) -> usize {
 }
 
 #[cfg(test)]
-mod test {
+pub(crate) mod test {
     use super::*;
     use crate::quadrature::gauss_jacobi_rule;
     use crate::types::ReferenceCellType;
     use approx::*;
     use paste::paste;
     use rlst::{DynArray, SliceArray, rlst_dynamic_array};
+
+    /// The index of the partial derivative with multi-index `alpha` in the derivative axis of
+    /// tabulated data.
+    ///
+    /// `alpha[i]` is the number of derivatives taken with respect to the `i`th reference
+    /// coordinate. All tests that depend on the ordering of derivatives use this function.
+    pub(crate) fn derivative_index(cell: ReferenceCellType, alpha: &[usize]) -> usize {
+        assert_eq!(alpha.len(), reference_cell::dim(cell));
+        match alpha.len() {
+            0 => 0,
+            1 => alpha[0],
+            2 => {
+                let n = alpha[0] + alpha[1];
+                n * (n + 1) / 2 + alpha[1]
+            }
+            3 => {
+                let n = alpha[0] + alpha[1] + alpha[2];
+                let m = alpha[1] + alpha[2];
+                n * (n + 1) * (n + 2) / 6 + m * (m + 1) / 2 + alpha[2]
+            }
+            _ => panic!("Unsupported dimension"),
+        }
+    }
+
+    /// All multi-indices in `tdim` variables with total order at most `nderivs`.
+    pub(crate) fn multi_indices(tdim: usize, nderivs: usize) -> Vec<Vec<usize>> {
+        if tdim == 0 {
+            return vec![vec![]];
+        }
+        let mut indices = vec![];
+        for first in 0..=nderivs {
+            for mut rest in multi_indices(tdim - 1, nderivs - first) {
+                rest.insert(0, first);
+                indices.push(rest);
+            }
+        }
+        indices
+    }
+
+    #[test]
+    fn test_derivative_index_is_bijection() {
+        for cell in [
+            ReferenceCellType::Interval,
+            ReferenceCellType::Triangle,
+            ReferenceCellType::Quadrilateral,
+            ReferenceCellType::Tetrahedron,
+            ReferenceCellType::Hexahedron,
+        ] {
+            let tdim = reference_cell::dim(cell);
+            for nderivs in 0..5 {
+                let mut indices = multi_indices(tdim, nderivs)
+                    .iter()
+                    .map(|alpha| derivative_index(cell, alpha))
+                    .collect::<Vec<_>>();
+                indices.sort_unstable();
+                assert_eq!(
+                    indices,
+                    (0..derivative_count(cell, nderivs)).collect::<Vec<_>>(),
+                    "{cell:?}, nderivs = {nderivs}"
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn test_derivative_index_values() {
+        use ReferenceCellType::{Hexahedron, Interval, Quadrilateral, Tetrahedron, Triangle};
+        assert_eq!(derivative_index(Interval, &[2]), 2);
+        for cell in [Triangle, Quadrilateral] {
+            for (alpha, index) in [
+                ([0, 0], 0),
+                ([1, 0], 1),
+                ([0, 1], 2),
+                ([2, 0], 3),
+                ([1, 1], 4),
+                ([0, 2], 5),
+                ([3, 0], 6),
+                ([0, 3], 9),
+            ] {
+                assert_eq!(derivative_index(cell, &alpha), index, "{cell:?} {alpha:?}");
+            }
+        }
+        for cell in [Tetrahedron, Hexahedron] {
+            for (alpha, index) in [
+                ([0, 0, 0], 0),
+                ([1, 0, 0], 1),
+                ([0, 1, 0], 2),
+                ([0, 0, 1], 3),
+                ([2, 0, 0], 4),
+                ([1, 1, 0], 5),
+                ([1, 0, 1], 6),
+                ([0, 2, 0], 7),
+                ([0, 1, 1], 8),
+                ([0, 0, 2], 9),
+                ([3, 0, 0], 10),
+                ([0, 0, 3], 19),
+            ] {
+                assert_eq!(derivative_index(cell, &alpha), index, "{cell:?} {alpha:?}");
+            }
+        }
+    }
 
     macro_rules! test_orthogonal {
         ($cell:ident, $degree:expr) => {
@@ -260,6 +361,106 @@ mod test {
     test_derivatives!(Hexahedron, 4);
     test_derivatives!(Hexahedron, 5);
     test_derivatives!(Hexahedron, 6);
+
+    /// A few points in the interior of a reference cell, stored as columns.
+    pub(crate) fn interior_points(cell: ReferenceCellType) -> DynArray<f64, 2> {
+        let coords: &[&[f64]] = match cell {
+            ReferenceCellType::Interval => &[&[0.15], &[0.4], &[0.85]],
+            ReferenceCellType::Triangle => &[&[0.2, 0.3], &[0.1, 0.6], &[0.55, 0.15]],
+            ReferenceCellType::Quadrilateral => &[&[0.2, 0.7], &[0.6, 0.1], &[0.85, 0.45]],
+            ReferenceCellType::Tetrahedron => {
+                &[&[0.1, 0.2, 0.3], &[0.3, 0.1, 0.25], &[0.15, 0.45, 0.2]]
+            }
+            ReferenceCellType::Hexahedron => {
+                &[&[0.2, 0.7, 0.4], &[0.6, 0.1, 0.8], &[0.35, 0.55, 0.15]]
+            }
+            _ => panic!("Unsupported cell type: {cell:?}"),
+        };
+        let mut points = rlst_dynamic_array!(f64, [coords[0].len(), coords.len()]);
+        for (p, c) in coords.iter().enumerate() {
+            for (i, x) in c.iter().enumerate() {
+                points[[i, p]] = *x;
+            }
+        }
+        points
+    }
+
+    /// Copy of `points` with `h` added to coordinate `direction` of every point.
+    pub(crate) fn shift_points(
+        points: &DynArray<f64, 2>,
+        direction: usize,
+        h: f64,
+    ) -> DynArray<f64, 2> {
+        let mut shifted = rlst_dynamic_array!(f64, points.shape());
+        shifted.fill_from(points);
+        for p in 0..points.shape()[1] {
+            shifted[[direction, p]] += h;
+        }
+        shifted
+    }
+
+    macro_rules! test_higher_derivatives {
+        ($cell:ident, $degree:expr) => {
+            paste! {
+                #[test]
+                fn [<test_legendre_higher_derivatives_ $cell:lower _ $degree>]() {
+                    let cell = ReferenceCellType::[<$cell>];
+                    let tdim = reference_cell::dim(cell);
+                    let nderivs = 3;
+                    let h = 1e-5;
+                    let points = interior_points(cell);
+                    let npts = points.shape()[1];
+
+                    let mut data = DynArray::<f64, 3>::from_shape(
+                        legendre_shape(cell, &points, $degree, nderivs)
+                    );
+                    tabulate_legendre_polynomials(cell, &points, $degree, nderivs, &mut data);
+                    assert_eq!(data.shape()[0], derivative_count(cell, nderivs));
+                    assert_eq!(data.shape()[1], polynomial_count(cell, $degree));
+                    assert_eq!(data.shape()[2], npts);
+
+                    // The derivative with multi-index alpha + e_m is the derivative in direction m
+                    // of the derivative with multi-index alpha.
+                    for m in 0..tdim {
+                        let mut plus = DynArray::<f64, 3>::from_shape(data.shape());
+                        let mut minus = DynArray::<f64, 3>::from_shape(data.shape());
+                        tabulate_legendre_polynomials(
+                            cell, &shift_points(&points, m, h), $degree, nderivs, &mut plus
+                        );
+                        tabulate_legendre_polynomials(
+                            cell, &shift_points(&points, m, -h), $degree, nderivs, &mut minus
+                        );
+                        for alpha in multi_indices(tdim, nderivs - 1) {
+                            let mut beta = alpha.clone();
+                            beta[m] += 1;
+                            let a = derivative_index(cell, &alpha);
+                            let b = derivative_index(cell, &beta);
+                            for i in 0..data.shape()[1] {
+                                for p in 0..npts {
+                                    assert_relative_eq!(
+                                        data[[b, i, p]],
+                                        (plus[[a, i, p]] - minus[[a, i, p]]) / (2.0 * h),
+                                        epsilon = 1e-5,
+                                        max_relative = 1e-6
+                                    );
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        };
+    }
+
+    test_higher_derivatives!(Interval, 4);
+    test_higher_derivatives!(Triangle, 1);
+    test_higher_derivatives!(Triangle, 4);
+    test_higher_derivatives!(Quadrilateral, 1);
+    test_higher_derivatives!(Quadrilateral, 3);
+    test_higher_derivatives!(Tetrahedron, 1);
+    test_higher_derivatives!(Tetrahedron, 3);
+    test_higher_derivatives!(Hexahedron, 1);
+    test_higher_derivatives!(Hexahedron, 2);
 
     #[test]
     fn test_legendre_interval_against_known_polynomials() {

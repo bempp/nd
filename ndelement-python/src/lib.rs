@@ -397,10 +397,10 @@ mod _ndelementrs {
 
                 let rshape = reference_values.shape();
                 let mut physical_values_array =
-                    Array::zeros((p_vs, rshape[2], rshape[1], rshape[0]));
+                    Array::zeros((rshape[3], rshape[2], p_vs, rshape[0]));
                 let mut physical_values = SliceArrayMut::<f64, 4>::from_shape(
                     physical_values_array.as_slice_mut().unwrap(),
-                    [rshape[0], rshape[1], rshape[2], p_vs],
+                    [rshape[0], p_vs, rshape[2], rshape[3]],
                 );
 
                 self.e.push_forward(
@@ -432,10 +432,10 @@ mod _ndelementrs {
 
                 let pshape = physical_values.shape();
                 let mut reference_values_array =
-                    Array::zeros((r_vs, pshape[2], pshape[1], pshape[0]));
+                    Array::zeros((pshape[3], pshape[2], r_vs, pshape[0]));
                 let mut reference_values = SliceArrayMut::<f64, 4>::from_shape(
                     reference_values_array.as_slice_mut().unwrap(),
-                    [pshape[0], pshape[1], pshape[2], r_vs],
+                    [pshape[0], r_vs, pshape[2], pshape[3]],
                 );
 
                 self.e.pull_back(

@@ -105,7 +105,17 @@ class CiarletElement:
         return self._rs.interpolation_weights()
 
     def tabulate(self, points: npt.NDArray[np.float64], nderivs: int) -> npt.NDArray[np.float64]:
-        """Tabulate the basis functions at a set of points."""
+        """Tabulate the basis functions at a set of points.
+
+        Args:
+            points: The points, with shape ``(npoints, tdim)``.
+            nderivs: The number of derivatives to tabulate.
+
+        Returns:
+            An array with shape ``(dim, nderivatives, value_size, npoints)``. The basis function
+            index is the outer index, so the whole array can be passed to
+            :meth:`apply_dof_permutations_and_transformations`.
+        """
         return self._rs.tabulate(points, nderivs)
 
     def physical_value_size(self, gdim: int) -> int:
@@ -124,7 +134,11 @@ class CiarletElement:
         jacobian_determinants: npt.NDArray[np.float64],
         inverse_jacobians: npt.NDArray[np.float64],
     ) -> npt.NDArray[np.float64]:
-        """Push values forward to a physical cell."""
+        """Push values forward to a physical cell.
+
+        ``reference_values`` has the shape returned by :meth:`tabulate`. The returned array has
+        the same shape, with the value size replaced by the physical value size.
+        """
         return self._rs.push_forward(
             reference_values, nderivs, jacobians, jacobian_determinants, inverse_jacobians
         )
@@ -137,7 +151,11 @@ class CiarletElement:
         jacobian_determinants: npt.NDArray[np.float64],
         inverse_jacobians: npt.NDArray[np.float64],
     ) -> npt.NDArray[np.float64]:
-        """Push values back from a physical cell."""
+        """Push values back from a physical cell.
+
+        ``physical_values`` has the shape returned by :meth:`push_forward`. The returned array has
+        the same shape, with the physical value size replaced by the reference value size.
+        """
         return self._rs.pull_back(
             physical_values, nderivs, jacobians, jacobian_determinants, inverse_jacobians
         )

@@ -39,23 +39,35 @@ pub trait FiniteElement {
     ///
     /// - `points` is a two-dimensional array where each column contains the coordinates of one point.
     /// - `nderivs` is the desired number of derivatives (0 for no derivatives, 1 for all first order derivatives, etc.).
-    /// - `data` is the 4-dimensional output array. The first dimension is the total number of partial derivatives,
-    ///   the second dimension is the number of evaluation points, the third dimension is the number of
-    ///   basis functions of the element, and the fourth dimension is the value size of the basis function output.
-    ///   For example, `data[3, 2, 1, 0]` returns the 0th value of the third partial derivative on the point with index 2 for the
-    ///   basis function with index 1.
+    /// - `data` is the 4-dimensional output array, with shape given by [`FiniteElement::tabulate_array_shape`].
+    ///   The first dimension is the number of evaluation points, the second dimension is the value size
+    ///   of the basis function output, the third dimension is the total number of partial derivatives,
+    ///   and the fourth dimension is the number of basis functions of the element.
+    ///   For example, for a vector-valued element on a triangle `data[2, 1, 3, 0]` returns the value with index 1 of
+    ///   the derivative $\partial^2/\partial x^2$ (derivative index 3) at the point with index 2 for the basis function
+    ///   with index 0.
+    ///
+    ///   As arrays are stored in column-major order, the basis function index is the slowest-varying index in
+    ///   memory. The data of a whole tabulation array can therefore be passed directly to
+    ///   [`MappedFiniteElement::apply_dof_permutations_and_transformations`] and related functions.
     ///
     /// ## Remark
-    /// Let $d^{i + k} = dx^{i}dy^{j}$ be a derivative with respect to $x$, $y$ in two dimensions and  
-    /// $d^{i + k + j} = dx^{i}dy^{j}dz^{k}$ be a derivative with respect to $x$, $y$, and $z$ in three dimensions.
-    /// Then the corresponding index $\ell$ in the first dimension of the `data` array is computed as follows.
+    /// Derivatives are ordered by increasing total order, and derivatives of the same total order are ordered
+    /// by decreasing power of $x$ (and then of $y$). Let
+    /// $\partial^{i + j} / \partial x^{i}\partial y^{j}$ be a derivative with respect to $x$, $y$ in two dimensions and
+    /// $\partial^{i + j + k} / \partial x^{i}\partial y^{j}\partial z^{k}$ be a derivative with respect to $x$, $y$, and $z$ in three dimensions.
+    /// Then the corresponding index $\ell$ in the third dimension of the `data` array is computed as follows.
     ///
-    /// - Triangle: $l = (i + j + 1) * (i + j) / 2 + j$
-    /// - Quadrilateral: $l = i * (n + 1) + j$
-    /// - Tetrahedron: $l = (i + j + k) * (i + j + k + 1) * (i + j + k + 2) / 6 + (j + k) * (j + k + 1) / 2 + k$
-    /// - Hexahedron $l = i * (n + 1) * (n + 1) + j * (n + 1) + k$.
+    /// - Interval: $\ell = i$
+    /// - Triangle and quadrilateral: $\ell = (i + j + 1)(i + j) / 2 + j$
+    /// - Tetrahedron and hexahedron: $\ell = (i + j + k)(i + j + k + 1)(i + j + k + 2) / 6 + (j + k)(j + k + 1) / 2 + k$
     ///
-    /// For the quadrilaterals and hexahedra, the parameter $n$ denotes the Lagrange superdegree.
+    /// For example, in two dimensions the indices $0, 1, \dots, 5$ correspond to the value,
+    /// $\partial/\partial x$, $\partial/\partial y$, $\partial^2/\partial x^2$, $\partial^2/\partial x\partial y$,
+    /// and $\partial^2/\partial y^2$.
+    ///
+    /// The total number of partial derivatives up to order `nderivs` is
+    /// $\binom{\texttt{nderivs} + d}{d}$, where $d \geq 1$ is the topological dimension of the cell.
     fn tabulate<
         Array2Impl: ValueArrayImpl<Self::TGeo, 2>,
         Array4MutImpl: MutableArrayImpl<Self::T, 4>,
@@ -115,7 +127,7 @@ pub trait MappedFiniteElement: FiniteElement {
     /// - `jacobian_determinants` should have shape \[npts\];
     /// - `inverse_jacobians` should have shape [`entity_topology_dimension`, `geometry_dimension`, npts] and use column-major ordering;
     /// - `physical_values`: The output array of the push operation. This shape of this array is the same as the `reference_values`
-    ///   but with reference value size replaced by the physical value size
+    ///   but with reference value size (the second dimension) replaced by the physical value size
     fn push_forward<
         Array3GeoImpl: ValueArrayImpl<Self::TGeo, 3>,
         Array4Impl: ValueArrayImpl<Self::T, 4>,
