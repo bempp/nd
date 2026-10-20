@@ -519,8 +519,9 @@ impl<T: RlstScalar + Getrf + Getri, TGeo: RlstScalar> ElementFamily
 
 #[cfg(test)]
 mod test {
-    use super::super::test::{check_dofs, check_tabulate_layout, check_vector_triangle};
+    use super::super::test::{check_dofs, check_tabulate_layout, check_vector_triangle, tabulate};
     use super::*;
+    use crate::polynomials::test::interior_points;
     use crate::traits::FiniteElement;
     use approx::assert_relative_eq;
 
@@ -528,23 +529,10 @@ mod test {
     fn test_raviart_thomas_1_triangle() {
         let e = create::<f64, f64>(ReferenceCellType::Triangle, 1, Continuity::Standard);
         assert_eq!(e.value_size(), 2);
-        let mut data = DynArray::<f64, 4>::from_shape(e.tabulate_array_shape(0, 6));
-        let mut points = rlst_dynamic_array!(f64, [2, 6]);
-        *points.get_mut([0, 0]).unwrap() = 0.0;
-        *points.get_mut([1, 0]).unwrap() = 0.0;
-        *points.get_mut([0, 1]).unwrap() = 1.0;
-        *points.get_mut([1, 1]).unwrap() = 0.0;
-        *points.get_mut([0, 2]).unwrap() = 0.0;
-        *points.get_mut([1, 2]).unwrap() = 1.0;
-        *points.get_mut([0, 3]).unwrap() = 0.5;
-        *points.get_mut([1, 3]).unwrap() = 0.0;
-        *points.get_mut([0, 4]).unwrap() = 0.0;
-        *points.get_mut([1, 4]).unwrap() = 0.5;
-        *points.get_mut([0, 5]).unwrap() = 0.5;
-        *points.get_mut([1, 5]).unwrap() = 0.5;
-        e.tabulate(&points, 0, &mut data);
+        let points = interior_points(ReferenceCellType::Triangle);
+        let data = tabulate(&e, &points, 0);
 
-        for pt in 0..6 {
+        for pt in 0..points.shape()[1] {
             let x = *points.get([0, pt]).unwrap();
             let y = *points.get([1, pt]).unwrap();
             for (i, basis_f) in [[-x, 1.0 - y], [x - 1.0, y], [-x, -y]].iter().enumerate() {
@@ -574,23 +562,10 @@ mod test {
     fn test_raviart_thomas_1_quadrilateral() {
         let e = create::<f64, f64>(ReferenceCellType::Quadrilateral, 1, Continuity::Standard);
         assert_eq!(e.value_size(), 2);
-        let mut data = DynArray::<f64, 4>::from_shape(e.tabulate_array_shape(0, 6));
-        let mut points = rlst_dynamic_array!(f64, [2, 6]);
-        *points.get_mut([0, 0]).unwrap() = 0.0;
-        *points.get_mut([1, 0]).unwrap() = 0.0;
-        *points.get_mut([0, 1]).unwrap() = 1.0;
-        *points.get_mut([1, 1]).unwrap() = 0.0;
-        *points.get_mut([0, 2]).unwrap() = 0.0;
-        *points.get_mut([1, 2]).unwrap() = 1.0;
-        *points.get_mut([0, 3]).unwrap() = 0.5;
-        *points.get_mut([1, 3]).unwrap() = 0.0;
-        *points.get_mut([0, 4]).unwrap() = 1.0;
-        *points.get_mut([1, 4]).unwrap() = 0.5;
-        *points.get_mut([0, 5]).unwrap() = 0.5;
-        *points.get_mut([1, 5]).unwrap() = 0.5;
-        e.tabulate(&points, 0, &mut data);
+        let points = interior_points(ReferenceCellType::Quadrilateral);
+        let data = tabulate(&e, &points, 0);
 
-        for pt in 0..6 {
+        for pt in 0..points.shape()[1] {
             let x = *points.get([0, pt]).unwrap();
             let y = *points.get([1, pt]).unwrap();
             for (i, basis_f) in [[0.0, 1.0 - y], [x - 1.0, 0.0], [-x, 0.0], [0.0, y]]
@@ -644,29 +619,10 @@ mod test {
     fn test_raviart_thomas_1_hexahedron() {
         let e = create::<f64, f64>(ReferenceCellType::Hexahedron, 1, Continuity::Standard);
         assert_eq!(e.value_size(), 3);
-        let mut data = DynArray::<f64, 4>::from_shape(e.tabulate_array_shape(0, 6));
-        let mut points = rlst_dynamic_array!(f64, [3, 6]);
-        *points.get_mut([0, 0]).unwrap() = 0.0;
-        *points.get_mut([1, 0]).unwrap() = 0.0;
-        *points.get_mut([2, 0]).unwrap() = 0.0;
-        *points.get_mut([0, 1]).unwrap() = 1.0;
-        *points.get_mut([1, 1]).unwrap() = 0.0;
-        *points.get_mut([2, 1]).unwrap() = 0.8;
-        *points.get_mut([0, 2]).unwrap() = 0.0;
-        *points.get_mut([1, 2]).unwrap() = 1.0;
-        *points.get_mut([2, 2]).unwrap() = 1.0;
-        *points.get_mut([0, 3]).unwrap() = 0.5;
-        *points.get_mut([1, 3]).unwrap() = 0.0;
-        *points.get_mut([2, 3]).unwrap() = 0.1;
-        *points.get_mut([0, 4]).unwrap() = 1.0;
-        *points.get_mut([1, 4]).unwrap() = 0.5;
-        *points.get_mut([2, 4]).unwrap() = 0.5;
-        *points.get_mut([0, 5]).unwrap() = 0.5;
-        *points.get_mut([1, 5]).unwrap() = 0.5;
-        *points.get_mut([2, 5]).unwrap() = 1.0;
-        e.tabulate(&points, 0, &mut data);
+        let points = interior_points(ReferenceCellType::Hexahedron);
+        let data = tabulate(&e, &points, 0);
 
-        for pt in 0..6 {
+        for pt in 0..points.shape()[1] {
             let x = *points.get([0, pt]).unwrap();
             let y = *points.get([1, pt]).unwrap();
             let z = *points.get([2, pt]).unwrap();
