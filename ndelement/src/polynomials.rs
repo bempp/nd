@@ -364,15 +364,25 @@ pub(crate) mod test {
 
     /// A few points in the interior of a reference cell, stored as columns.
     pub(crate) fn interior_points(cell: ReferenceCellType) -> DynArray<f64, 2> {
-        let coords: &[&[f64]] = match cell {
-            ReferenceCellType::Interval => &[&[0.15], &[0.4], &[0.85]],
-            ReferenceCellType::Triangle => &[&[0.2, 0.3], &[0.1, 0.6], &[0.55, 0.15]],
-            ReferenceCellType::Quadrilateral => &[&[0.2, 0.7], &[0.6, 0.1], &[0.85, 0.45]],
+        let coords = match cell {
+            ReferenceCellType::Interval => vec![vec![0.15], vec![0.4], vec![0.85]],
+            ReferenceCellType::Triangle => vec![vec![0.2, 0.3], vec![0.1, 0.6], vec![0.55, 0.15]],
+            ReferenceCellType::Quadrilateral => {
+                vec![vec![0.2, 0.7], vec![0.6, 0.1], vec![0.85, 0.45]]
+            }
             ReferenceCellType::Tetrahedron => {
-                &[&[0.1, 0.2, 0.3], &[0.3, 0.1, 0.25], &[0.15, 0.45, 0.2]]
+                vec![
+                    vec![0.1, 0.2, 0.3],
+                    vec![0.3, 0.1, 0.25],
+                    vec![0.15, 0.45, 0.2],
+                ]
             }
             ReferenceCellType::Hexahedron => {
-                &[&[0.2, 0.7, 0.4], &[0.6, 0.1, 0.8], &[0.35, 0.55, 0.15]]
+                vec![
+                    vec![0.2, 0.7, 0.4],
+                    vec![0.6, 0.1, 0.8],
+                    vec![0.35, 0.55, 0.15],
+                ]
             }
             _ => panic!("Unsupported cell type: {cell:?}"),
         };
