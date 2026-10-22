@@ -6,7 +6,7 @@
 //! - $\mathcal{R}\subset\mathbb{R}^d$ is the reference cell,
 //! - $\mathcal{V}$ is a finite dimensional function space on $\mathcal{R}$ of dimension $n$, usually polynomials,
 //! - $\mathcal{L} = \{\ell_0,\dots, \ell_{n-1}\}$ is a basis of the dual space $\mathcal{V}^* = \set{f:\mathcal{V} -> \mathbb{R}: f\text{ is linear}}$, with
-//    each functional associated with a subentity of the reference cell $\mathcal{R}$.
+//!   each functional associated with a subentity of the reference cell $\mathcal{R}$.
 //!
 //! The basis functions $\phi_0,\dots, \phi_{n-1}$ of the finite element space are defined by
 //! $$\ell_i(\phi_j) = \begin{cases}1 &\text{if }~i = j \newline
