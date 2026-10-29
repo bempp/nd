@@ -74,6 +74,9 @@ Examples of use can be found in the examples folder of each crate, for example
 [the ndelement examples are in the folder ndelement/examples](ndelement/examples/) and
 [the ndmesh examples are in the folder ndmesh/examples](ndmesh/examples/).
 
+## Contibuting
+If you are interested in contributing to nd, please read the [contributor guidance](CONTRIBUTING.md).
+
 ## Getting help
 Errors in the library should be added to the [Codeberg issue tracker](https://codeberg.org/nd-project/nd/issues).
 
