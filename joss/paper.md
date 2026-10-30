@@ -42,7 +42,7 @@ Compared to other languages like C++, the chances of encountering undefined beha
 greatly reduced. This reduction is achieved by various features of Rust including the enforcing of
 memory safety at compile time and the built-in bounds checking. By eliminating the possibility of
 many difficult-to-diagnose bugs, Rust can lead to an improved developer experience and increase
-the programmer's proctivity.
+the programmer's productivity.
 
 Using Rust's concept of a trait, a developer can define abstract interfaces. A trait can then be
 implemented for one or many structures, with the Rust compiler ensuring at compile time that
